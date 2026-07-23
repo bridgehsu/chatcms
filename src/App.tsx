@@ -9,6 +9,7 @@ import { CronPage } from "@/views/cron";
 import { SkillsPage } from "@/views/skills";
 import { AgentsPage } from "@/views/agents";
 import { McpPage } from "@/views/mcp";
+import { ModelConfigPage } from "@/views/model-config";
 
 const App = () => (
   <HashRouter>
@@ -24,6 +25,7 @@ const App = () => (
         <Route path="skills" element={<SkillsPage />} />
         <Route path="agents" element={<AgentsPage />} />
         <Route path="mcp" element={<McpPage />} />
+        <Route path="models" element={<ModelConfigPage />} />
         <Route path="*" element={<Navigate to="/chat" replace />} />
       </Route>
     </Routes>

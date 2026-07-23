@@ -43,6 +43,7 @@ src/
 │   ├── map/ images/ videos/ accounts/ cron/
 │   ├── skills/ agents/     # 占位页（即将推出）
 │   ├── mcp/                # MCP 管理 + McpPanel
+│   ├── model-config/       # 模型配置表格 + 弹窗 CRUD
 │   └── settings/components/ # SettingsModal 用 Knowledge/Channel 面板
 ├── components/
 │   ├── PlaceholderPage.tsx
@@ -53,7 +54,10 @@ src/
 │   ├── tokens.css
 │   └── global.css
 ├── stores/
-│   └── useChatStore.ts
+│   ├── useChatStore.ts
+│   └── useProviderStore.ts
+├── config/
+│   └── modelPresets.ts     # 模型预设（Claude/GPT/DeepSeek/Kimi/千问）
 └── types/
     └── index.ts
 ```
@@ -78,7 +82,7 @@ src-tauri/src/
 ├── memory/mod.rs        # Session / Message
 ├── knowledge/mod.rs     # 知识库检索 → system prompt
 ├── channels/mod.rs      # Telegram poller
-├── config/mod.rs        # AppConfig / ProviderConfig
+├── config/mod.rs        # AppConfig / ProviderConfig / ProviderProfile CRUD
 └── persist/mod.rs       # tauri-plugin-store 持久化
 ```
 

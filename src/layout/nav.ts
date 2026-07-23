@@ -7,6 +7,7 @@ import {
   IconImages,
   IconMap,
   IconMcp,
+  IconProvider,
   IconSettings,
   IconSkills,
   IconVideos,
@@ -32,6 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: "/skills", label: "技能管理", Icon: IconSkills, dividerBefore: true },
   { path: "/agents", label: "代理管理", Icon: IconAgents },
   { path: "/mcp", label: "MCP 管理", Icon: IconMcp },
+  { path: "/models", label: "模型配置", Icon: IconProvider },
 ];
 
 export const SETTINGS_ITEM = {

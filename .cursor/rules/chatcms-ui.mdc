@@ -48,7 +48,7 @@ src/
 | 色板 | `styles/tokens.css` | `styles/tokens.css` |
 | 状态 | `stores/` | `stores/` |
 
-侧栏一级平铺（智能会话…设置），无二级菜单。会话列表在 `views/chat/` 内；MCP 在 `views/mcp/`；系统设置在 `views/settings/`（Provider / Memory / Channels）。
+侧栏一级平铺（智能会话…模型配置…设置），无二级菜单。会话列表在 `views/chat/` 内；MCP 在 `views/mcp/`；模型配置在 `views/model-config/`；系统设置弹窗在 `views/settings/`（Memory / Channels）。
 
 ## 组件放哪里
 

@@ -10,7 +10,7 @@ mod tools;
 
 use agent::AgentState;
 use channels::TelegramConfig;
-use config::{AppConfig, ProviderConfig, ProviderKind};
+use config::{AppConfig, ProviderConfig, ProviderKind, ProviderProfile, ProviderProfileInfo};
 use knowledge::KnowledgeEntry;
 use mcp::{McpManager, McpServerConfig, McpServerInfo};
 use memory::Session;
@@ -73,12 +73,169 @@ fn config_set(
         "openai" => ProviderKind::OpenAI,
         _ => ProviderKind::Anthropic,
     };
-    let new_config = AppConfig {
-        provider: ProviderConfig { kind, api_key, model, base_url },
+    let mut cfg = state.config.lock().unwrap();
+    cfg.provider = ProviderConfig {
+        kind,
+        api_key,
+        model,
+        base_url,
     };
-    *state.config.lock().unwrap() = new_config.clone();
-    persist::save_config(&app, &new_config);
+    cfg.ensure_profiles();
+    cfg.upsert_active_from_provider();
+    persist::save_config(&app, &cfg);
     Ok(())
+}
+
+fn parse_provider_kind(provider: &str) -> ProviderKind {
+    match provider {
+        "openai" => ProviderKind::OpenAI,
+        _ => ProviderKind::Anthropic,
+    }
+}
+
+#[tauri::command]
+fn provider_list(state: State<'_, AgentState>) -> Vec<ProviderProfileInfo> {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.ensure_profiles();
+    cfg.profile_infos()
+}
+
+#[tauri::command]
+fn provider_add(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    name: String,
+    provider: String,
+    api_key: String,
+    model: String,
+    base_url: Option<String>,
+) -> Result<ProviderProfileInfo, String> {
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return Err("名称不能为空".into());
+    }
+    if model.trim().is_empty() {
+        return Err("模型 ID 不能为空".into());
+    }
+
+    let mut cfg = state.config.lock().unwrap();
+    cfg.ensure_profiles();
+    if cfg.profiles.iter().any(|p| p.name == name) {
+        return Err(format!("已存在同名配置「{name}」"));
+    }
+
+    let profile = ProviderProfile {
+        id: uuid::Uuid::new_v4().to_string(),
+        name,
+        kind: parse_provider_kind(&provider),
+        api_key,
+        model: model.trim().to_string(),
+        base_url: base_url.filter(|s| !s.trim().is_empty()),
+    };
+    let id = profile.id.clone();
+    cfg.profiles.push(profile);
+    if cfg.active_profile_id.is_none() {
+        cfg.active_profile_id = Some(id.clone());
+        cfg.sync_active_provider();
+    }
+    persist::save_config(&app, &cfg);
+    cfg.profile_infos()
+        .into_iter()
+        .find(|p| p.id == id)
+        .ok_or_else(|| "添加失败".into())
+}
+
+#[tauri::command]
+fn provider_update(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+    name: String,
+    provider: String,
+    api_key: String,
+    model: String,
+    base_url: Option<String>,
+) -> Result<ProviderProfileInfo, String> {
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return Err("名称不能为空".into());
+    }
+    if model.trim().is_empty() {
+        return Err("模型 ID 不能为空".into());
+    }
+
+    let mut cfg = state.config.lock().unwrap();
+    cfg.ensure_profiles();
+    if cfg
+        .profiles
+        .iter()
+        .any(|p| p.name == name && p.id != id)
+    {
+        return Err(format!("已存在同名配置「{name}」"));
+    }
+
+    let profile = cfg
+        .profiles
+        .iter_mut()
+        .find(|p| p.id == id)
+        .ok_or_else(|| "配置不存在".to_string())?;
+    profile.name = name;
+    profile.kind = parse_provider_kind(&provider);
+    profile.api_key = api_key;
+    profile.model = model.trim().to_string();
+    profile.base_url = base_url.filter(|s| !s.trim().is_empty());
+
+    if cfg.active_profile_id.as_deref() == Some(id.as_str()) {
+        cfg.sync_active_provider();
+    }
+    persist::save_config(&app, &cfg);
+    cfg.profile_infos()
+        .into_iter()
+        .find(|p| p.id == id)
+        .ok_or_else(|| "更新失败".into())
+}
+
+#[tauri::command]
+fn provider_remove(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+) -> Result<(), String> {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.ensure_profiles();
+    if cfg.profiles.len() <= 1 {
+        return Err("至少保留一条模型配置".into());
+    }
+    if !cfg.profiles.iter().any(|p| p.id == id) {
+        return Err("配置不存在".into());
+    }
+    cfg.profiles.retain(|p| p.id != id);
+    if cfg.active_profile_id.as_deref() == Some(id.as_str()) {
+        cfg.active_profile_id = cfg.profiles.first().map(|p| p.id.clone());
+        cfg.sync_active_provider();
+    }
+    persist::save_config(&app, &cfg);
+    Ok(())
+}
+
+#[tauri::command]
+fn provider_activate(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+) -> Result<ProviderProfileInfo, String> {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.ensure_profiles();
+    if !cfg.profiles.iter().any(|p| p.id == id) {
+        return Err("配置不存在".into());
+    }
+    cfg.active_profile_id = Some(id.clone());
+    cfg.sync_active_provider();
+    persist::save_config(&app, &cfg);
+    cfg.profile_infos()
+        .into_iter()
+        .find(|p| p.id == id)
+        .ok_or_else(|| "激活失败".into())
 }
 
 #[tauri::command]
@@ -237,7 +394,9 @@ pub fn run() {
             let handle = app.handle().clone();
             let state = handle.state::<AgentState>();
 
-            if let Some(config) = persist::load_config(&handle) {
+            if let Some(mut config) = persist::load_config(&handle) {
+                config.ensure_profiles();
+                persist::save_config(&handle, &config);
                 *state.config.lock().unwrap() = config;
             }
             *state.sessions.lock().unwrap() = persist::load_sessions(&handle);
@@ -272,6 +431,11 @@ pub fn run() {
             session_get,
             config_get,
             config_set,
+            provider_list,
+            provider_add,
+            provider_update,
+            provider_remove,
+            provider_activate,
             permission_respond,
             mcp_list,
             mcp_add,

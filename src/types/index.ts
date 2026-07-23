@@ -109,6 +109,19 @@ export interface ProviderConfig {
   base_url: string | null;
 }
 
+export interface ProviderProfile {
+  id: string;
+  name: string;
+  kind: ProviderKind;
+  api_key: string;
+  model: string;
+  base_url: string | null;
+  active: boolean;
+}
+
 export interface AppConfig {
   provider: ProviderConfig;
+  profiles?: ProviderProfile[];
+  active_profile_id?: string | null;
 }
+
