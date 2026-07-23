@@ -1,32 +1,33 @@
-import { useState } from "react";
-import { Sidebar } from "./components/Sidebar";
-import { ChatWindow } from "./components/ChatWindow";
-import { SettingsModal } from "./components/SettingsModal";
-import { PermissionModal } from "./components/PermissionModal";
-import "./App.css";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AppLayout } from "@/layout/AppLayout";
+import { ChatPage } from "@/views/chat";
+import { MapPage } from "@/views/map";
+import { ImagesPage } from "@/views/images";
+import { VideosPage } from "@/views/videos";
+import { AccountsPage } from "@/views/accounts";
+import { CronPage } from "@/views/cron";
+import { SkillsPage } from "@/views/skills";
+import { AgentsPage } from "@/views/agents";
+import { McpPage } from "@/views/mcp";
 
-function App() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  return (
-    <div className="app-layout">
-      <Sidebar />
-
-      <div className="main-area">
-        <header className="topbar">
-          <span />
-          <button className="btn-settings" onClick={() => setSettingsOpen(true)}>
-            ⚙
-          </button>
-        </header>
-
-        <ChatWindow />
-      </div>
-
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <PermissionModal />
-    </div>
-  );
-}
+const App = () => (
+  <HashRouter>
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<Navigate to="/chat" replace />} />
+        <Route path="chat" element={<ChatPage />} />
+        <Route path="map" element={<MapPage />} />
+        <Route path="images" element={<ImagesPage />} />
+        <Route path="videos" element={<VideosPage />} />
+        <Route path="accounts" element={<AccountsPage />} />
+        <Route path="cron" element={<CronPage />} />
+        <Route path="skills" element={<SkillsPage />} />
+        <Route path="agents" element={<AgentsPage />} />
+        <Route path="mcp" element={<McpPage />} />
+        <Route path="*" element={<Navigate to="/chat" replace />} />
+      </Route>
+    </Routes>
+  </HashRouter>
+);
 
 export default App;

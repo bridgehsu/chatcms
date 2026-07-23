@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use futures_util::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -52,6 +52,9 @@ pub async fn stream_chat(
     tools: Vec<ToolDef>,
     system_prompt: Option<String>,
 ) -> Result<ProviderOutput> {
+    if config.provider.api_key.trim().is_empty() {
+        bail!("API Key 未配置，请先点击右上角 ⚙ Settings 填写后重试");
+    }
     match config.provider.kind {
         ProviderKind::Anthropic => {
             stream_anthropic(app, config, session_id, api_messages, tools, system_prompt).await
@@ -103,15 +106,22 @@ async fn stream_anthropic(
         }
     }
 
-    let mut resp = client
+    let resp = client
         .post(format!("{}/v1/messages", base_url))
         .header("x-api-key", &config.provider.api_key)
         .header("anthropic-version", "2023-06-01")
         .header("content-type", "application/json")
         .json(&body)
         .send()
-        .await?
-        .bytes_stream();
+        .await?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let err_body = resp.text().await.unwrap_or_default();
+        bail!("Anthropic API 错误 ({status}): {err_body}");
+    }
+
+    let mut resp = resp.bytes_stream();
 
     let mut full_text = String::new();
     let mut tool_blocks: HashMap<usize, (String, String, String)> = HashMap::new();
@@ -245,14 +255,21 @@ async fn stream_openai(
         "messages": messages,
     });
 
-    let mut resp = client
+    let resp = client
         .post(format!("{}/v1/chat/completions", base_url))
         .header("Authorization", format!("Bearer {}", config.provider.api_key))
         .header("content-type", "application/json")
         .json(&body)
         .send()
-        .await?
-        .bytes_stream();
+        .await?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let err_body = resp.text().await.unwrap_or_default();
+        bail!("OpenAI API 错误 ({status}): {err_body}");
+    }
+
+    let mut resp = resp.bytes_stream();
 
     let mut full_text = String::new();
     let mut tool_accum: HashMap<usize, (String, String, String)> = HashMap::new();

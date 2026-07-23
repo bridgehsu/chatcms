@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invoke, listen } from "@/hooks/useTauri";
 import type {
   Message,
   PermissionRequest,
@@ -11,7 +10,7 @@ import type {
   SubAgentStart,
   ToolCallEvent,
   ToolResultEvent,
-} from "../types";
+} from "@/types";
 
 interface ChatState {
   sessions: SessionSummary[];
@@ -20,11 +19,13 @@ interface ChatState {
   streamingContent: string;
   isStreaming: boolean;
   pendingPermission: PermissionRequest | null;
+  error: string | null;
 
   loadSessions: () => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   newSession: () => void;
+  clearError: () => void;
   respondPermission: (requestId: string, allowed: boolean) => Promise<void>;
 }
 
@@ -34,6 +35,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     const { session_id, delta, done } = event.payload;
     const { activeSessionId } = get();
 
+    // 新会话时 activeSessionId 仍为 null，需放行首包流式事件
     if (session_id !== activeSessionId && activeSessionId !== null) return;
 
     if (done) {
@@ -45,12 +47,20 @@ export const useChatStore = create<ChatState>((set, get) => {
             streamingContent: "",
             isStreaming: false,
             activeSessionId: sid,
+            error: null,
           });
+        } else {
+          set({ isStreaming: false, streamingContent: "" });
         }
       });
       get().loadSessions();
     } else {
-      set((s) => ({ streamingContent: s.streamingContent + delta, isStreaming: true }));
+      set((s) => ({
+        streamingContent: s.streamingContent + delta,
+        isStreaming: true,
+        // 收到首包时就把真实 session id 对齐，避免后续事件被过滤
+        activeSessionId: s.activeSessionId ?? session_id,
+      }));
     }
   });
 
@@ -60,7 +70,6 @@ export const useChatStore = create<ChatState>((set, get) => {
     const { activeSessionId } = get();
     if (session_id !== activeSessionId && activeSessionId !== null) return;
 
-    // Append an in-progress tool-call display message
     const display = `[calling: ${name}]\n${JSON.stringify(input, null, 2)}`;
     const msg: Message = {
       id: `tool-call-${id}`,
@@ -82,7 +91,6 @@ export const useChatStore = create<ChatState>((set, get) => {
     const { activeSessionId } = get();
     if (session_id !== activeSessionId && activeSessionId !== null) return;
 
-    // Update the matching tool-call message with the result
     const resultText = is_error ? `[error]\n${content}` : `[result]\n${content}`;
     set((s) => {
       if (!s.activeSession) return {};
@@ -139,6 +147,9 @@ export const useChatStore = create<ChatState>((set, get) => {
     streamingContent: "",
     isStreaming: false,
     pendingPermission: null,
+    error: null,
+
+    clearError: () => set({ error: null }),
 
     loadSessions: async () => {
       const sessions = await invoke<SessionSummary[]>("session_list");
@@ -147,38 +158,82 @@ export const useChatStore = create<ChatState>((set, get) => {
 
     selectSession: async (id: string) => {
       const session = await invoke<Session | null>("session_get", { sessionId: id });
-      set({ activeSessionId: id, activeSession: session, streamingContent: "" });
+      set({
+        activeSessionId: id,
+        activeSession: session,
+        streamingContent: "",
+        error: null,
+      });
     },
 
     sendMessage: async (content: string) => {
-      const { activeSessionId } = get();
-
-      // Optimistically append user message
-      set((s) => {
-        const msg: Message = {
-          id: crypto.randomUUID(),
-          role: "user",
-          content,
-          created_at: Date.now(),
-        };
-        const session = s.activeSession
-          ? { ...s.activeSession, messages: [...s.activeSession.messages, msg] }
-          : null;
-        return { activeSession: session, streamingContent: "", isStreaming: true };
-      });
-
-      const sessionId = await invoke<string>("chat_send", {
-        sessionId: activeSessionId,
+      const { activeSessionId, activeSession } = get();
+      const now = Date.now();
+      const userMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "user",
         content,
+        created_at: now,
+      };
+
+      // 乐观更新：新会话也要立刻显示用户消息（之前 activeSession=null 导致界面空白）
+      set({
+        activeSession: activeSession
+          ? { ...activeSession, messages: [...activeSession.messages, userMsg] }
+          : {
+              id: "pending",
+              title: "New Chat",
+              messages: [userMsg],
+              created_at: now,
+              updated_at: now,
+            },
+        streamingContent: "",
+        isStreaming: true,
+        error: null,
       });
 
-      if (!activeSessionId) {
-        set({ activeSessionId: sessionId });
+      try {
+        const sessionId = await invoke<string>("chat_send", {
+          sessionId: activeSessionId,
+          content,
+        });
+
+        set((s) => ({
+          activeSessionId: sessionId,
+          activeSession:
+            s.activeSession && s.activeSession.id === "pending"
+              ? { ...s.activeSession, id: sessionId }
+              : s.activeSession,
+        }));
+
+        // 若流式 done 已处理过，这里再拉一次保证最终一致；失败时也要解除转圈
+        const session = await invoke<Session | null>("session_get", { sessionId });
+        if (session) {
+          set({
+            activeSession: session,
+            isStreaming: false,
+            streamingContent: "",
+          });
+          await get().loadSessions();
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        set({
+          isStreaming: false,
+          streamingContent: "",
+          error: message,
+        });
       }
     },
 
     newSession: () => {
-      set({ activeSessionId: null, activeSession: null, streamingContent: "" });
+      set({
+        activeSessionId: null,
+        activeSession: null,
+        streamingContent: "",
+        isStreaming: false,
+        error: null,
+      });
     },
 
     respondPermission: async (requestId: string, allowed: boolean) => {

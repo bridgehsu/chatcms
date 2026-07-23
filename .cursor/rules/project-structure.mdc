@@ -1,0 +1,104 @@
+---
+description: ChatCMS 工程目录与模块职责；改结构时必须同步更新本文件
+alwaysApply: true
+---
+
+# ChatCMS 工程结构
+
+栈：**React 19 + Vite + Zustand** 前端 · **Rust + Tauri v2** 后端。
+
+## 维护约定（强制）
+
+- 本文件是**当前目录真相**；新增/移动/删除模块或改职责后，**同一任务内**更新本 rule。
+- 更细的「如何扫树、怎么改」见 skill：`.cursor/skills/update-project-structure/SKILL.md`。
+
+## 顶层
+
+```text
+chatcms/
+├── src/                 # React 前端
+├── src-tauri/           # Tauri / Rust 后端
+├── doc/                 # 原理说明（如 how-it-works.md）
+├── .cursor/rules/       # Cursor rules（含本文件）
+├── .cursor/skills/      # 项目 skills
+├── package.json         # 前端依赖；脚本 pnpm tauri / pnpm dev
+└── prompt.md            # 开发进度备忘（非运行时）
+```
+
+忽略：`node_modules/`、`src-tauri/target/`、`dist/`。
+
+## 前端 `src/`
+
+**规范**：`.cursor/rules/chatcms-ui.mdc`（目录、ES6、箭头函数）。
+
+```text
+src/
+├── App.tsx / main.tsx      # HashRouter + 一级路由
+├── layout/
+│   ├── AppLayout.tsx       # Sidebar + Topbar + Outlet
+│   ├── nav.ts              # 一级导航项与标题
+│   └── components/         # Sidebar、Topbar、Settings/Permission 弹窗
+├── views/
+│   ├── chat/               # 智能会话（SessionList + ChatWindow）
+│   ├── map/ images/ videos/ accounts/ cron/
+│   ├── skills/ agents/     # 占位页（即将推出）
+│   ├── mcp/                # MCP 管理 + McpPanel
+│   └── settings/components/ # SettingsModal 用 Knowledge/Channel 面板
+├── components/
+│   ├── PlaceholderPage.tsx
+│   └── icons/
+├── hooks/
+│   └── useTauri.ts
+├── styles/
+│   ├── tokens.css
+│   └── global.css
+├── stores/
+│   └── useChatStore.ts
+└── types/
+    └── index.ts
+```
+
+## 后端 `src-tauri/src/`
+
+```text
+src-tauri/src/
+├── main.rs              # 二进制入口 → lib::run
+├── lib.rs               # Tauri commands 注册 + bootstrap
+├── agent/               # Agent 运行时（单一职责拆分）
+│   ├── mod.rs           # 再导出：AgentState / send_message / …
+│   ├── state.rs         # AgentState
+│   ├── chat.rs          # 主会话 + agent loop
+│   ├── dispatch.rs      # 工具路由（spawn / MCP / 内置）
+│   ├── subagent.rs      # 子 agent loop
+│   ├── permission.rs    # 权限请求与 resolve
+│   └── turns.rs         # turn 组装、tool 事件 emit
+├── provider/mod.rs      # Anthropic / OpenAI 流式 + tools 请求体
+├── tools/mod.rs         # ToolDef / execute（read_file、write_file、bash、spawn_agent）
+├── mcp/mod.rs           # MCP stdio 子进程
+├── memory/mod.rs        # Session / Message
+├── knowledge/mod.rs     # 知识库检索 → system prompt
+├── channels/mod.rs      # Telegram poller
+├── config/mod.rs        # AppConfig / ProviderConfig
+└── persist/mod.rs       # tauri-plugin-store 持久化
+```
+
+## 关键数据流
+
+```text
+ChatWindow → invoke chat_send
+  → agent::send_message (chat.rs)
+  → provider::stream_chat (+ tools schema)
+  → emit stream-chunk / tool-call / tool-result / permission-request
+  → store/chat.ts → UI
+```
+
+工具分流见 `agent/dispatch.rs`；原理文档：`doc/how-it-works.md`。
+
+## 改结构时怎么动本文件
+
+| 变更 | 更新位置 |
+|------|----------|
+| 新增/删除 `src/components/*` | 「前端 `src/`」树 |
+| 新增/拆分 `src-tauri/src/**` | 「后端」树 + 必要时数据流 |
+| 改 Tauri command 入口职责 | `lib.rs` 说明或数据流 |
+| 仅改函数内部逻辑、不改路径 | **不必**改本 rule |

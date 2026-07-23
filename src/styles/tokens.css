@@ -1,0 +1,72 @@
+/* ChatCMS 设计 token — OpenClaw claw（dark）主题 */
+
+:root {
+  /* OpenClaw 核心色板 */
+  --oc-bg: #0e1015;
+  --oc-bg-elevated: #191c24;
+  --oc-bg-hover: #1f2330;
+  --oc-card: #161920;
+  --oc-text: #d4d4d8;
+  --oc-muted: #8b8b94;
+  --oc-border: #1e2028;
+  --oc-border-strong: #2e3040;
+  --oc-accent: #ff5c5c;
+  --oc-accent-hover: #ff7070;
+  --oc-accent-subtle: rgba(255, 92, 92, 0.1);
+  --oc-accent-2: #14b8a6;
+  --oc-primary: #d13c3c;
+  --oc-danger: #ef4444;
+  --oc-ok: #22c55e;
+  --oc-warn: #f59e0b;
+
+  /* ChatCMS 语义（存量 CSS 引用这些名） */
+  --color-bg: var(--oc-bg);
+  --color-bg-2: var(--oc-bg-elevated);
+  --color-bg-3: var(--oc-bg-hover);
+  --color-border: var(--oc-border-strong);
+  --color-text: var(--oc-text);
+  --color-text-dim: var(--oc-muted);
+  --color-accent: var(--oc-accent);
+  --color-accent-hover: var(--oc-accent-hover);
+  --color-user-bg: var(--oc-accent-subtle);
+  --color-assistant-bg: var(--oc-card);
+  --color-danger: var(--oc-danger);
+  --color-danger-text: #ff8e8e;
+
+  --bg: var(--oc-bg);
+  --bg-1: var(--oc-bg);
+  --bg-2: var(--oc-bg-elevated);
+  --bg-3: var(--oc-bg-hover);
+  --border: var(--oc-border-strong);
+  --text: var(--oc-text);
+  --text-dim: var(--oc-muted);
+  --accent: var(--oc-accent);
+  --accent-hover: var(--oc-accent-hover);
+  --user-bg: var(--oc-accent-subtle);
+  --assistant-bg: var(--oc-card);
+
+  /* 字号 / 间距 / 圆角（对齐 OpenClaw） */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 15px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  font-family: var(--font-body);
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  background: var(--color-bg);
+  color-scheme: dark;
+}

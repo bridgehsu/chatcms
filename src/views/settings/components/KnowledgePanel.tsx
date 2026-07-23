@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import type { KnowledgeEntry } from "../types";
+import { invoke } from "@/hooks/useTauri";
+import type { KnowledgeEntry } from "@/types";
 
-export function KnowledgePanel() {
+export const KnowledgePanel = () => {
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", content: "", tags: "" });
@@ -12,7 +12,9 @@ export function KnowledgePanel() {
   const refresh = () =>
     invoke<KnowledgeEntry[]>("knowledge_list").then(setEntries).catch(console.error);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const add = async () => {
     setError("");
@@ -45,13 +47,13 @@ export function KnowledgePanel() {
   return (
     <div className="mcp-panel">
       <div className="mcp-header">
-        <span className="mcp-title">Agent Memory ({entries.length})</span>
-        <button className="btn-mcp-add" onClick={() => setAdding(true)}>
-          + Add Entry
+        <span className="mcp-title">Agent 记忆（{entries.length}）</span>
+        <button className="btn-mcp-add" onClick={() => setAdding(true)} type="button">
+          + 添加条目
         </button>
       </div>
       <p className="mcp-empty" style={{ fontSize: 11, marginTop: -4 }}>
-        Relevant entries are automatically injected into the system prompt.
+        相关条目会自动注入到系统提示词中。
       </p>
 
       <div className="mcp-server-list">
@@ -70,67 +72,77 @@ export function KnowledgePanel() {
             </div>
             <button
               className="btn-mcp-remove"
-              onClick={() => remove(e.id)}
+              onClick={() => void remove(e.id)}
               disabled={busy === e.id}
+              type="button"
             >
-              {busy === e.id ? "…" : "Remove"}
+              {busy === e.id ? "…" : "移除"}
             </button>
           </div>
         ))}
         {entries.length === 0 && !adding && (
-          <p className="mcp-empty">No knowledge entries yet.</p>
+          <p className="mcp-empty">暂无记忆条目</p>
         )}
       </div>
 
       {adding && (
         <div className="mcp-add-form">
           <div className="mcp-form-row">
-            <label>Title</label>
+            <label>标题</label>
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="My Project Context"
+              placeholder="项目背景"
             />
           </div>
           <div className="mcp-form-row">
-            <label>Description (used for matching)</label>
+            <label>描述（用于匹配）</label>
             <input
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Brief summary for relevance matching"
+              placeholder="简短摘要，便于相关性匹配"
             />
           </div>
           <div className="mcp-form-row">
-            <label>Content</label>
+            <label>内容</label>
             <textarea
               className="mcp-env-input"
               rows={5}
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="Full content injected into the prompt…"
+              placeholder="将注入到提示词中的完整内容…"
             />
           </div>
           <div className="mcp-form-row">
-            <label>Tags (comma-separated)</label>
+            <label>标签（逗号分隔）</label>
             <input
               value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              placeholder="project, context, rules"
+              placeholder="项目, 上下文, 规则"
             />
           </div>
           {error && <div className="mcp-form-error">{error}</div>}
           <div className="modal-actions" style={{ marginTop: 0 }}>
-            <button onClick={() => { setAdding(false); setError(""); }}>Cancel</button>
+            <button
+              onClick={() => {
+                setAdding(false);
+                setError("");
+              }}
+              type="button"
+            >
+              取消
+            </button>
             <button
               className="btn-primary"
-              onClick={add}
+              onClick={() => void add()}
               disabled={!form.title || !form.content || busy === "add"}
+              type="button"
             >
-              {busy === "add" ? "Saving…" : "Add"}
+              {busy === "add" ? "保存中…" : "添加"}
             </button>
           </div>
         </div>
       )}
     </div>
   );
-}
+};

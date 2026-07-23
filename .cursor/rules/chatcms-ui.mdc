@@ -1,0 +1,138 @@
+---
+description: ChatCMS 前端规范（目标目录、ES6、箭头函数、组件归属、样式、Tauri）
+globs: src/**/*.{tsx,ts,css}
+alwaysApply: false
+---
+
+# ChatCMS UI
+
+编辑 `src/` 时遵守。栈：**React 19 · TypeScript · Vite · Zustand · Tauri**（非 Vue；目录组织对齐下列约定）。
+
+改目录或模块归属后，同步更新本文件，并更新 `.cursor/rules/project-structure.mdc` 中的前端树。
+
+## 目标目录（强制）
+
+新代码按此布局放置；存量文件逐步迁入，禁止继续往旧扁平 `src/components/*` 堆业务页组件。
+
+```text
+src/
+├── App.tsx / main.tsx      # HashRouter + 一级路由
+├── layout/                 # 主壳：Sidebar、Topbar、壳级弹窗
+│   ├── AppLayout.tsx
+│   ├── nav.ts              # 一级导航配置
+│   └── components/         # Sidebar、Topbar、PermissionModal
+├── views/<页>/             # 页面入口（路由一级页）
+│   ├── index.tsx           # 页面组装
+│   ├── components/         # 仅本页私有组件
+│   └── hooks/              # 仅本页逻辑（可选）
+├── components/             # 跨页全局组件
+│   ├── PlaceholderPage.tsx
+│   └── icons/              # 一图标一文件 + index.ts 导出 IconXxx
+├── hooks/                  # 跨页 hooks（如 useTauri.ts）
+├── styles/
+│   └── tokens.css          # 唯一色板 / 间距 / 字号（改视觉优先只动这里）
+├── stores/                 # Zustand；不负责「切哪一页」
+│   └── useChatStore.ts
+└── types/                  # 前后端共享类型
+    └── index.ts
+```
+
+对照（你给的 Vue 结构 → ChatCMS）：
+
+| 约定 | Vue 示例 | ChatCMS |
+|------|----------|---------|
+| 壳 | `layout/` | `layout/` |
+| 页 | `views/<页>/index.vue` | `views/<页>/index.tsx` |
+| 跨页组件 | `components/` | `components/` |
+| 跨页逻辑 | `composables/` | `hooks/` |
+| 色板 | `styles/tokens.css` | `styles/tokens.css` |
+| 状态 | `stores/` | `stores/` |
+
+侧栏一级平铺（智能会话…设置），无二级菜单。会话列表在 `views/chat/` 内；MCP 在 `views/mcp/`；系统设置在 `views/settings/`（Provider / Memory / Channels）。
+
+## 组件放哪里
+
+1. 只服务某一页 → `views/<页>/components/Xxx.tsx`
+2. 两页及以上共用 → `src/components/Xxx.tsx`
+3. 图标 → `components/icons/Xxx.tsx` + `icons/index.ts` 导出 `IconXxx`
+4. 主壳侧栏 / 顶栏 / 壳级弹窗 → `layout/components/`
+
+```text
+✅ import { IconSettings } from '@/components/icons'
+✅ import { ChatWindow } from './components/ChatWindow'
+❌ 页面私有组件丢进 src/components/（icons 除外）
+❌ 业务里新增长段内联 SVG（进度环等控件例外）
+❌ 在 App.tsx 里堆大段页面 UI（壳只组合 layout + views）
+```
+
+## Tauri 调用（强制）
+
+- 统一经 `hooks/useTauri.ts`（封装 `invoke` / `listen`），Store 与组件不要各自动态 `import('@tauri-apps/api/...')` 复制一套。
+- 事件监听（`stream-chunk` 等）放 store 或专用 hook，组件只消费状态。
+
+```text
+✅ import { invoke } from '@/hooks/useTauri'
+✅ await invoke('chat_send', { sessionId, content })
+❌ 组件内到处直接 import('@tauri-apps/api/core')
+```
+
+## 语法（ES 模块 / ES6+）（强制）
+
+- 一律 `import` / `export`，禁止 `require` / `module.exports`
+- 优先：`const` / `let`、解构、展开、`?.`、`??`、`async/await`
+- 禁止：`var`、能 `async/await` 却堆多层 `.then`
+- 组件：函数组件 + Hooks；本地回调与业务函数用**箭头函数**
+
+### 箭头函数（强制）
+
+```text
+✅ const handleSend = async () => { ... }
+✅ messages.map((m) => <Item key={m.id} msg={m} />)
+✅ useEffect(() => { void load() }, [])
+❌ function handleSend() { ... }          // 新写业务函数不要用 function 声明
+❌ messages.map(function (m) { return ... })
+```
+
+例外：React 组件可用 `export function ChatWindow()` 或 `export const ChatWindow = () =>`，二选一后在同一文件内保持一致；**组件内部**的 handler / 辅助函数一律箭头函数。
+
+### 单语句不套块（强制）
+
+箭头函数体只有一条语句时用表达式体（同 `arrow-body-style: as-needed`）。
+
+```text
+✅ items.map((x) => x.id)
+✅ onClose={() => setOpen(false)}
+❌ items.map((x) => { return x.id })
+❌ onClose={() => { setOpen(false) }}
+```
+
+## 样式
+
+- 颜色、圆角、间距、字号进 `styles/tokens.css`（CSS 变量）
+- 组件样式可用 CSS Modules / 同目录 `*.css`，禁止魔法色散落硬编码（临时调试除外，合并前清掉）
+- 改主题优先改 tokens，不复制多套色值
+
+## Zustand
+
+- Store 只管业务数据与副作用（会话、流式、权限），**不**用 store 字段冒充路由/切页
+- 命名：`stores/useXxxStore.ts`，导出 `useXxxStore`
+
+## 命名
+
+| 类型 | 约定 |
+|------|------|
+| 组件文件 | `PascalCase.tsx` |
+| hooks | `useXxx.ts` |
+| store | `useXxxStore.ts` |
+| 类型 | `types/` 或同域 `types.ts` |
+| CSS 变量 | `--color-*` / `--space-*` / `--font-*` |
+
+## 自检
+
+```text
+□ 新文件落在 layout / views / components / hooks / stores / styles 正确层级
+□ 无新增 function 声明的业务函数（组件内部用箭头）
+□ Tauri 调用走统一 hook
+□ 视觉 token 未在业务文件复制一份
+□ 若改了目录，已更新 project-structure.mdc
+```
