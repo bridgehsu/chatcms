@@ -1,5 +1,8 @@
-import { PlaceholderPage } from "@/components/PlaceholderPage";
+import { AccountsPanel } from "./components/AccountsPanel";
 
+/** 账号管理页 — 各大内容平台账号与密钥 */
 export const AccountsPage = () => (
-  <PlaceholderPage title="账号管理" description="账号与授权管理（即将推出）" />
+  <div className="page page-scroll">
+    <AccountsPanel />
+  </div>
 );

@@ -8,6 +8,7 @@ use crate::config::{AppConfig, ProviderKind};
 use crate::knowledge;
 use crate::memory::{Role, Session};
 use crate::provider::{self, ProviderOutput};
+use crate::skills;
 use crate::tools;
 
 use super::dispatch::dispatch_tool;
@@ -38,15 +39,51 @@ pub async fn send_message(
 
 // ── 准备阶段 ──────────────────────────────────────────────────────────────────
 
-/// 按用户输入检索知识库，拼成 system prompt（无命中则 None）。
+/// 知识库检索 + 默认代理人格 + 技能白名单 → system prompt。
 fn build_system_prompt(state: &State<'_, AgentState>, content: &str) -> Option<String> {
+    let mut blocks: Vec<String> = Vec::new();
+
+    let active_agent = state
+        .agents
+        .lock()
+        .unwrap()
+        .iter()
+        .find(|a| a.is_default && a.enabled)
+        .cloned()
+        .or_else(|| {
+            state
+                .agents
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|a| a.enabled)
+                .cloned()
+        });
+
+    if let Some(ref agent) = active_agent {
+        blocks.push(crate::agents::format_persona(agent));
+    }
+
     let entries = state.knowledge.lock().unwrap().clone();
     let relevant = knowledge::search(&entries, content, 3);
-    let prompt = knowledge::format_for_prompt(&relevant);
-    if prompt.is_empty() {
+    let memory = knowledge::format_for_prompt(&relevant);
+    if !memory.is_empty() {
+        blocks.push(memory);
+    }
+
+    let skill_list = state.skills.lock().unwrap().clone();
+    let allowlist = active_agent
+        .as_ref()
+        .and_then(|a| a.skills.as_ref().map(|v| v.as_slice()));
+    let skill_prompt = skills::format_for_prompt(&skill_list, content, allowlist);
+    if !skill_prompt.is_empty() {
+        blocks.push(skill_prompt);
+    }
+
+    if blocks.is_empty() {
         None
     } else {
-        Some(prompt)
+        Some(blocks.join("\n\n"))
     }
 }
 

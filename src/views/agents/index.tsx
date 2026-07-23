@@ -1,5 +1,8 @@
-import { PlaceholderPage } from "@/components/PlaceholderPage";
+import { AgentsPanel } from "./components/AgentsPanel";
 
+/** 代理管理 — OpenClaw 风格多 Agent 档案 */
 export const AgentsPage = () => (
-  <PlaceholderPage title="代理管理" description="Agent / 子代理 / 角色配置（即将推出）" />
+  <div className="page page-scroll">
+    <AgentsPanel />
+  </div>
 );

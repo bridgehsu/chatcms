@@ -19,6 +19,15 @@
   --oc-ok: #22c55e;
   --oc-warn: #f59e0b;
 
+  /* 工作流节点色 */
+  --wf-trigger: #f59e0b;
+  --wf-agent: #ff5c5c;
+  --wf-http: #3b82f6;
+  --wf-publish: #a855f7;
+  --wf-condition: #14b8a6;
+  --wf-delay: #64748b;
+  --wf-note: #8b8b94;
+
   /* ChatCMS 语义（存量 CSS 引用这些名） */
   --color-bg: var(--oc-bg);
   --color-bg-2: var(--oc-bg-elevated);

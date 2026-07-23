@@ -11,13 +11,39 @@ use tokio::sync::{mpsc, oneshot};
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpServerConfig {
     pub command: String,
     #[serde(default)]
     pub args: Vec<String>,
     #[serde(default)]
     pub env: HashMap<String, String>,
+    /// 工作目录（可选）
+    #[serde(default)]
+    pub cwd: Option<String>,
+    /// 说明（UI）
+    #[serde(default)]
+    pub description: String,
+    /// false 时保留配置但不自动连接
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+impl Default for McpServerConfig {
+    fn default() -> Self {
+        Self {
+            command: String::new(),
+            args: Vec::new(),
+            env: HashMap::new(),
+            cwd: None,
+            description: String::new(),
+            enabled: true,
+        }
+    }
+}
+
+fn default_true() -> bool {
+    true
 }
 
 // ── Tool / server info (used for UI and provider) ─────────────────────────────
@@ -114,14 +140,18 @@ pub struct McpClient {
 
 impl McpClient {
     pub async fn connect(name: &str, config: &McpServerConfig) -> Result<Self> {
-        let mut child = tokio::process::Command::new(&config.command)
-            .args(&config.args)
+        let mut cmd = tokio::process::Command::new(&config.command);
+        cmd.args(&config.args)
             .envs(&config.env)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::null())
-            .kill_on_drop(true)
-            .spawn()?;
+            .kill_on_drop(true);
+        if let Some(cwd) = config.cwd.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            cmd.current_dir(cwd);
+        }
+
+        let mut child = cmd.spawn()?;
 
         let stdin = child.stdin.take().ok_or_else(|| anyhow!("No stdin"))?;
         let stdout = child.stdout.take().ok_or_else(|| anyhow!("No stdout"))?;
@@ -279,9 +309,13 @@ impl McpManager {
 
     async fn connect_one(&mut self, name: &str) {
         self.errors.remove(name);
+        self.clients.remove(name);
         let Some(config) = self.configs.get(name).cloned() else {
             return;
         };
+        if !config.enabled {
+            return;
+        }
         match McpClient::connect(name, &config).await {
             Ok(client) => {
                 self.clients.insert(name.to_string(), client);
@@ -292,9 +326,42 @@ impl McpManager {
         }
     }
 
-    pub async fn add_server(&mut self, name: String, config: McpServerConfig) {
+    pub async fn add_server(
+        &mut self,
+        name: String,
+        config: McpServerConfig,
+    ) -> Result<(), String> {
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            return Err("名称不能为空".into());
+        }
+        if config.command.trim().is_empty() {
+            return Err("命令不能为空".into());
+        }
+        if self.configs.contains_key(&name) {
+            return Err(format!("已存在同名服务器「{name}」"));
+        }
         self.configs.insert(name.clone(), config);
         self.connect_one(&name).await;
+        Ok(())
+    }
+
+    pub async fn update_server(
+        &mut self,
+        name: &str,
+        config: McpServerConfig,
+    ) -> Result<(), String> {
+        if !self.configs.contains_key(name) {
+            return Err("服务器不存在".into());
+        }
+        if config.command.trim().is_empty() {
+            return Err("命令不能为空".into());
+        }
+        self.clients.remove(name);
+        self.errors.remove(name);
+        self.configs.insert(name.to_string(), config);
+        self.connect_one(name).await;
+        Ok(())
     }
 
     pub fn remove_server(&mut self, name: &str) {
@@ -306,6 +373,18 @@ impl McpManager {
     pub async fn reconnect(&mut self, name: &str) {
         self.clients.remove(name);
         self.connect_one(name).await;
+    }
+
+    pub fn disconnect(&mut self, name: &str) {
+        self.clients.remove(name);
+        self.errors.remove(name);
+    }
+
+    pub fn tools_for(&self, name: &str) -> Vec<McpToolDef> {
+        self.clients
+            .get(name)
+            .map(|c| c.tools.clone())
+            .unwrap_or_default()
     }
 
     /// All tools from connected servers, as API-ready ToolDefs.
@@ -346,7 +425,9 @@ impl McpManager {
             .configs
             .iter()
             .map(|(name, config)| {
-                let status = if let Some(client) = self.clients.get(name) {
+                let status = if !config.enabled {
+                    McpStatus::Disconnected
+                } else if let Some(client) = self.clients.get(name) {
                     McpStatus::Connected {
                         tools: client.tools.len(),
                     }

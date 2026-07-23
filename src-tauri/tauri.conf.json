@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "chatcms",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "identifier": "com.xukui.chatcms",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -20,7 +20,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
     }
   },
   "bundle": {

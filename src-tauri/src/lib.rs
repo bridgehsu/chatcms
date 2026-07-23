@@ -1,12 +1,18 @@
 mod agent;
+mod accounts;
+mod agents;
 mod channels;
 mod config;
+mod images;
 mod knowledge;
 mod mcp;
 mod memory;
 mod persist;
 mod provider;
+mod schedules;
+mod skills;
 mod tools;
+mod videos;
 
 use agent::AgentState;
 use channels::TelegramConfig;
@@ -258,12 +264,54 @@ async fn mcp_add(
     command: String,
     args: Vec<String>,
     env: std::collections::HashMap<String, String>,
+    cwd: Option<String>,
+    description: String,
+    enabled: bool,
 ) -> Result<McpServerInfo, String> {
-    let config = McpServerConfig { command, args, env };
+    let config = McpServerConfig {
+        command,
+        args,
+        env,
+        cwd: cwd.filter(|s| !s.trim().is_empty()),
+        description,
+        enabled,
+    };
     let mut mcp = state.mcp.lock().await;
-    mcp.add_server(name.clone(), config).await;
+    mcp.add_server(name.clone(), config).await?;
     persist::save_mcp_configs(&app, &mcp.configs);
-    Ok(mcp.server_infos().into_iter().find(|s| s.name == name).unwrap())
+    mcp.server_infos()
+        .into_iter()
+        .find(|s| s.name == name)
+        .ok_or_else(|| "添加失败".into())
+}
+
+#[tauri::command]
+async fn mcp_update(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    name: String,
+    command: String,
+    args: Vec<String>,
+    env: std::collections::HashMap<String, String>,
+    cwd: Option<String>,
+    description: String,
+    enabled: bool,
+) -> Result<McpServerInfo, String> {
+    let config = McpServerConfig {
+        command,
+        args,
+        env,
+        cwd: cwd.filter(|s| !s.trim().is_empty()),
+        description,
+        enabled,
+    };
+    let mut mcp = state.mcp.lock().await;
+    mcp.update_server(&name, config).await?;
+    persist::save_mcp_configs(&app, &mcp.configs);
+    mcp.server_infos()
+        .into_iter()
+        .find(|s| s.name == name)
+        .ok_or_else(|| "更新失败".into())
 }
 
 #[tauri::command]
@@ -289,6 +337,27 @@ async fn mcp_reconnect(
         .into_iter()
         .find(|s| s.name == name)
         .ok_or_else(|| format!("Server {name} not found"))
+}
+
+#[tauri::command]
+async fn mcp_disconnect(
+    state: State<'_, AgentState>,
+    name: String,
+) -> Result<McpServerInfo, String> {
+    let mut mcp = state.mcp.lock().await;
+    mcp.disconnect(&name);
+    mcp.server_infos()
+        .into_iter()
+        .find(|s| s.name == name)
+        .ok_or_else(|| format!("Server {name} not found"))
+}
+
+#[tauri::command]
+async fn mcp_tools(
+    state: State<'_, AgentState>,
+    name: String,
+) -> Result<Vec<mcp::McpToolDef>, String> {
+    Ok(state.mcp.lock().await.tools_for(&name))
 }
 
 // ── Knowledge ─────────────────────────────────────────────────────────────────
@@ -382,6 +451,356 @@ async fn channel_telegram_stop(state: State<'_, AgentState>) -> Result<(), Strin
     Ok(())
 }
 
+// ── Images ────────────────────────────────────────────────────────────────────
+
+#[tauri::command]
+async fn image_generate(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    prompt: String,
+    model: String,
+    size: String,
+) -> Result<images::GeneratedImage, String> {
+    let config = state.config.lock().unwrap().clone();
+    images::generate(&app, config, prompt, model, size)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn image_list(app: tauri::AppHandle) -> Vec<images::GeneratedImage> {
+    images::list(&app)
+}
+
+#[tauri::command]
+fn image_delete(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    images::delete(&app, id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn image_data_url(path: String) -> Result<String, String> {
+    images::read_data_url(path).map_err(|e| e.to_string())
+}
+
+// ── Videos ────────────────────────────────────────────────────────────────────
+
+#[tauri::command]
+async fn video_generate(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    prompt: String,
+    model: String,
+    size: String,
+    seconds: String,
+) -> Result<videos::GeneratedVideo, String> {
+    let config = state.config.lock().unwrap().clone();
+    videos::generate(&app, config, prompt, model, size, seconds)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn video_list(app: tauri::AppHandle) -> Vec<videos::GeneratedVideo> {
+    videos::list(&app)
+}
+
+#[tauri::command]
+fn video_delete(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    videos::delete(&app, id).map_err(|e| e.to_string())
+}
+
+// ── Platform accounts ─────────────────────────────────────────────────────────
+
+#[tauri::command]
+fn account_list(app: tauri::AppHandle) -> Vec<accounts::PlatformAccount> {
+    accounts::list(&app)
+}
+
+#[tauri::command]
+fn account_add(
+    app: tauri::AppHandle,
+    name: String,
+    platform: String,
+    account_id: String,
+    access_key: String,
+    secret_key: String,
+    enabled: bool,
+    notes: String,
+) -> Result<accounts::PlatformAccount, String> {
+    accounts::add(
+        &app,
+        name,
+        platform,
+        account_id,
+        access_key,
+        secret_key,
+        enabled,
+        notes,
+    )
+}
+
+#[tauri::command]
+fn account_update(
+    app: tauri::AppHandle,
+    id: String,
+    name: String,
+    platform: String,
+    account_id: String,
+    access_key: String,
+    secret_key: String,
+    enabled: bool,
+    notes: String,
+) -> Result<accounts::PlatformAccount, String> {
+    accounts::update(
+        &app,
+        id,
+        name,
+        platform,
+        account_id,
+        access_key,
+        secret_key,
+        enabled,
+        notes,
+    )
+}
+
+#[tauri::command]
+fn account_remove(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    accounts::remove(&app, id)
+}
+
+// ── Schedule projects / workflows ─────────────────────────────────────────────
+
+#[tauri::command]
+fn schedule_list(app: tauri::AppHandle) -> Vec<schedules::ScheduleProject> {
+    schedules::list(&app)
+}
+
+#[tauri::command]
+fn schedule_get(app: tauri::AppHandle, id: String) -> Result<schedules::ScheduleProject, String> {
+    schedules::get(&app, &id)
+}
+
+#[tauri::command]
+fn schedule_add(
+    app: tauri::AppHandle,
+    name: String,
+    description: String,
+    enabled: bool,
+) -> Result<schedules::ScheduleProject, String> {
+    schedules::add(&app, name, description, enabled)
+}
+
+#[tauri::command]
+fn schedule_update(
+    app: tauri::AppHandle,
+    id: String,
+    name: String,
+    description: String,
+    enabled: bool,
+) -> Result<schedules::ScheduleProject, String> {
+    schedules::update_meta(&app, id, name, description, enabled)
+}
+
+#[tauri::command]
+fn schedule_save_workflow(
+    app: tauri::AppHandle,
+    id: String,
+    workflow: schedules::WorkflowGraph,
+) -> Result<schedules::ScheduleProject, String> {
+    schedules::save_workflow(&app, id, workflow)
+}
+
+#[tauri::command]
+fn schedule_remove(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    schedules::remove(&app, id)
+}
+
+// ── Skills (OpenClaw SKILL.md) ─────────────────────────────────────────────────
+
+fn sync_skills_state(app: &tauri::AppHandle, state: &State<'_, AgentState>) {
+    let list = skills::list(app);
+    *state.skills.lock().unwrap() = list;
+}
+
+#[tauri::command]
+fn skill_list(app: tauri::AppHandle, state: State<'_, AgentState>) -> Vec<skills::Skill> {
+    let list = skills::list(&app);
+    *state.skills.lock().unwrap() = list.clone();
+    list
+}
+
+#[tauri::command]
+fn skill_add(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    name: String,
+    description: String,
+    body: String,
+    enabled: bool,
+    user_invocable: bool,
+    disable_model_invocation: bool,
+    homepage: Option<String>,
+    metadata: Option<serde_json::Value>,
+) -> Result<skills::Skill, String> {
+    let skill = skills::add(
+        &app,
+        name,
+        description,
+        body,
+        enabled,
+        user_invocable,
+        disable_model_invocation,
+        homepage,
+        metadata,
+    )?;
+    sync_skills_state(&app, &state);
+    Ok(skill)
+}
+
+#[tauri::command]
+fn skill_update(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+    name: String,
+    description: String,
+    body: String,
+    enabled: bool,
+    user_invocable: bool,
+    disable_model_invocation: bool,
+    homepage: Option<String>,
+    metadata: Option<serde_json::Value>,
+) -> Result<skills::Skill, String> {
+    let skill = skills::update(
+        &app,
+        id,
+        name,
+        description,
+        body,
+        enabled,
+        user_invocable,
+        disable_model_invocation,
+        homepage,
+        metadata,
+    )?;
+    sync_skills_state(&app, &state);
+    Ok(skill)
+}
+
+#[tauri::command]
+fn skill_remove(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+) -> Result<(), String> {
+    skills::remove(&app, id)?;
+    sync_skills_state(&app, &state);
+    Ok(())
+}
+
+#[tauri::command]
+fn skill_export_md(app: tauri::AppHandle, id: String) -> Result<String, String> {
+    let skill = skills::list(&app)
+        .into_iter()
+        .find(|s| s.id == id)
+        .ok_or_else(|| "技能不存在".to_string())?;
+    Ok(skills::to_skill_md(&skill))
+}
+
+// ── Agent profiles ────────────────────────────────────────────────────────────
+
+fn sync_agents_state(app: &tauri::AppHandle, state: &State<'_, AgentState>) {
+    *state.agents.lock().unwrap() = agents::list(app);
+}
+
+#[tauri::command]
+fn agent_list(app: tauri::AppHandle, state: State<'_, AgentState>) -> Vec<agents::AgentProfile> {
+    let list = agents::list(&app);
+    *state.agents.lock().unwrap() = list.clone();
+    list
+}
+
+#[tauri::command]
+fn agent_add(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    slug: String,
+    name: String,
+    description: String,
+    system_prompt: String,
+    emoji: String,
+    enabled: bool,
+    skills: Option<Vec<String>>,
+    allow_as_subagent: bool,
+) -> Result<agents::AgentProfile, String> {
+    let profile = agents::add(
+        &app,
+        slug,
+        name,
+        description,
+        system_prompt,
+        emoji,
+        enabled,
+        skills,
+        allow_as_subagent,
+    )?;
+    sync_agents_state(&app, &state);
+    Ok(profile)
+}
+
+#[tauri::command]
+fn agent_update(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+    slug: String,
+    name: String,
+    description: String,
+    system_prompt: String,
+    emoji: String,
+    enabled: bool,
+    skills: Option<Vec<String>>,
+    allow_as_subagent: bool,
+) -> Result<agents::AgentProfile, String> {
+    let profile = agents::update(
+        &app,
+        id,
+        slug,
+        name,
+        description,
+        system_prompt,
+        emoji,
+        enabled,
+        skills,
+        allow_as_subagent,
+    )?;
+    sync_agents_state(&app, &state);
+    Ok(profile)
+}
+
+#[tauri::command]
+fn agent_activate(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+) -> Result<agents::AgentProfile, String> {
+    let profile = agents::activate(&app, id)?;
+    sync_agents_state(&app, &state);
+    Ok(profile)
+}
+
+#[tauri::command]
+fn agent_remove(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+) -> Result<(), String> {
+    agents::remove(&app, id)?;
+    sync_agents_state(&app, &state);
+    Ok(())
+}
+
 // ── App bootstrap ─────────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -401,6 +820,8 @@ pub fn run() {
             }
             *state.sessions.lock().unwrap() = persist::load_sessions(&handle);
             *state.knowledge.lock().unwrap() = persist::load_knowledge(&handle);
+            *state.skills.lock().unwrap() = skills::ensure_seeded(&handle);
+            *state.agents.lock().unwrap() = agents::ensure_seeded(&handle);
 
             // MCP
             let mcp_configs = persist::load_mcp_configs(&handle);
@@ -439,8 +860,11 @@ pub fn run() {
             permission_respond,
             mcp_list,
             mcp_add,
+            mcp_update,
             mcp_remove,
             mcp_reconnect,
+            mcp_disconnect,
+            mcp_tools,
             knowledge_list,
             knowledge_add,
             knowledge_remove,
@@ -448,6 +872,33 @@ pub fn run() {
             channel_telegram_set,
             channel_telegram_start,
             channel_telegram_stop,
+            image_generate,
+            image_list,
+            image_delete,
+            image_data_url,
+            video_generate,
+            video_list,
+            video_delete,
+            account_list,
+            account_add,
+            account_update,
+            account_remove,
+            schedule_list,
+            schedule_get,
+            schedule_add,
+            schedule_update,
+            schedule_save_workflow,
+            schedule_remove,
+            skill_list,
+            skill_add,
+            skill_update,
+            skill_remove,
+            skill_export_md,
+            agent_list,
+            agent_add,
+            agent_update,
+            agent_activate,
+            agent_remove,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

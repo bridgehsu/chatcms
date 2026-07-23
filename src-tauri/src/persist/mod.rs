@@ -4,11 +4,17 @@ use std::sync::Arc;
 use tauri::AppHandle;
 use tauri_plugin_store::{Store, StoreBuilder};
 
+use crate::accounts::PlatformAccount;
+use crate::agents::AgentProfile;
 use crate::channels::ChannelConfig;
 use crate::config::AppConfig;
+use crate::images::GeneratedImage;
 use crate::knowledge::KnowledgeEntry;
 use crate::mcp::McpServerConfig;
 use crate::memory::Session;
+use crate::schedules::ScheduleProject;
+use crate::skills::Skill;
+use crate::videos::GeneratedVideo;
 
 const STORE_FILE: &str = "chatcms.json";
 
@@ -92,6 +98,108 @@ pub fn load_channel_config(app: &AppHandle) -> ChannelConfig {
     };
     store
         .get("channel_config")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_images(app: &AppHandle, images: &[GeneratedImage]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(images).unwrap_or_default();
+    store.set("generated_images", val);
+    let _ = store.save();
+}
+
+pub fn load_images(app: &AppHandle) -> Vec<GeneratedImage> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("generated_images")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_videos(app: &AppHandle, videos: &[GeneratedVideo]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(videos).unwrap_or_default();
+    store.set("generated_videos", val);
+    let _ = store.save();
+}
+
+pub fn load_videos(app: &AppHandle) -> Vec<GeneratedVideo> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("generated_videos")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_accounts(app: &AppHandle, accounts: &[PlatformAccount]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(accounts).unwrap_or_default();
+    store.set("platform_accounts", val);
+    let _ = store.save();
+}
+
+pub fn load_accounts(app: &AppHandle) -> Vec<PlatformAccount> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("platform_accounts")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_schedule_projects(app: &AppHandle, projects: &[ScheduleProject]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(projects).unwrap_or_default();
+    store.set("schedule_projects", val);
+    let _ = store.save();
+}
+
+pub fn load_schedule_projects(app: &AppHandle) -> Vec<ScheduleProject> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("schedule_projects")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_skills(app: &AppHandle, skills: &[Skill]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(skills).unwrap_or_default();
+    store.set("skills", val);
+    let _ = store.save();
+}
+
+pub fn load_skills(app: &AppHandle) -> Vec<Skill> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("skills")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_agent_profiles(app: &AppHandle, agents: &[AgentProfile]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(agents).unwrap_or_default();
+    store.set("agent_profiles", val);
+    let _ = store.save();
+}
+
+pub fn load_agent_profiles(app: &AppHandle) -> Vec<AgentProfile> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("agent_profiles")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default()
 }

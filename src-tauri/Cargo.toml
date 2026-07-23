@@ -1,6 +1,6 @@
 [package]
 name = "chatcms"
-version = "0.0.2"
+version = "0.0.3"
 description = "ChatCMS Desktop Agent"
 authors = ["xukui"]
 edition = "2021"
@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 tauri-plugin-store = "2"
 
@@ -24,4 +24,5 @@ tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 futures-util = "0.3"
 uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"
 anyhow = "1"

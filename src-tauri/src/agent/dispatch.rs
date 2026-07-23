@@ -48,11 +48,47 @@ async fn dispatch_spawn_agent(
     session_id: &str,
 ) -> tools::ToolResult {
     let prompt = tc.input["prompt"].as_str().unwrap_or("").to_string();
-    let sys = tc.input["system_prompt"].as_str().map(String::from);
+    let agent_key = tc.input["agent"].as_str().map(str::trim).filter(|s| !s.is_empty());
+    let override_sys = tc.input["system_prompt"].as_str().map(String::from);
+
+    let (sys, label) = if let Some(key) = agent_key {
+        match crate::agents::find_by_slug_or_id(app, key) {
+            Some(profile) if profile.enabled && profile.allow_as_subagent => {
+                let mut blocks = vec![crate::agents::format_persona(&profile)];
+                let skills = {
+                    let s = app.state::<AgentState>();
+                    let list = s.skills.lock().unwrap().clone();
+                    list
+                };
+                let allowlist = profile.skills.as_ref().map(|v| v.as_slice());
+                let skill_prompt =
+                    crate::skills::format_for_prompt(&skills, &prompt, allowlist);
+                if !skill_prompt.is_empty() {
+                    blocks.push(skill_prompt);
+                }
+                (
+                    Some(blocks.join("\n\n")),
+                    format!("{} ({})", profile.name, profile.slug),
+                )
+            }
+            Some(_) => (
+                override_sys.clone(),
+                format!("agent `{key}` disabled or not allowed as subagent"),
+            ),
+            None => (override_sys.clone(), format!("unknown agent `{key}`")),
+        }
+    } else {
+        (override_sys, "adhoc".into())
+    };
 
     let _ = app.emit(
         "subagent-start",
-        json!({ "parent_session_id": session_id, "task_id": &tc.id, "prompt": &prompt }),
+        json!({
+            "parent_session_id": session_id,
+            "task_id": &tc.id,
+            "prompt": &prompt,
+            "agent": label,
+        }),
     );
 
     let result_text = match run_sub_agent(app.clone(), sys, prompt).await {

@@ -40,9 +40,15 @@ src/
 │   └── components/         # Sidebar、Topbar、Settings/Permission 弹窗
 ├── views/
 │   ├── chat/               # 智能会话（SessionList + ChatWindow）
-│   ├── map/ images/ videos/ accounts/ cron/
-│   ├── skills/ agents/     # 占位页（即将推出）
-│   ├── mcp/                # MCP 管理 + McpPanel
+│   ├── map/                # 业务地图看板（分区入口 / 笔记 / 时钟）
+│   ├── content/            # 内容管理 · AI 笔记（Notion 风格）
+│   ├── images/             # 图片管理 · AI 生图与本地保存
+│   ├── videos/             # 视频管理 · AI 生视频与本地保存
+│   ├── accounts/           # 账号管理 · 多平台账号与密钥 CRUD
+│   ├── schedules/          # 任务调度 · 项目列表 + n8n 风格工作流画布
+│   ├── skills/             # 技能管理 · OpenClaw SKILL.md CRUD
+│   ├── agents/             # 代理管理 · 多 Agent 档案 / 技能白名单
+│   ├── mcp/                # MCP 管理 · 表格/预设/工具列表
 │   ├── model-config/       # 模型配置表格 + 弹窗 CRUD
 │   └── settings/components/ # SettingsModal 用 Knowledge/Channel 面板
 ├── components/
@@ -57,7 +63,9 @@ src/
 │   ├── useChatStore.ts
 │   └── useProviderStore.ts
 ├── config/
-│   └── modelPresets.ts     # 模型预设（Claude/GPT/DeepSeek/Kimi/千问）
+│   ├── modelPresets.ts     # 模型预设（Claude/GPT/DeepSeek/Kimi/千问）
+│   ├── platformPresets.ts  # 内容平台预设（微信/抖音/小红书等）
+│   └── mcpPresets.ts       # 常用 MCP 服务器预设
 └── types/
     └── index.ts
 ```
@@ -82,6 +90,12 @@ src-tauri/src/
 ├── memory/mod.rs        # Session / Message
 ├── knowledge/mod.rs     # 知识库检索 → system prompt
 ├── channels/mod.rs      # Telegram poller
+├── accounts/mod.rs      # 多平台账号与密钥 CRUD
+├── schedules/mod.rs     # 任务调度项目 + 工作流图 CRUD
+├── skills/mod.rs        # OpenClaw 风格 Skills（SKILL.md）+ 提示词注入
+├── agents/mod.rs        # 多代理档案 / 默认代理 / 技能白名单
+├── images/mod.rs        # AI 生图 + 本地落盘
+├── videos/mod.rs        # AI 生视频（Videos API）+ 本地落盘
 ├── config/mod.rs        # AppConfig / ProviderConfig / ProviderProfile CRUD
 └── persist/mod.rs       # tauri-plugin-store 持久化
 ```

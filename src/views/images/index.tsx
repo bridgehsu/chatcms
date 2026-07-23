@@ -1,5 +1,8 @@
-import { PlaceholderPage } from "@/components/PlaceholderPage";
+import { ImagesBoard } from "./components/ImagesBoard";
 
+/** 图片管理 · AI 生图与保存 */
 export const ImagesPage = () => (
-  <PlaceholderPage title="图片管理" description="图片资源管理（即将推出）" />
+  <div className="page page-scroll images-page">
+    <ImagesBoard />
+  </div>
 );

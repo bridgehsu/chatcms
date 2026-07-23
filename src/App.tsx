@@ -2,10 +2,11 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/layout/AppLayout";
 import { ChatPage } from "@/views/chat";
 import { MapPage } from "@/views/map";
+import { ContentPage } from "@/views/content";
 import { ImagesPage } from "@/views/images";
 import { VideosPage } from "@/views/videos";
 import { AccountsPage } from "@/views/accounts";
-import { CronPage } from "@/views/cron";
+import { SchedulesPage, WorkflowEditorPage } from "@/views/schedules";
 import { SkillsPage } from "@/views/skills";
 import { AgentsPage } from "@/views/agents";
 import { McpPage } from "@/views/mcp";
@@ -18,10 +19,13 @@ const App = () => (
         <Route index element={<Navigate to="/chat" replace />} />
         <Route path="chat" element={<ChatPage />} />
         <Route path="map" element={<MapPage />} />
+        <Route path="content" element={<ContentPage />} />
         <Route path="images" element={<ImagesPage />} />
         <Route path="videos" element={<VideosPage />} />
         <Route path="accounts" element={<AccountsPage />} />
-        <Route path="cron" element={<CronPage />} />
+        <Route path="schedules" element={<SchedulesPage />} />
+        <Route path="schedules/:projectId" element={<WorkflowEditorPage />} />
+        <Route path="cron" element={<Navigate to="/schedules" replace />} />
         <Route path="skills" element={<SkillsPage />} />
         <Route path="agents" element={<AgentsPage />} />
         <Route path="mcp" element={<McpPage />} />
