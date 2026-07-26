@@ -86,9 +86,6 @@ export const SchedulesPanel = () => {
             创建调度项目，在画布中设计节点工作流（类似 n8n）
           </p>
         </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 新建项目
-        </button>
       </header>
 
       <div className="model-toolbar">
@@ -103,6 +100,9 @@ export const SchedulesPanel = () => {
             />
           </div>
         </div>
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 新建项目
+        </button>
       </div>
 
       {error && <div className="mcp-form-error">{error}</div>}

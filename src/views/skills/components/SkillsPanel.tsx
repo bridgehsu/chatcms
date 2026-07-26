@@ -141,18 +141,6 @@ export const SkillsPanel = () => {
 
   return (
     <div className="model-panel">
-      <header className="model-panel__header">
-        <div>
-          <h1 className="model-panel__title">技能管理</h1>
-          <p className="model-panel__desc">
-            OpenClaw 风格 Skills：用 SKILL.md 教 Agent 何时、如何完成专项工作流
-          </p>
-        </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 新建技能
-        </button>
-      </header>
-
       <div className="model-toolbar">
         <div className="model-filters">
           <div className="model-filter model-filter--family">
@@ -173,6 +161,9 @@ export const SkillsPanel = () => {
             />
           </div>
         </div>
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 新建技能
+        </button>
       </div>
 
       {error && <div className="mcp-form-error">{error}</div>}
@@ -181,6 +172,7 @@ export const SkillsPanel = () => {
         <table className="model-table">
           <thead>
             <tr>
+              <th className="model-table__idx">#</th>
               <th>名称</th>
               <th>描述</th>
               <th>来源</th>
@@ -192,19 +184,22 @@ export const SkillsPanel = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="model-table__empty">
+                <td colSpan={7} className="model-table__empty">
                   {skills.length === 0
                     ? "暂无技能"
                     : "没有匹配的技能"}
                 </td>
               </tr>
             ) : (
-              filtered.map((s) => (
+              filtered.map((s, index) => (
                 <tr
                   key={s.id}
                   className="model-table__row"
                   onClick={() => openEdit(s)}
                 >
+                  <td className="model-table__idx model-table__mono">
+                    {index + 1}
+                  </td>
                   <td>
                     <span className="model-table__name model-table__mono">
                       {s.name}

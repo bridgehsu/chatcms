@@ -112,6 +112,45 @@ src/
 - 组件样式可用 CSS Modules / 同目录 `*.css`，禁止魔法色散落硬编码（临时调试除外，合并前清掉）
 - 改主题优先改 tokens，不复制多套色值
 
+## CRUD 列表页布局（强制）
+
+适用：技能 / 代理 / MCP / 模型配置，以及同结构的账号、任务调度等「表格 + 筛选 + 新增」管理页。参考：`views/skills/components/SkillsPanel.tsx`。
+
+### 页面结构
+
+```text
+.model-panel
+├── .model-toolbar          # 首行：筛选/搜索 + 新增（同一排）
+│   ├── .model-filters      # 左：Select / 搜索框
+│   └── .model-btn-add      # 右：新增按钮
+├── （可选）错误提示
+└── .model-table-wrap
+    └── table.model-table   # 首列 # 序号
+```
+
+### 规则
+
+1. **不要**在搜索区上方再放 `model-panel__header` 标题 / 副标题；页名由顶栏 `titleForPath` 提供。
+2. **新增按钮**必须与筛选/搜索同一行（`.model-toolbar` 内，`justify-content: space-between`），禁止单独挂在 header 右侧。
+3. 表格首列固定为序号：`<th className="model-table__idx">#</th>`，行内 `{index + 1}`。
+4. 复用已有 class：`model-panel` / `model-toolbar` / `model-filters` / `model-search` / `model-btn-add` / `model-table*`；不要新造平行布局体系。
+
+```tsx
+// ✅
+<div className="model-panel">
+  <div className="model-toolbar">
+    <div className="model-filters">{/* Select + search */}</div>
+    <button className="model-btn-add" type="button">+ 新建…</button>
+  </div>
+  <div className="model-table-wrap">
+    <table className="model-table">{/* # 列 + 数据 */}</table>
+  </div>
+</div>
+
+// ❌ 页内再写 h1/desc header
+// ❌ 新增按钮放在标题行，搜索单独一行
+```
+
 ## Zustand
 
 - Store 只管业务数据与副作用（会话、流式、权限），**不**用 store 字段冒充路由/切页
@@ -134,5 +173,6 @@ src/
 □ 无新增 function 声明的业务函数（组件内部用箭头）
 □ Tauri 调用走统一 hook
 □ 视觉 token 未在业务文件复制一份
+□ CRUD 列表页：无页内标题/副标题；新增与筛选同排；表格有 # 序号列
 □ 若改了目录，已更新 project-structure.mdc
 ```

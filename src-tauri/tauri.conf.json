@@ -5,7 +5,7 @@
   "identifier": "com.xukui.chatcms",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:15420",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },

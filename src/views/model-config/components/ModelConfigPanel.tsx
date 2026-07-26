@@ -104,32 +104,8 @@ export const ModelConfigPanel = () => {
     }
   };
 
-  const activate = async (id: string) => {
-    setBusy(`activate-${id}`);
-    setError("");
-    try {
-      await invoke("provider_activate", { id });
-      await refresh();
-      await loadActive();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(null);
-    }
-  };
-
   return (
     <div className="model-panel">
-      <header className="model-panel__header">
-        <div>
-          <h1 className="model-panel__title">模型配置</h1>
-          <p className="model-panel__desc">管理可用的模型档案，启用后将用于智能会话</p>
-        </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 添加配置
-        </button>
-      </header>
-
       <div className="model-toolbar">
         <div className="model-filters">
           <div className="model-filter model-filter--family">
@@ -149,6 +125,9 @@ export const ModelConfigPanel = () => {
             />
           </div>
         </div>
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 添加配置
+        </button>
       </div>
 
       {error && <div className="mcp-form-error">{error}</div>}
@@ -157,6 +136,7 @@ export const ModelConfigPanel = () => {
         <table className="model-table">
           <thead>
             <tr>
+              <th className="model-table__idx">#</th>
               <th>名称</th>
               <th>协议</th>
               <th>模型</th>
@@ -169,17 +149,20 @@ export const ModelConfigPanel = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="model-table__empty">
+                <td colSpan={8} className="model-table__empty">
                   {profiles.length === 0 ? "尚未添加模型配置" : "没有匹配的配置"}
                 </td>
               </tr>
             ) : (
-              filtered.map((p) => (
+              filtered.map((p, index) => (
                 <tr
                   key={p.id}
                   className="model-table__row"
                   onClick={() => openEdit(p)}
                 >
+                  <td className="model-table__idx model-table__mono">
+                    {index + 1}
+                  </td>
                   <td>
                     <span className="model-table__name">{p.name}</span>
                   </td>
@@ -190,27 +173,13 @@ export const ModelConfigPanel = () => {
                     {p.base_url || "—"}
                   </td>
                   <td>
-                    {p.active ? (
-                      <span className="model-badge">当前</span>
-                    ) : (
-                      <span className="model-status-idle">未启用</span>
-                    )}
+                    <span className="model-badge">启用</span>
                   </td>
                   <td>
                     <div
                       className="model-table__actions"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {!p.active && (
-                        <button
-                          className="btn-mcp-action"
-                          onClick={() => void activate(p.id)}
-                          disabled={busy === `activate-${p.id}`}
-                          type="button"
-                        >
-                          {busy === `activate-${p.id}` ? "…" : "启用"}
-                        </button>
-                      )}
                       <button
                         className="btn-mcp-action"
                         onClick={() => openEdit(p)}

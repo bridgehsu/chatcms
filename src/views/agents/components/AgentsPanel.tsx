@@ -99,18 +99,6 @@ export const AgentsPanel = () => {
 
   return (
     <div className="model-panel">
-      <header className="model-panel__header">
-        <div>
-          <h1 className="model-panel__title">代理管理</h1>
-          <p className="model-panel__desc">
-            配置多代理角色、技能白名单与默认会话代理（对齐 OpenClaw agents）
-          </p>
-        </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 新建代理
-        </button>
-      </header>
-
       <div className="model-toolbar">
         <div className="model-filters">
           <div className="model-search">
@@ -123,6 +111,9 @@ export const AgentsPanel = () => {
             />
           </div>
         </div>
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 新建代理
+        </button>
       </div>
 
       {error && <div className="mcp-form-error">{error}</div>}
@@ -131,6 +122,7 @@ export const AgentsPanel = () => {
         <table className="model-table">
           <thead>
             <tr>
+              <th className="model-table__idx">#</th>
               <th>代理</th>
               <th>ID</th>
               <th>技能</th>
@@ -143,17 +135,20 @@ export const AgentsPanel = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="model-table__empty">
+                <td colSpan={8} className="model-table__empty">
                   {agents.length === 0 ? "暂无代理" : "没有匹配的代理"}
                 </td>
               </tr>
             ) : (
-              filtered.map((a) => (
+              filtered.map((a, index) => (
                 <tr
                   key={a.id}
                   className="model-table__row"
                   onClick={() => openEdit(a)}
                 >
+                  <td className="model-table__idx model-table__mono">
+                    {index + 1}
+                  </td>
                   <td>
                     <span className="model-table__name">
                       {a.emoji ? `${a.emoji} ` : ""}

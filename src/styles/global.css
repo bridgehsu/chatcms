@@ -447,6 +447,7 @@ html, body, #root { height: 100%; }
   flex: 1;
   padding: 24px 10px;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .page-scroll {
@@ -1407,10 +1408,18 @@ html, body, #root { height: 100%; }
   flex-direction: column;
   gap: 20px;
   min-height: 0;
-  max-width: 1200px;
   width: 100%;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 8px 0 32px;
+  box-sizing: border-box;
+}
+
+.model-table__idx {
+  width: 48px;
+  text-align: center;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .model-panel__header {
@@ -1453,6 +1462,7 @@ html, body, #root { height: 100%; }
 .model-toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
 
@@ -1461,6 +1471,7 @@ html, body, #root { height: 100%; }
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex: 1;
 }
 
 .model-filter {
@@ -1793,16 +1804,18 @@ html, body, #root { height: 100%; }
 
 /* ── Business map ─────────────────────────────────────────────────────────── */
 .map-page {
-  padding: 20px 10px 40px;
+  /* 与模型配置一致：左右 10px（覆盖 .page 的上下，保留左右） */
+  padding: 8px 10px 32px;
 }
 
 .map-board {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 1280px;
-  margin: 0 auto;
   width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 /* 上半区（常用工具+右侧栏+里程碑）与运营速览分开 */

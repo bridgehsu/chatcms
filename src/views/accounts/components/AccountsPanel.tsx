@@ -135,9 +135,6 @@ export const AccountsPanel = () => {
             管理各大内容平台的账号与密钥，数据保存在本机应用目录
           </p>
         </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 添加账号
-        </button>
       </header>
 
       <div className="model-toolbar">
@@ -160,6 +157,9 @@ export const AccountsPanel = () => {
             />
           </div>
         </div>
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 添加账号
+        </button>
       </div>
 
       {error && <div className="mcp-form-error">{error}</div>}

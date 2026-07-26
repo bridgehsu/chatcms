@@ -121,29 +121,8 @@ export const McpPanel = () => {
     }
   };
 
-  const connectedCount = servers.filter((s) => s.status.state === "connected").length;
-  const toolTotal = servers.reduce(
-    (n, s) => n + (s.status.state === "connected" ? s.status.tools : 0),
-    0,
-  );
-
   return (
     <div className="model-panel">
-      <header className="model-panel__header">
-        <div>
-          <h1 className="model-panel__title">MCP 管理</h1>
-          <p className="model-panel__desc">
-            管理 Model Context Protocol 服务器；已连接工具会自动提供给智能会话
-            {servers.length > 0
-              ? `（${connectedCount}/${servers.length} 在线 · ${toolTotal} 工具）`
-              : ""}
-          </p>
-        </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 添加服务器
-        </button>
-      </header>
-
       <div className="model-toolbar">
         <div className="model-filters">
           <div className="model-filter model-filter--family">
@@ -164,6 +143,9 @@ export const McpPanel = () => {
             />
           </div>
         </div>
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 添加服务器
+        </button>
       </div>
 
       {error && <div className="mcp-form-error">{error}</div>}
@@ -172,6 +154,7 @@ export const McpPanel = () => {
         <table className="model-table">
           <thead>
             <tr>
+              <th className="model-table__idx">#</th>
               <th>名称</th>
               <th>命令</th>
               <th>状态</th>
@@ -182,19 +165,22 @@ export const McpPanel = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="model-table__empty">
+                <td colSpan={6} className="model-table__empty">
                   {servers.length === 0
                     ? "尚未配置 MCP 服务器，可从预设快速添加"
                     : "没有匹配的服务器"}
                 </td>
               </tr>
             ) : (
-              filtered.map((s) => (
+              filtered.map((s, index) => (
                 <tr
                   key={s.name}
                   className="model-table__row"
                   onClick={() => openEdit(s)}
                 >
+                  <td className="model-table__idx model-table__mono">
+                    {index + 1}
+                  </td>
                   <td>
                     <span className="model-table__name">{s.name}</span>
                     {s.config.description ? (
