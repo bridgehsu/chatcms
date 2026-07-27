@@ -1,4 +1,5 @@
-//! 外部频道：Telegram 长轮询。启动前会停掉旧 poller，避免 getUpdates Conflict。
+//! 外部频道：多 IM 渠道注册表；运行时目前仅 Telegram。
+//! 不同平台可同时启用；同一 kind（如 Telegram）仅一份配置 / 一个运行时。
 
 use anyhow::Result;
 use reqwest::Client;
@@ -19,10 +20,93 @@ pub struct TelegramConfig {
     pub allowed_ids: Vec<String>,
 }
 
+/// 预留渠道的通用草稿配置（Discord / 飞书等）
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ChannelDraft {
+    #[serde(default)]
+    pub token: String,
+    #[serde(default)]
+    pub webhook: String,
+    #[serde(default)]
+    pub notes: String,
+    #[serde(default)]
+    pub extra: HashMap<String, String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChannelConfig {
     #[serde(default)]
     pub telegram: Option<TelegramConfig>,
+    /// 当前已启用的平台列表（可多项；每项 kind 至多出现一次）
+    #[serde(default)]
+    pub enabled_kinds: Vec<String>,
+    /// 旧版全局互斥字段，读入后迁移到 enabled_kinds
+    #[serde(default, skip_serializing)]
+    pub active_kind: Option<String>,
+    #[serde(default)]
+    pub drafts: HashMap<String, ChannelDraft>,
+}
+
+impl ChannelConfig {
+    pub fn migrate_legacy(&mut self) {
+        if let Some(kind) = self.active_kind.take() {
+            self.set_kind_enabled(&kind, true);
+        }
+    }
+
+    pub fn is_kind_enabled(&self, kind: &str) -> bool {
+        self.enabled_kinds.iter().any(|k| k == kind)
+    }
+
+    pub fn set_kind_enabled(&mut self, kind: &str, enabled: bool) {
+        if enabled {
+            if !self.is_kind_enabled(kind) {
+                self.enabled_kinds.push(kind.to_string());
+            }
+        } else {
+            self.enabled_kinds.retain(|k| k != kind);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ChannelInfo {
+    pub kind: String,
+    pub label: String,
+    pub description: String,
+    /// 后端是否已实现运行时
+    pub supported: bool,
+    pub configured: bool,
+    pub enabled: bool,
+    pub status: String,
+}
+
+const KIND_META: &[(&str, &str, &str, bool)] = &[
+    (
+        "telegram",
+        "Telegram",
+        "通过 Bot Token 长轮询与 Agent 对话",
+        true,
+    ),
+    (
+        "discord",
+        "Discord",
+        "Discord Bot（即将支持）",
+        false,
+    ),
+    (
+        "whatsapp",
+        "WhatsApp",
+        "WhatsApp Business API（即将支持）",
+        false,
+    ),
+    ("feishu", "飞书", "飞书机器人（即将支持）", false),
+    ("wechat", "微信", "企业微信 / 公众号（即将支持）", false),
+    ("dingtalk", "钉钉", "钉钉机器人（即将支持）", false),
+];
+
+pub fn known_kinds() -> &'static [(&'static str, &'static str, &'static str, bool)] {
+    KIND_META
 }
 
 // ── Runtime state ─────────────────────────────────────────────────────────────
@@ -51,6 +135,100 @@ impl ChannelState {
     pub fn is_telegram_running(&self) -> bool {
         self.telegram_running.load(Ordering::SeqCst) && self.telegram_task.is_some()
     }
+
+    pub fn list_infos(&self) -> Vec<ChannelInfo> {
+        KIND_META
+            .iter()
+            .map(|(kind, label, desc, supported)| {
+                let configured = match *kind {
+                    "telegram" => self
+                        .config
+                        .telegram
+                        .as_ref()
+                        .map(|t| !t.token.trim().is_empty())
+                        .unwrap_or(false),
+                    other => self
+                        .config
+                        .drafts
+                        .get(other)
+                        .map(|d| !d.token.trim().is_empty() || !d.webhook.trim().is_empty())
+                        .unwrap_or(false),
+                };
+                let marked = self.config.is_kind_enabled(kind);
+                let enabled = marked
+                    && if *kind == "telegram" {
+                        self.is_telegram_running()
+                    } else {
+                        // 未实现运行时时不展示为「运行中」
+                        false
+                    };
+                let status = if !*supported {
+                    "coming_soon".into()
+                } else if enabled {
+                    "running".into()
+                } else if configured {
+                    "ready".into()
+                } else {
+                    "idle".into()
+                };
+                ChannelInfo {
+                    kind: (*kind).into(),
+                    label: (*label).into(),
+                    description: (*desc).into(),
+                    supported: *supported,
+                    configured,
+                    enabled,
+                    status,
+                }
+            })
+            .collect()
+    }
+}
+
+/// 停掉所有已实现渠道的运行时，并清空启用列表。
+pub async fn disable_all(state: &mut ChannelState) {
+    stop_telegram_poller(state).await;
+    state.config.enabled_kinds.clear();
+}
+
+/// 启用指定平台（不影响其它已启用平台；同 kind 仅重启自身）。
+pub async fn enable_kind(
+    state: &mut ChannelState,
+    app: AppHandle,
+    kind: &str,
+) -> Result<(), String> {
+    let meta = KIND_META
+        .iter()
+        .find(|(k, _, _, _)| *k == kind)
+        .ok_or_else(|| format!("未知渠道: {kind}"))?;
+    if !meta.3 {
+        return Err(format!("{} 即将接入，暂不可启用", meta.1));
+    }
+
+    match kind {
+        "telegram" => {
+            restart_telegram_poller(state, app).await?;
+            state.config.set_kind_enabled("telegram", true);
+            Ok(())
+        }
+        _ => Err(format!("{kind} 运行时尚未实现")),
+    }
+}
+
+pub async fn disable_kind(state: &mut ChannelState, kind: &str) -> Result<(), String> {
+    if !state.config.is_kind_enabled(kind) {
+        // 兼容：运行中但标记丢失时仍可停
+        if kind == "telegram" && state.is_telegram_running() {
+            stop_telegram_poller(state).await;
+        }
+        return Ok(());
+    }
+    match kind {
+        "telegram" => stop_telegram_poller(state).await,
+        _ => {}
+    }
+    state.config.set_kind_enabled(kind, false);
+    Ok(())
 }
 
 // ── Telegram API helpers ──────────────────────────────────────────────────────
@@ -161,6 +339,7 @@ pub async fn restart_telegram_poller(
         run_poll_loop(app, token, allowed_ids, sessions, running).await;
     });
     state.telegram_task = Some(handle);
+    state.config.set_kind_enabled("telegram", true);
     eprintln!("[telegram] poller started");
     Ok(())
 }

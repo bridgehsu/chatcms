@@ -11,6 +11,12 @@ import { SkillsPage } from "@/views/skills";
 import { AgentsPage } from "@/views/agents";
 import { McpPage } from "@/views/mcp";
 import { ModelConfigPage } from "@/views/model-config";
+import { ChannelsPage } from "@/views/settings/ChannelsPage";
+import { KnowledgePage } from "@/views/settings/KnowledgePage";
+import {
+  PermissionsRedirect,
+  SettingsPermissionsPage,
+} from "@/views/settings/PermissionsPage";
 
 const App = () => (
   <HashRouter>
@@ -30,6 +36,10 @@ const App = () => (
         <Route path="agents" element={<AgentsPage />} />
         <Route path="mcp" element={<McpPage />} />
         <Route path="models" element={<ModelConfigPage />} />
+        <Route path="settings/permissions" element={<SettingsPermissionsPage />} />
+        <Route path="settings/knowledge" element={<KnowledgePage />} />
+        <Route path="settings/channels" element={<ChannelsPage />} />
+        <Route path="permissions" element={<PermissionsRedirect />} />
         <Route path="*" element={<Navigate to="/chat" replace />} />
       </Route>
     </Routes>

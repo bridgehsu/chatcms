@@ -17,10 +17,10 @@ alwaysApply: false
 ```text
 src/
 ├── App.tsx / main.tsx      # HashRouter + 一级路由
-├── layout/                 # 主壳：Sidebar、Topbar、壳级弹窗
+├── layout/                 # 主壳：Sidebar、Topbar
 │   ├── AppLayout.tsx
-│   ├── nav.ts              # 一级导航配置
-│   └── components/         # Sidebar、Topbar、SettingsModal、ThemeToggle
+│   ├── nav.ts              # 一级 + 分组二级（智能配置 / 系统设置）
+│   └── components/         # Sidebar、Topbar、ThemeToggle
 ├── views/<页>/             # 页面入口（路由一级页）
 │   ├── index.tsx           # 页面组装
 │   ├── components/         # 仅本页私有组件
@@ -48,7 +48,7 @@ src/
 | 色板 | `styles/tokens.css` | `styles/tokens.css` |
 | 状态 | `stores/` | `stores/` |
 
-侧栏一级平铺（智能会话…内容管理…模型配置…设置），无二级菜单。会话列表在 `views/chat/` 内；业务地图在 `views/map/`；内容管理 / AI 笔记在 `views/content/`；图片管理 / AI 生图在 `views/images/`；视频管理 / AI 生视频在 `views/videos/`；账号管理 / 多平台密钥在 `views/accounts/`；任务调度 / 工作流画布在 `views/schedules/`；技能管理 / OpenClaw SKILL.md 在 `views/skills/`；代理管理 / 多 Agent 档案在 `views/agents/`；MCP 在 `views/mcp/`；模型配置在 `views/model-config/`；系统设置弹窗在 `views/settings/`（Memory / Channels）。
+侧栏：**干活区一级平铺**；**智能配置**（Agent / 模型 / Skill / MCP）、**系统设置**（权限 / 记忆 / 渠道）为可展开二级。会话列表在 `views/chat/`；业务地图在 `views/map/`；内容管理在 `views/content/`；图片 / 视频 / 账号 / 任务调度同前；系统设置页在 `views/settings/`。
 
 ## 组件放哪里
 

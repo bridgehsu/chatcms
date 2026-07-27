@@ -1,145 +1,228 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { CHANNEL_PRESETS } from "@/config/channelPresets";
 import { invoke } from "@/hooks/useTauri";
-import type { TelegramStatus } from "@/types";
+import type { ChannelInfo, ChannelKind } from "@/types";
+import { ChannelModal } from "./ChannelModal";
+
+const statusLabel = (c: ChannelInfo) => {
+  if (c.enabled) return "运行中";
+  if (c.status === "coming_soon") return "即将支持";
+  if (c.configured) return "已配置";
+  return "未配置";
+};
+
+const statusClass = (c: ChannelInfo) => {
+  if (c.enabled) return "mcp-badge mcp-badge--ok";
+  if (c.status === "coming_soon") return "mcp-badge";
+  if (c.configured) return "mcp-badge mcp-badge--ok";
+  return "mcp-badge";
+};
 
 export const ChannelPanel = () => {
-  const [status, setStatus] = useState<TelegramStatus>({
-    token: "",
-    allowed_ids: [],
-    running: false,
-  });
-  const [token, setToken] = useState("");
-  const [allowedIds, setAllowedIds] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [channels, setChannels] = useState<ChannelInfo[]>([]);
+  const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"idle" | "add" | "edit">("idle");
+  const [editing, setEditing] = useState<ChannelInfo | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const s = await invoke<TelegramStatus>("channel_telegram_get").catch(() => null);
-    if (s) {
-      setStatus(s);
-      setToken(s.token);
-      setAllowedIds(s.allowed_ids.join(", "));
-    }
+    const list = await invoke<ChannelInfo[]>("channel_list");
+    setChannels(list);
   };
 
   useEffect(() => {
-    void refresh();
+    void refresh().catch((e) => setError(String(e)));
   }, []);
 
-  const save = async () => {
+  /** 表格只展示已配置 / 运行中的渠道 */
+  const configured = useMemo(
+    () => channels.filter((c) => c.configured || c.enabled),
+    [channels],
+  );
+
+  const availableKinds = useMemo(
+    () =>
+      CHANNEL_PRESETS.map((p) => p.kind).filter(
+        (kind) => !channels.some((c) => c.kind === kind && c.configured),
+      ),
+    [channels],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return configured;
+    return configured.filter((c) =>
+      [c.label, c.kind, c.description].join(" ").toLowerCase().includes(q),
+    );
+  }, [configured, query]);
+
+  const openAdd = () => {
     setError("");
-    setBusy(true);
-    const ids = allowedIds
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    try {
-      await invoke("channel_telegram_set", { token, allowedIds: ids });
-      await refresh();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
+    if (availableKinds.length === 0) {
+      setError("所有平台均已添加，请直接编辑表格中的渠道");
+      return;
     }
+    setEditing(null);
+    setMode("add");
   };
 
-  const toggle = async () => {
+  const openEdit = (c: ChannelInfo) => {
     setError("");
-    setBusy(true);
+    setEditing(c);
+    setMode("edit");
+  };
+
+  const closeModal = () => {
+    setMode("idle");
+    setEditing(null);
+  };
+
+  const toggle = async (c: ChannelInfo, e: MouseEvent) => {
+    e.stopPropagation();
+    setError("");
+    setBusy(`toggle-${c.kind}`);
     try {
-      if (status.running) {
-        await invoke("channel_telegram_stop");
+      if (c.enabled) {
+        const list = await invoke<ChannelInfo[]>("channel_disable", {
+          kind: c.kind,
+        });
+        setChannels(list);
       } else {
-        await invoke("channel_telegram_start");
+        if (!c.supported) {
+          setError(`${c.label} 即将接入，暂不可启用`);
+          return;
+        }
+        if (!c.configured) {
+          setError(`请先配置 ${c.label}`);
+          openEdit(c);
+          return;
+        }
+        const list = await invoke<ChannelInfo[]>("channel_enable", {
+          kind: c.kind,
+        });
+        setChannels(list);
       }
-      await refresh();
-    } catch (e) {
-      setError(String(e));
+    } catch (err) {
+      setError(String(err));
+      await refresh().catch(() => undefined);
     } finally {
-      setBusy(false);
-    }
-  };
-
-  const restart = async () => {
-    setError("");
-    setBusy(true);
-    try {
-      await invoke("channel_telegram_set", {
-        token,
-        allowedIds: allowedIds
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      });
-      await invoke("channel_telegram_start");
-      await refresh();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   return (
-    <div className="mcp-panel">
-      <div className="mcp-header">
-        <span className="mcp-title">Telegram 机器人</span>
-        <span
-          className={`mcp-dot ${status.running ? "connected" : "disconnected"}`}
-          style={{ width: 10, height: 10 }}
+    <div className="model-panel">
+      <div className="model-toolbar">
+        <div className="model-filters">
+          <div className="model-search">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="搜索渠道…"
+              aria-label="搜索渠道"
+            />
+          </div>
+        </div>
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 新增渠道
+        </button>
+      </div>
+
+      {error ? <div className="mcp-form-error">{error}</div> : null}
+
+      <div className="model-table-wrap">
+        <table className="model-table">
+          <thead>
+            <tr>
+              <th className="model-table__idx">#</th>
+              <th>渠道</th>
+              <th>说明</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="model-table__empty">
+                  {configured.length === 0
+                    ? "暂无渠道，点击右上角新增"
+                    : "没有匹配的渠道"}
+                </td>
+              </tr>
+            ) : (
+              filtered.map((c, index) => (
+                <tr
+                  key={c.kind}
+                  className="model-table__row"
+                  onClick={() => openEdit(c)}
+                >
+                  <td className="model-table__idx model-table__mono">
+                    {index + 1}
+                  </td>
+                  <td>
+                    <span className="model-table__name">{c.label}</span>
+                    <div className="account-table__notes">{c.kind}</div>
+                  </td>
+                  <td>
+                    <div className="skill-table__desc">{c.description}</div>
+                  </td>
+                  <td>
+                    <span className={statusClass(c)}>{statusLabel(c)}</span>
+                  </td>
+                  <td>
+                    <div
+                      className="model-table__actions"
+                      onClick={(ev) => ev.stopPropagation()}
+                    >
+                      <button
+                        className="btn-mcp-action"
+                        type="button"
+                        onClick={() => openEdit(c)}
+                      >
+                        配置
+                      </button>
+                      <button
+                        className={
+                          c.enabled ? "btn-mcp-remove" : "btn-mcp-action"
+                        }
+                        type="button"
+                        disabled={
+                          busy === `toggle-${c.kind}` ||
+                          (!c.enabled && !c.supported)
+                        }
+                        title={!c.supported ? "即将支持" : undefined}
+                        onClick={(ev) => void toggle(c, ev)}
+                      >
+                        {busy === `toggle-${c.kind}`
+                          ? "…"
+                          : c.enabled
+                            ? "停用"
+                            : "启用"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {mode === "add" || mode === "edit" ? (
+        <ChannelModal
+          mode={mode}
+          channel={editing}
+          availableKinds={availableKinds as ChannelKind[]}
+          onClose={closeModal}
+          onSaved={async () => {
+            closeModal();
+            await refresh();
+          }}
         />
-      </div>
-      <p className="mcp-empty" style={{ fontSize: 11, marginTop: -4 }}>
-        启动后可通过 Telegram 与 Agent 对话。重复点「启动」会先停掉旧轮询，避免 Conflict。
-      </p>
-
-      <div className="mcp-add-form">
-        <div className="mcp-form-row">
-          <label>Bot Token</label>
-          <input
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="123456:ABC-DEF..."
-          />
-        </div>
-        <div className="mcp-form-row">
-          <label>允许的 Chat ID（逗号分隔，* 表示全部）</label>
-          <input
-            value={allowedIds}
-            onChange={(e) => setAllowedIds(e.target.value)}
-            placeholder="123456789, 987654321 或 *"
-          />
-        </div>
-        {error && <div className="mcp-form-error">{error}</div>}
-        <div className="modal-actions" style={{ marginTop: 0 }}>
-          <button onClick={() => void save()} disabled={busy} type="button">
-            {busy ? "…" : "保存"}
-          </button>
-          <button
-            className={status.running ? "btn-deny" : "btn-allow"}
-            onClick={() => void toggle()}
-            disabled={busy || !status.token}
-            style={{ padding: "8px 20px" }}
-            type="button"
-          >
-            {busy ? "…" : status.running ? "停止机器人" : "启动机器人"}
-          </button>
-          <button
-            onClick={() => void restart()}
-            disabled={busy || !token.trim()}
-            type="button"
-          >
-            {busy ? "…" : "重新启动"}
-          </button>
-        </div>
-      </div>
-
-      {status.running && (
-        <div className="channel-status-box">
-          机器人运行中。在 Telegram 向机器人发消息即可；会话会出现在「智能会话」左侧列表。
-        </div>
-      )}
+      ) : null}
     </div>
   );
 };

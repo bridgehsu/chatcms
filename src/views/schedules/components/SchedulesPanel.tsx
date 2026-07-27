@@ -79,15 +79,6 @@ export const SchedulesPanel = () => {
 
   return (
     <div className="model-panel">
-      <header className="model-panel__header">
-        <div>
-          <h1 className="model-panel__title">任务调度</h1>
-          <p className="model-panel__desc">
-            创建调度项目，在画布中设计节点工作流（类似 n8n）
-          </p>
-        </div>
-      </header>
-
       <div className="model-toolbar">
         <div className="model-filters">
           <div className="model-search">

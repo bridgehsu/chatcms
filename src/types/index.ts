@@ -44,11 +44,78 @@ export interface ToolResultEvent {
   is_error: boolean;
 }
 
+export type RunMode = "observe" | "assist" | "trust";
+
+export type DomainPolicy = "allow" | "ask" | "deny";
+
+export type RememberScope = "once" | "session_allow" | "session_deny";
+
+export type AuditDecision =
+  | "allow_auto"
+  | "allow_user"
+  | "deny_user"
+  | "deny_policy"
+  | "deny_timeout"
+  | "deny_constraint";
+
+export type PermissionDomainId =
+  | "file_read"
+  | "file_write"
+  | "shell"
+  | "mcp"
+  | "agent"
+  | "network"
+  | "browser"
+  | "app";
+
 export interface PermissionRequest {
   request_id: string;
   session_id: string;
   tool_name: string;
+  domain: string;
+  domain_label: string;
   input: Record<string, unknown>;
+  input_summary: string;
+}
+
+export interface PermissionMode {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  domains: Record<string, DomainPolicy>;
+}
+
+export interface PermissionConfig {
+  modes: PermissionMode[];
+  active_mode_id: string;
+  /** @deprecated 兼容旧配置 */
+  run_mode?: RunMode;
+  /** @deprecated 兼容旧配置 */
+  domains?: Record<string, DomainPolicy>;
+  mcp_servers: Record<string, DomainPolicy>;
+  write_path_allowlist: string[];
+  shell_command_deny: string[];
+}
+
+export interface DomainInfo {
+  id: string;
+  label: string;
+  policy: DomainPolicy;
+}
+
+export interface AuditEvent {
+  id: string;
+  ts: number;
+  session_id: string;
+  agent_id: string | null;
+  domain: string;
+  tool_name: string;
+  input_summary: string;
+  decision: AuditDecision;
+  run_mode?: RunMode;
+  mode_name?: string;
+  grant_used: boolean;
 }
 
 export type ProviderKind = "anthropic" | "openai";
@@ -96,10 +163,45 @@ export interface KnowledgeEntry {
 
 // ── Channels ──────────────────────────────────────────────────────────────────
 
+export type ChannelKind =
+  | "telegram"
+  | "discord"
+  | "whatsapp"
+  | "feishu"
+  | "wechat"
+  | "dingtalk";
+
+export type ChannelStatus =
+  | "idle"
+  | "ready"
+  | "running"
+  | "coming_soon";
+
+export interface ChannelInfo {
+  kind: ChannelKind | string;
+  label: string;
+  description: string;
+  supported: boolean;
+  configured: boolean;
+  enabled: boolean;
+  status: ChannelStatus | string;
+}
+
+export interface ChannelDetail {
+  kind: string;
+  token?: string;
+  allowed_ids?: string[];
+  webhook?: string;
+  notes?: string;
+  enabled?: boolean;
+}
+
+/** @deprecated 使用 ChannelInfo / channel_get */
 export interface TelegramStatus {
   token: string;
   allowed_ids: string[];
   running: boolean;
+  enabled?: boolean;
 }
 
 // ── Sub-agent events ──────────────────────────────────────────────────────────
@@ -228,6 +330,8 @@ export interface AgentProfile {
   /** null = 全部技能；[] = 无；string[] = 白名单 */
   skills: string[] | null;
   allow_as_subagent: boolean;
+  /** 域 id → 策略；空对象 = 继承全局 */
+  permission_overrides: Record<string, DomainPolicy>;
   created_at: number;
   updated_at: number;
 }

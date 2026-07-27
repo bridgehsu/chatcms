@@ -6,6 +6,7 @@ import {
   getVersionOptions,
 } from "@/config/modelPresets";
 import { useChatStore } from "@/stores/useChatStore";
+import { usePermissionStore } from "@/stores/usePermissionStore";
 import { useProviderStore } from "@/stores/useProviderStore";
 import type { Message } from "@/types";
 import { MarkdownContent } from "./MarkdownContent";
@@ -56,6 +57,12 @@ export const ChatWindow = () => {
     clearError,
   } = useChatStore();
   const { familyId, versionId, load, selectFamily, selectVersion } = useProviderStore();
+  const {
+    modes: permissionModes,
+    activeModeId,
+    load: loadPermissionModes,
+    setActive: setActivePermissionMode,
+  } = usePermissionStore();
   const [input, setInput] = useState("");
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -63,6 +70,10 @@ export const ChatWindow = () => {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadPermissionModes();
+  }, [loadPermissionModes]);
 
   // 只滚消息容器，避免 scrollIntoView 带动整页导致会话区「空白」
   useEffect(() => {
@@ -93,6 +104,14 @@ export const ChatWindow = () => {
   };
 
   const versionOptions = getVersionOptions(familyId);
+  const permissionOptions = permissionModes.map((m) => ({
+    value: m.id,
+    label: m.name,
+  }));
+  const permissionValue =
+    activeModeId && permissionOptions.some((o) => o.value === activeModeId)
+      ? activeModeId
+      : (permissionOptions[0]?.value ?? "");
 
   const messages = activeSession?.messages ?? [];
   const isEmpty = messages.length === 0 && !isStreaming;
@@ -127,7 +146,7 @@ export const ChatWindow = () => {
             <div className="empty-state">
               <p className="empty-state__title">有什么可以帮你的？</p>
               <p className="empty-state__hint">
-                在下方输入问题，或先到侧栏「模型配置」填写 API 密钥
+                在下方输入问题，或先到侧栏「模型」填写 API 密钥
               </p>
             </div>
           )}
@@ -161,25 +180,39 @@ export const ChatWindow = () => {
       <div className="input-bar">
         <PermissionPrompt />
         <div className="composer">
-          <textarea
-            ref={textareaRef}
-            className="input-textarea"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"
-            rows={1}
-            disabled={isStreaming || !!pendingPermission}
-          />
-          <button
-            className="btn-send"
-            onClick={() => void handleSend()}
-            disabled={isStreaming || !!pendingPermission || !input.trim()}
-            type="button"
-            aria-label="发送"
-          >
-            {isStreaming ? <span className="btn-send__dots">…</span> : <IconSend />}
-          </button>
+          <div className="composer__body">
+            <textarea
+              ref={textareaRef}
+              className="input-textarea"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"
+              rows={1}
+              disabled={isStreaming || !!pendingPermission}
+            />
+            <button
+              className="btn-send"
+              onClick={() => void handleSend()}
+              disabled={isStreaming || !!pendingPermission || !input.trim()}
+              type="button"
+              aria-label="发送"
+            >
+              {isStreaming ? <span className="btn-send__dots">…</span> : <IconSend />}
+            </button>
+          </div>
+          {permissionOptions.length > 0 ? (
+            <div className="composer__footer">
+              <Select
+                className="composer__perm"
+                aria-label="选择权限模式"
+                placement="top"
+                value={permissionValue}
+                options={permissionOptions}
+                onChange={(id) => void setActivePermissionMode(id)}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

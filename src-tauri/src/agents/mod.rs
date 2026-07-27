@@ -28,6 +28,9 @@ pub struct AgentProfile {
     /// 是否允许被 spawn_agent 调用
     #[serde(default = "default_true")]
     pub allow_as_subagent: bool,
+    /// 域策略覆盖（domain id → allow|ask|deny）
+    #[serde(default)]
+    pub permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -72,6 +75,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             is_default: true,
             skills: None,
             allow_as_subagent: true,
+            permission_overrides: std::collections::HashMap::new(),
             created_at: ts,
             updated_at: ts,
         },
@@ -86,6 +90,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             is_default: false,
             skills: Some(vec!["content-publish".into(), "image-brief".into()]),
             allow_as_subagent: true,
+            permission_overrides: std::collections::HashMap::new(),
             created_at: ts,
             updated_at: ts,
         },
@@ -100,6 +105,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             is_default: false,
             skills: None,
             allow_as_subagent: true,
+            permission_overrides: std::collections::HashMap::new(),
             created_at: ts,
             updated_at: ts,
         },
@@ -160,6 +166,7 @@ pub fn add(
     enabled: bool,
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
+    permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -185,6 +192,7 @@ pub fn add(
         is_default: make_default,
         skills,
         allow_as_subagent,
+        permission_overrides,
         created_at: ts,
         updated_at: ts,
     };
@@ -204,6 +212,7 @@ pub fn update(
     enabled: bool,
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
+    permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -228,6 +237,7 @@ pub fn update(
     profile.enabled = enabled;
     profile.skills = skills;
     profile.allow_as_subagent = allow_as_subagent;
+    profile.permission_overrides = permission_overrides;
     profile.updated_at = now_ms();
 
     if !profile.enabled && profile.is_default {

@@ -3,45 +3,170 @@
 use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::permission::{
+    self, append_audit, make_audit, AuditDecision, RememberScope, SessionGrant, Verdict,
+};
 use crate::tools;
 
 use super::permission::request_permission;
 use super::state::AgentState;
 use super::subagent::run_sub_agent;
 
-/// 主 Agent 工具分发：spawn_agent → MCP →（可选权限）→ 内置 tools。
+/// 主 Agent 工具分发：权限裁决 → spawn / MCP / 内置 tools。
 pub async fn dispatch_tool(
     tc: &tools::ToolCall,
     app: &AppHandle,
     state: &State<'_, AgentState>,
     session_id: &str,
 ) -> tools::ToolResult {
-    // 启动子 Agent，不进入本地工具执行
+    let (cfg, agent_overrides, agent_id) = {
+        let config = state.config.lock().unwrap();
+        let agents = state.agents.lock().unwrap();
+        let default = agents.iter().find(|a| a.is_default && a.enabled);
+        let overrides = default.map(|a| a.permission_overrides.clone());
+        let id = default.map(|a| a.id.clone());
+        (config.permission.clone(), overrides, id)
+    };
+
+    let outcome = {
+        let grants = state.session_grants.lock().unwrap();
+        permission::authorize(
+            &permission::AuthzContext {
+                cfg: &cfg,
+                grants: &grants,
+                session_id,
+                agent_id: agent_id.as_deref(),
+                agent_overrides: agent_overrides.as_ref(),
+            },
+            tc,
+        )
+    };
+
+    let mode_name = cfg.active_mode_name();
+    let domain = outcome.domain;
+    let summary = outcome.input_summary.clone();
+    let mcp_server = outcome.mcp_server.clone();
+
+    let allowed = match outcome.verdict {
+        Verdict::Allow => {
+            append_audit(
+                app,
+                make_audit(
+                    session_id,
+                    agent_id.as_deref(),
+                    domain,
+                    &tc.name,
+                    &summary,
+                    if outcome.grant_used {
+                        AuditDecision::AllowUser
+                    } else {
+                        AuditDecision::AllowAuto
+                    },
+                    &mode_name,
+                    outcome.grant_used,
+                ),
+            );
+            true
+        }
+        Verdict::Deny { reason } => {
+            let decision = if reason.contains("denylist") || reason.contains("allowlist") {
+                AuditDecision::DenyConstraint
+            } else if outcome.grant_used {
+                AuditDecision::DenyUser
+            } else {
+                AuditDecision::DenyPolicy
+            };
+            append_audit(
+                app,
+                make_audit(
+                    session_id,
+                    agent_id.as_deref(),
+                    domain,
+                    &tc.name,
+                    &summary,
+                    decision,
+                    &mode_name,
+                    outcome.grant_used,
+                ),
+            );
+            return tools::ToolResult {
+                id: tc.id.clone(),
+                content: reason,
+                is_error: true,
+            };
+        }
+        Verdict::Ask => {
+            let reply =
+                request_permission(app, state, session_id, tc, domain, &summary).await;
+
+            // 超时：remember=Once 且 allowed=false
+            let decision = if !reply.allowed && matches!(reply.remember, RememberScope::Once) {
+                // 无法区分超时与手动拒绝；记 deny_user（超时也是拒绝）
+                AuditDecision::DenyUser
+            } else if reply.allowed {
+                AuditDecision::AllowUser
+            } else {
+                AuditDecision::DenyUser
+            };
+
+            if matches!(
+                reply.remember,
+                RememberScope::SessionAllow | RememberScope::SessionDeny
+            ) {
+                let mut grants = state.session_grants.lock().unwrap();
+                grants.add(SessionGrant {
+                    session_id: session_id.to_string(),
+                    domain,
+                    tool_name: Some(tc.name.clone()),
+                    mcp_server: mcp_server.clone(),
+                    allow: matches!(reply.remember, RememberScope::SessionAllow),
+                });
+            }
+
+            append_audit(
+                app,
+                make_audit(
+                    session_id,
+                    agent_id.as_deref(),
+                    domain,
+                    &tc.name,
+                    &summary,
+                    decision,
+                    &mode_name,
+                    false,
+                ),
+            );
+
+            if !reply.allowed {
+                return tools::ToolResult {
+                    id: tc.id.clone(),
+                    content: "User denied permission.".to_string(),
+                    is_error: true,
+                };
+            }
+            true
+        }
+    };
+
+    if !allowed {
+        return tools::ToolResult {
+            id: tc.id.clone(),
+            content: "Permission denied.".to_string(),
+            is_error: true,
+        };
+    }
+
     if tc.name == "spawn_agent" {
         return dispatch_spawn_agent(tc, app, session_id).await;
     }
 
-    // MCP 工具名形如 mcp__server__tool
     if state.mcp.lock().await.is_mcp_tool(&tc.name) {
         return dispatch_mcp_tool(tc, state).await;
-    }
-
-    // bash / write_file 等需前端确认
-    if tools::requires_permission(&tc.name) {
-        let allowed = request_permission(app, state, session_id, tc).await;
-        if !allowed {
-            return tools::ToolResult {
-                id: tc.id.clone(),
-                content: "User denied permission.".to_string(),
-                is_error: true,
-            };
-        }
     }
 
     tools::execute(tc).await
 }
 
-/// 启动子 Agent：通知 UI → 跑独立 loop → 把最终文本当工具结果返回。
 async fn dispatch_spawn_agent(
     tc: &tools::ToolCall,
     app: &AppHandle,
@@ -108,7 +233,6 @@ async fn dispatch_spawn_agent(
     }
 }
 
-/// 转发到已连接的 MCP 子进程。
 async fn dispatch_mcp_tool(
     tc: &tools::ToolCall,
     state: &State<'_, AgentState>,
@@ -128,14 +252,80 @@ async fn dispatch_mcp_tool(
     }
 }
 
-/// 子 Agent 工具分发：仅 MCP + 内置工具（禁止再 spawn，不弹权限窗）。
+/// 子 Agent 工具分发：同样走权限裁决（使用父 session_id）。
 pub async fn dispatch_sub_tool(
     tc: &tools::ToolCall,
     app: &AppHandle,
     mcp_tool_names: &[String],
 ) -> tools::ToolResult {
+    let s = app.state::<AgentState>();
+    // 子 agent 无独立 session，用占位 id 走策略但不污染主会话 grants
+    let session_id = format!("subagent:{}", tc.id);
+
+    if mcp_tool_names.iter().any(|n| n == &tc.name) || !tc.name.starts_with("mcp__") {
+        // 复用主分发逻辑的权限部分：简化为 authorize + 对 ask 自动 deny（子 agent 不弹窗）
+        let cfg = s.config.lock().unwrap().permission.clone();
+        let outcome = {
+            let grants = s.session_grants.lock().unwrap();
+            permission::authorize(
+                &permission::AuthzContext {
+                    cfg: &cfg,
+                    grants: &grants,
+                    session_id: &session_id,
+                    agent_id: None,
+                    agent_overrides: None,
+                },
+                tc,
+            )
+        };
+
+        match outcome.verdict {
+            Verdict::Allow => {}
+            Verdict::Deny { reason } => {
+                append_audit(
+                    app,
+                    make_audit(
+                        &session_id,
+                        None,
+                        outcome.domain,
+                        &tc.name,
+                        &outcome.input_summary,
+                        AuditDecision::DenyPolicy,
+                        &cfg.active_mode_name(),
+                        false,
+                    ),
+                );
+                return tools::ToolResult {
+                    id: tc.id.clone(),
+                    content: reason,
+                    is_error: true,
+                };
+            }
+            Verdict::Ask => {
+                // 子 agent 无法弹窗：需确认的操作一律拒绝
+                append_audit(
+                    app,
+                    make_audit(
+                        &session_id,
+                        None,
+                        outcome.domain,
+                        &tc.name,
+                        &outcome.input_summary,
+                        AuditDecision::DenyPolicy,
+                        &cfg.active_mode_name(),
+                        false,
+                    ),
+                );
+                return tools::ToolResult {
+                    id: tc.id.clone(),
+                    content: "Sub-agent cannot prompt for permission; denied.".into(),
+                    is_error: true,
+                };
+            }
+        }
+    }
+
     if mcp_tool_names.iter().any(|n| n == &tc.name) {
-        let s = app.state::<AgentState>();
         let mcp = s.mcp.lock().await;
         return match mcp.call_tool(&tc.name, tc.input.clone()).await {
             Ok(text) => tools::ToolResult {

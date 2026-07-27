@@ -96,10 +96,12 @@ pub fn load_channel_config(app: &AppHandle) -> ChannelConfig {
     let Some(store) = open(app) else {
         return ChannelConfig::default();
     };
-    store
+    let mut cfg: ChannelConfig = store
         .get("channel_config")
         .and_then(|v| serde_json::from_value(v).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    cfg.migrate_legacy();
+    cfg
 }
 
 pub fn save_images(app: &AppHandle, images: &[GeneratedImage]) {
@@ -183,6 +185,23 @@ pub fn load_skills(app: &AppHandle) -> Vec<Skill> {
     };
     store
         .get("skills")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_permission_audit(app: &AppHandle, events: &[crate::permission::AuditEvent]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(events).unwrap_or_default();
+    store.set("permission_audit", val);
+    let _ = store.save();
+}
+
+pub fn load_permission_audit(app: &AppHandle) -> Vec<crate::permission::AuditEvent> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("permission_audit")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default()
 }

@@ -4,10 +4,11 @@ import App from "./App";
 import "@/styles/global.css";
 import {
   applyThemeToDocument,
+  resolveTheme,
   useThemeStore,
 } from "@/stores/useThemeStore";
 
-applyThemeToDocument(useThemeStore.getState().preference);
+applyThemeToDocument(resolveTheme(useThemeStore.getState().preference));
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

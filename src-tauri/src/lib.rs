@@ -7,6 +7,7 @@ mod images;
 mod knowledge;
 mod mcp;
 mod memory;
+mod permission;
 mod persist;
 mod provider;
 mod schedules;
@@ -15,7 +16,6 @@ mod tools;
 mod videos;
 
 use agent::AgentState;
-use channels::TelegramConfig;
 use config::{AppConfig, ProviderConfig, ProviderKind, ProviderProfile, ProviderProfileInfo};
 use knowledge::KnowledgeEntry;
 use mcp::{McpManager, McpServerConfig, McpServerInfo};
@@ -304,8 +304,152 @@ fn provider_activate(
 }
 
 #[tauri::command]
-fn permission_respond(state: State<'_, AgentState>, request_id: String, allowed: bool) {
-    agent::resolve_permission(&state, &request_id, allowed);
+fn permission_respond(
+    state: State<'_, AgentState>,
+    request_id: String,
+    allowed: bool,
+    remember: Option<String>,
+) {
+    let remember = match remember.as_deref() {
+        Some("session_allow") => permission::RememberScope::SessionAllow,
+        Some("session_deny") => permission::RememberScope::SessionDeny,
+        _ => permission::RememberScope::Once,
+    };
+    agent::resolve_permission(&state, &request_id, allowed, remember);
+}
+
+#[tauri::command]
+fn permission_get(state: State<'_, AgentState>) -> permission::PermissionConfig {
+    let mut cfg = state.config.lock().unwrap().permission.clone();
+    cfg.ensure_defaults();
+    cfg
+}
+
+#[tauri::command]
+fn permission_set(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    config: permission::PermissionConfig,
+) -> Result<(), String> {
+    let mut cfg = config;
+    cfg.ensure_defaults();
+    let mut app_cfg = state.config.lock().unwrap();
+    app_cfg.permission = cfg;
+    persist::save_config(&app, &app_cfg);
+    Ok(())
+}
+
+#[tauri::command]
+fn permission_mode_list(state: State<'_, AgentState>) -> Vec<permission::PermissionMode> {
+    let mut cfg = state.config.lock().unwrap().permission.clone();
+    cfg.ensure_defaults();
+    permission::list_modes(&cfg)
+}
+
+#[tauri::command]
+fn permission_mode_add(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    name: String,
+    description: String,
+    domains: Option<std::collections::HashMap<String, permission::DomainPolicy>>,
+) -> Result<permission::PermissionMode, String> {
+    let mut app_cfg = state.config.lock().unwrap();
+    app_cfg.permission.ensure_defaults();
+    let mode = permission::add_mode(
+        &mut app_cfg.permission,
+        name,
+        description,
+        domains,
+    )?;
+    persist::save_config(&app, &app_cfg);
+    Ok(mode)
+}
+
+#[tauri::command]
+fn permission_mode_update(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+    name: String,
+    description: String,
+    domains: std::collections::HashMap<String, permission::DomainPolicy>,
+) -> Result<permission::PermissionMode, String> {
+    let mut app_cfg = state.config.lock().unwrap();
+    app_cfg.permission.ensure_defaults();
+    let mode = permission::update_mode(
+        &mut app_cfg.permission,
+        &id,
+        name,
+        description,
+        domains,
+    )?;
+    persist::save_config(&app, &app_cfg);
+    Ok(mode)
+}
+
+#[tauri::command]
+fn permission_mode_remove(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+) -> Result<(), String> {
+    let mut app_cfg = state.config.lock().unwrap();
+    app_cfg.permission.ensure_defaults();
+    permission::remove_mode(&mut app_cfg.permission, &id)?;
+    persist::save_config(&app, &app_cfg);
+    Ok(())
+}
+
+#[tauri::command]
+fn permission_mode_reorder(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    ordered_ids: Vec<String>,
+) -> Result<Vec<permission::PermissionMode>, String> {
+    let mut app_cfg = state.config.lock().unwrap();
+    app_cfg.permission.ensure_defaults();
+    permission::reorder_modes(&mut app_cfg.permission, ordered_ids)?;
+    let list = permission::list_modes(&app_cfg.permission);
+    persist::save_config(&app, &app_cfg);
+    Ok(list)
+}
+
+#[tauri::command]
+fn permission_mode_set_active(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+) -> Result<permission::PermissionMode, String> {
+    let mut app_cfg = state.config.lock().unwrap();
+    app_cfg.permission.ensure_defaults();
+    let mode = permission::set_active_mode(&mut app_cfg.permission, &id)?;
+    persist::save_config(&app, &app_cfg);
+    Ok(mode)
+}
+
+#[tauri::command]
+fn permission_domains(state: State<'_, AgentState>) -> Vec<permission::DomainInfo> {
+    let mut cfg = state.config.lock().unwrap().permission.clone();
+    cfg.ensure_defaults();
+    permission::Domain::all()
+        .iter()
+        .map(|d| permission::DomainInfo {
+            id: d.as_str().to_string(),
+            label: d.label().to_string(),
+            policy: cfg.domain_policy(*d),
+        })
+        .collect()
+}
+
+#[tauri::command]
+fn permission_audit_list(app: tauri::AppHandle, limit: Option<usize>) -> Vec<permission::AuditEvent> {
+    permission::list_audit(&app, limit.unwrap_or(100))
+}
+
+#[tauri::command]
+fn permission_clear_session_grants(state: State<'_, AgentState>, session_id: String) {
+    state.session_grants.lock().unwrap().clear_session(&session_id);
 }
 
 // ── MCP ───────────────────────────────────────────────────────────────────────
@@ -443,6 +587,38 @@ fn knowledge_add(
 }
 
 #[tauri::command]
+fn knowledge_update(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    id: String,
+    title: String,
+    description: String,
+    content: String,
+    tags: Vec<String>,
+) -> Result<KnowledgeEntry, String> {
+    let title = title.trim().to_string();
+    let content = content.trim().to_string();
+    if title.is_empty() {
+        return Err("标题不能为空".into());
+    }
+    if content.is_empty() {
+        return Err("内容不能为空".into());
+    }
+    let mut entries = state.knowledge.lock().unwrap();
+    let entry = entries
+        .iter_mut()
+        .find(|e| e.id == id)
+        .ok_or_else(|| "条目不存在".to_string())?;
+    entry.title = title;
+    entry.description = description.trim().to_string();
+    entry.content = content;
+    entry.tags = tags;
+    let out = entry.clone();
+    persist::save_knowledge(&app, &entries);
+    Ok(out)
+}
+
+#[tauri::command]
 fn knowledge_remove(
     app: tauri::AppHandle,
     state: State<'_, AgentState>,
@@ -457,22 +633,121 @@ fn knowledge_remove(
 // ── Channels ──────────────────────────────────────────────────────────────────
 
 #[tauri::command]
-async fn channel_telegram_get(state: State<'_, AgentState>) -> Result<serde_json::Value, String> {
+async fn channel_list(state: State<'_, AgentState>) -> Result<Vec<channels::ChannelInfo>, String> {
     let ch = state.channel.lock().await;
-    let running = ch.is_telegram_running();
-    let token = ch
-        .config
-        .telegram
-        .as_ref()
-        .map(|t| t.token.clone())
-        .unwrap_or_default();
-    let allowed_ids = ch
-        .config
-        .telegram
-        .as_ref()
-        .map(|t| t.allowed_ids.clone())
-        .unwrap_or_default();
-    Ok(json!({ "token": token, "allowed_ids": allowed_ids, "running": running }))
+    Ok(ch.list_infos())
+}
+
+#[tauri::command]
+async fn channel_get(
+    state: State<'_, AgentState>,
+    kind: String,
+) -> Result<serde_json::Value, String> {
+    let ch = state.channel.lock().await;
+    match kind.as_str() {
+        "telegram" => {
+            let token = ch
+                .config
+                .telegram
+                .as_ref()
+                .map(|t| t.token.clone())
+                .unwrap_or_default();
+            let allowed_ids = ch
+                .config
+                .telegram
+                .as_ref()
+                .map(|t| t.allowed_ids.clone())
+                .unwrap_or_default();
+            Ok(json!({
+                "kind": "telegram",
+                "token": token,
+                "allowed_ids": allowed_ids,
+                "enabled": ch.config.is_kind_enabled("telegram")
+                    && ch.is_telegram_running(),
+            }))
+        }
+        other => {
+            let draft = ch
+                .config
+                .drafts
+                .get(other)
+                .cloned()
+                .unwrap_or_default();
+            Ok(json!({
+                "kind": other,
+                "token": draft.token,
+                "webhook": draft.webhook,
+                "notes": draft.notes,
+                "extra": draft.extra,
+                "enabled": false,
+            }))
+        }
+    }
+}
+
+#[tauri::command]
+async fn channel_update(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    kind: String,
+    token: String,
+    allowed_ids: Option<Vec<String>>,
+    webhook: Option<String>,
+    notes: Option<String>,
+) -> Result<(), String> {
+    let mut ch = state.channel.lock().await;
+    match kind.as_str() {
+        "telegram" => {
+            ch.config.telegram = Some(channels::TelegramConfig {
+                token,
+                allowed_ids: allowed_ids.unwrap_or_default(),
+            });
+        }
+        other => {
+            if !channels::known_kinds().iter().any(|(k, _, _, _)| *k == other) {
+                return Err(format!("未知渠道: {other}"));
+            }
+            let entry = ch.config.drafts.entry(other.to_string()).or_default();
+            entry.token = token;
+            if let Some(w) = webhook {
+                entry.webhook = w;
+            }
+            if let Some(n) = notes {
+                entry.notes = n;
+            }
+        }
+    }
+    persist::save_channel_config(&app, &ch.config);
+    Ok(())
+}
+
+#[tauri::command]
+async fn channel_enable(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    kind: String,
+) -> Result<Vec<channels::ChannelInfo>, String> {
+    let mut ch = state.channel.lock().await;
+    channels::enable_kind(&mut ch, app.clone(), &kind).await?;
+    persist::save_channel_config(&app, &ch.config);
+    Ok(ch.list_infos())
+}
+
+#[tauri::command]
+async fn channel_disable(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+    kind: String,
+) -> Result<Vec<channels::ChannelInfo>, String> {
+    let mut ch = state.channel.lock().await;
+    channels::disable_kind(&mut ch, &kind).await?;
+    persist::save_channel_config(&app, &ch.config);
+    Ok(ch.list_infos())
+}
+
+#[tauri::command]
+async fn channel_telegram_get(state: State<'_, AgentState>) -> Result<serde_json::Value, String> {
+    channel_get(state, "telegram".into()).await
 }
 
 #[tauri::command]
@@ -482,11 +757,16 @@ async fn channel_telegram_set(
     token: String,
     allowed_ids: Vec<String>,
 ) -> Result<(), String> {
-    let cfg = TelegramConfig { token, allowed_ids };
-    let mut ch = state.channel.lock().await;
-    ch.config.telegram = Some(cfg);
-    persist::save_channel_config(&app, &ch.config);
-    Ok(())
+    channel_update(
+        app,
+        state,
+        "telegram".into(),
+        token,
+        Some(allowed_ids),
+        None,
+        None,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -495,14 +775,19 @@ async fn channel_telegram_start(
     state: State<'_, AgentState>,
 ) -> Result<(), String> {
     let mut ch = state.channel.lock().await;
-    // 每次启动都先停旧 poller，避免热重载/重复点击导致 getUpdates Conflict
-    channels::restart_telegram_poller(&mut ch, app).await
+    channels::enable_kind(&mut ch, app.clone(), "telegram").await?;
+    persist::save_channel_config(&app, &ch.config);
+    Ok(())
 }
 
 #[tauri::command]
-async fn channel_telegram_stop(state: State<'_, AgentState>) -> Result<(), String> {
+async fn channel_telegram_stop(
+    app: tauri::AppHandle,
+    state: State<'_, AgentState>,
+) -> Result<(), String> {
     let mut ch = state.channel.lock().await;
-    channels::stop_telegram_poller(&mut ch).await;
+    channels::disable_kind(&mut ch, "telegram").await?;
+    persist::save_channel_config(&app, &ch.config);
     Ok(())
 }
 
@@ -788,6 +1073,7 @@ fn agent_add(
     enabled: bool,
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
+    permission_overrides: Option<std::collections::HashMap<String, permission::DomainPolicy>>,
 ) -> Result<agents::AgentProfile, String> {
     let profile = agents::add(
         &app,
@@ -799,6 +1085,7 @@ fn agent_add(
         enabled,
         skills,
         allow_as_subagent,
+        permission_overrides.unwrap_or_default(),
     )?;
     sync_agents_state(&app, &state);
     Ok(profile)
@@ -817,6 +1104,7 @@ fn agent_update(
     enabled: bool,
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
+    permission_overrides: Option<std::collections::HashMap<String, permission::DomainPolicy>>,
 ) -> Result<agents::AgentProfile, String> {
     let profile = agents::update(
         &app,
@@ -829,6 +1117,7 @@ fn agent_update(
         enabled,
         skills,
         allow_as_subagent,
+        permission_overrides.unwrap_or_default(),
     )?;
     sync_agents_state(&app, &state);
     Ok(profile)
@@ -916,6 +1205,17 @@ pub fn run() {
             provider_remove,
             provider_activate,
             permission_respond,
+            permission_get,
+            permission_set,
+            permission_mode_list,
+            permission_mode_add,
+            permission_mode_update,
+            permission_mode_remove,
+            permission_mode_reorder,
+            permission_mode_set_active,
+            permission_domains,
+            permission_audit_list,
+            permission_clear_session_grants,
             mcp_list,
             mcp_add,
             mcp_update,
@@ -925,7 +1225,13 @@ pub fn run() {
             mcp_tools,
             knowledge_list,
             knowledge_add,
+            knowledge_update,
             knowledge_remove,
+            channel_list,
+            channel_get,
+            channel_update,
+            channel_enable,
+            channel_disable,
             channel_telegram_get,
             channel_telegram_set,
             channel_telegram_start,

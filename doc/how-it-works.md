@@ -57,7 +57,7 @@ Rust 端的 `agent/mod.rs` 跑一个 **loop**：
 | `stream-chunk` | 文字边生成边显示（流式光标） |
 | `tool-call` | 显示「正在调用 xxx 工具」 |
 | `tool-result` | 显示工具返回结果 |
-| `permission-request` | 弹出 Allow / Deny 授权弹窗 |
+| `permission-request` | 权限弹窗（允许一次 / 本会话允许或拒绝）；当前模式来自会话工具栏 |
 | `subagent-start` | 显示子 agent 启动和任务描述 |
 | `subagent-done` | 标记子 agent 完成 |
 

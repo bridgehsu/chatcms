@@ -11,6 +11,9 @@ pub struct AppConfig {
     /// 当前激活的配置 id
     #[serde(default)]
     pub active_profile_id: Option<String>,
+    /// 权限：模式 / 域策略 / MCP / 约束
+    #[serde(default)]
+    pub permission: crate::permission::PermissionConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,6 +71,7 @@ impl Default for AppConfig {
             },
             active_profile_id: Some(profile.id.clone()),
             profiles: vec![profile],
+            permission: crate::permission::PermissionConfig::default(),
         }
     }
 }
@@ -75,6 +79,7 @@ impl Default for AppConfig {
 impl AppConfig {
     /// 旧版仅有 provider 时，补一条配置档案
     pub fn ensure_profiles(&mut self) {
+        self.permission.ensure_defaults();
         if !self.profiles.is_empty() {
             if self.active_profile_id.is_none() {
                 self.active_profile_id = self.profiles.first().map(|p| p.id.clone());

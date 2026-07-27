@@ -2,50 +2,206 @@ import type { ComponentType } from "react";
 import {
   IconAccounts,
   IconAgents,
+  IconChannels,
   IconChat,
   IconContent,
   IconCron,
   IconImages,
+  IconLock,
   IconMap,
   IconMcp,
+  IconMemory,
   IconProvider,
   IconSettings,
   IconSkills,
   IconVideos,
 } from "@/components/icons";
 
-/** 一级导航（平铺，无二级） */
-export type NavItem = {
+export type NavIcon = ComponentType<{ locked?: boolean }>;
+
+/** 一级叶子项 */
+export type NavLeaf = {
+  kind: "leaf";
   path: string;
   label: string;
-  Icon: ComponentType;
-  /** 视觉分隔：该项之前画一条线 */
+  description: string;
+  Icon: NavIcon;
   dividerBefore?: boolean;
 };
 
-/** 主列表（设置单独贴底） */
-export const NAV_ITEMS: NavItem[] = [
-  { path: "/chat", label: "智能会话", Icon: IconChat },
-  { path: "/map", label: "业务地图", Icon: IconMap },
-  { path: "/content", label: "内容管理", Icon: IconContent },
-  { path: "/images", label: "图片管理", Icon: IconImages },
-  { path: "/videos", label: "视频管理", Icon: IconVideos },
-  { path: "/accounts", label: "账号管理", Icon: IconAccounts },
-  { path: "/schedules", label: "任务调度", Icon: IconCron, dividerBefore: true },
-  { path: "/skills", label: "技能管理", Icon: IconSkills, dividerBefore: true },
-  { path: "/agents", label: "代理管理", Icon: IconAgents },
-  { path: "/mcp", label: "MCP 管理", Icon: IconMcp },
-  { path: "/models", label: "模型配置", Icon: IconProvider },
+/** 可展开分组（二级菜单） */
+export type NavGroup = {
+  kind: "group";
+  id: string;
+  label: string;
+  Icon: NavIcon;
+  /** 点击父级时的默认子路径 */
+  defaultPath: string;
+  dividerBefore?: boolean;
+  children: {
+    path: string;
+    label: string;
+    description: string;
+    Icon: NavIcon;
+  }[];
+};
+
+export type NavEntry = NavLeaf | NavGroup;
+
+/** 侧栏导航：干活区平铺 + 智能配置 / 系统设置分组 */
+export const NAV_ENTRIES: NavEntry[] = [
+  {
+    kind: "leaf",
+    path: "/chat",
+    label: "智能会话",
+    description: "与 Agent 对话，调用工具与技能完成任务",
+    Icon: IconChat,
+  },
+  {
+    kind: "leaf",
+    path: "/map",
+    label: "业务地图",
+    description: "分区入口、笔记与截止提醒，一览业务全貌",
+    Icon: IconMap,
+  },
+  {
+    kind: "leaf",
+    path: "/content",
+    label: "内容管理",
+    description: "Notion 风格 AI 笔记，沉淀选题与成稿",
+    Icon: IconContent,
+  },
+  {
+    kind: "leaf",
+    path: "/images",
+    label: "图片管理",
+    description: "AI 生图与素材管理，文件保存在本机",
+    Icon: IconImages,
+  },
+  {
+    kind: "leaf",
+    path: "/videos",
+    label: "视频管理",
+    description: "AI 生视频与成片管理，文件保存在本机",
+    Icon: IconVideos,
+  },
+  {
+    kind: "leaf",
+    path: "/accounts",
+    label: "账号管理",
+    description: "管理各大内容平台的账号与密钥，数据保存在本机应用目录",
+    Icon: IconAccounts,
+  },
+  {
+    kind: "leaf",
+    path: "/schedules",
+    label: "任务调度",
+    description: "创建调度项目，在画布中设计节点工作流（类似 n8n）",
+    Icon: IconCron,
+    dividerBefore: true,
+  },
+  {
+    kind: "group",
+    id: "workspace",
+    label: "智能配置",
+    Icon: IconAgents,
+    defaultPath: "/agents",
+    dividerBefore: true,
+    children: [
+      {
+        path: "/agents",
+        label: "Agent",
+        description: "管理多 Agent 档案、默认代理与技能白名单",
+        Icon: IconAgents,
+      },
+      {
+        path: "/models",
+        label: "模型",
+        description: "配置模型提供商、密钥与当前激活模型",
+        Icon: IconProvider,
+      },
+      {
+        path: "/skills",
+        label: "Skill",
+        description: "管理 OpenClaw 风格技能（SKILL.md）与提示词注入",
+        Icon: IconSkills,
+      },
+      {
+        path: "/mcp",
+        label: "MCP",
+        description: "接入 MCP 服务器，扩展 Agent 可用的外部工具",
+        Icon: IconMcp,
+      },
+    ],
+  },
+  {
+    kind: "group",
+    id: "settings",
+    label: "系统设置",
+    Icon: IconSettings,
+    defaultPath: "/settings/permissions",
+    children: [
+      {
+        path: "/settings/permissions",
+        label: "权限",
+        description: "自定义权限模式，控制工具调用的授权策略",
+        Icon: IconLock,
+      },
+      {
+        path: "/settings/knowledge",
+        label: "记忆",
+        description: "维护知识库条目，供 Agent 检索并注入系统提示",
+        Icon: IconMemory,
+      },
+      {
+        path: "/settings/channels",
+        label: "渠道",
+        description: "配置 Telegram 等聊天渠道机器人，各平台可并行启用",
+        Icon: IconChannels,
+      },
+    ],
+  },
 ];
 
-export const SETTINGS_ITEM = {
-  label: "设置",
-  Icon: IconSettings,
-} as const;
-
-export const titleForPath = (pathname: string): string => {
-  const item = NAV_ITEMS.find(
-    (n) => pathname === n.path || pathname.startsWith(`${n.path}/`),
-  );
-  return item?.label ?? "ChatCMS";
+const allLeaves = (): { path: string; label: string; description: string }[] => {
+  const out: { path: string; label: string; description: string }[] = [];
+  for (const e of NAV_ENTRIES) {
+    if (e.kind === "leaf") {
+      out.push({ path: e.path, label: e.label, description: e.description });
+    } else {
+      for (const c of e.children) {
+        out.push({
+          path: c.path,
+          label: c.label,
+          description: c.description,
+        });
+      }
+    }
+  }
+  return out;
 };
+
+const leafForPath = (pathname: string) => {
+  const leaves = allLeaves();
+  const exact = leaves.find((n) => pathname === n.path);
+  if (exact) return exact;
+  const prefix = leaves.find((n) => pathname.startsWith(`${n.path}/`));
+  if (prefix) return prefix;
+  if (pathname === "/permissions" || pathname.startsWith("/permissions/")) {
+    return leaves.find((n) => n.path === "/settings/permissions");
+  }
+  return undefined;
+};
+
+export const titleForPath = (pathname: string): string =>
+  leafForPath(pathname)?.label ?? "ChatCMS";
+
+/** 顶部标题下方的页面说明 */
+export const subtitleForPath = (pathname: string): string | undefined =>
+  leafForPath(pathname)?.description;
+
+/** 当前路径是否属于某分组 */
+export const groupContainsPath = (group: NavGroup, pathname: string): boolean =>
+  group.children.some(
+    (c) => pathname === c.path || pathname.startsWith(`${c.path}/`),
+  );

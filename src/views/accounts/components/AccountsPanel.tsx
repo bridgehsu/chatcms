@@ -128,15 +128,6 @@ export const AccountsPanel = () => {
 
   return (
     <div className="model-panel">
-      <header className="model-panel__header">
-        <div>
-          <h1 className="model-panel__title">账号管理</h1>
-          <p className="model-panel__desc">
-            管理各大内容平台的账号与密钥，数据保存在本机应用目录
-          </p>
-        </div>
-      </header>
-
       <div className="model-toolbar">
         <div className="model-filters">
           <div className="model-filter model-filter--family">

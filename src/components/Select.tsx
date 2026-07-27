@@ -10,6 +10,9 @@ interface Props<T extends string> {
   options: SelectOption<T>[];
   onChange: (value: T) => void;
   "aria-label"?: string;
+  className?: string;
+  /** 菜单展开方向，输入框旁用 top */
+  placement?: "bottom" | "top";
 }
 
 /** 自定义下拉，避免原生 select 遮挡表单 */
@@ -18,6 +21,8 @@ export const Select = <T extends string>({
   options,
   onChange,
   "aria-label": ariaLabel,
+  className = "",
+  placement = "bottom",
 }: Props<T>) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -39,8 +44,17 @@ export const Select = <T extends string>({
     };
   }, [open]);
 
+  const rootClass = [
+    "ui-select",
+    open ? "is-open" : "",
+    placement === "top" ? "ui-select--up" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`ui-select${open ? " is-open" : ""}`} ref={rootRef}>
+    <div className={rootClass} ref={rootRef}>
       <button
         type="button"
         className="ui-select__trigger"

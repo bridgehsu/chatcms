@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChatStore } from "@/stores/useChatStore";
+import type { RememberScope } from "@/types";
 
 const TIMEOUT_SEC = 60;
 const PREVIEW_LINES = 24;
@@ -20,6 +21,7 @@ const asString = (v: unknown) => (typeof v === "string" ? v : null);
 const buildToolView = (
   toolName: string,
   input: Record<string, unknown>,
+  domainLabel: string,
 ): ToolView => {
   if (toolName === "bash") {
     const command =
@@ -61,7 +63,7 @@ const buildToolView = (
   return {
     kind: "generic",
     title: "需要确认",
-    subtitle: `Agent 请求执行工具 ${toolName}`,
+    subtitle: `Agent 请求执行工具 ${toolName}（${domainLabel}）`,
     accent: "slate",
     primaryLabel: "允许",
     bodyLabel: "参数",
@@ -79,14 +81,18 @@ export const PermissionPrompt = () => {
 
   const view = useMemo(() => {
     if (!pendingPermission) return null;
-    return buildToolView(pendingPermission.tool_name, pendingPermission.input);
+    return buildToolView(
+      pendingPermission.tool_name,
+      pendingPermission.input,
+      pendingPermission.domain_label || pendingPermission.domain,
+    );
   }, [pendingPermission]);
 
-  const respond = async (allowed: boolean) => {
+  const respond = async (allowed: boolean, remember: RememberScope = "once") => {
     if (!requestId || busy) return;
     setBusy(true);
     try {
-      await respondPermission(requestId, allowed);
+      await respondPermission(requestId, allowed, remember);
     } finally {
       setBusy(false);
     }
@@ -117,12 +123,12 @@ export const PermissionPrompt = () => {
       if (busy) return;
       if (e.key === "Escape") {
         e.preventDefault();
-        void respondPermission(requestId, false);
+        void respondPermission(requestId, false, "once");
         return;
       }
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        void respondPermission(requestId, true);
+        void respondPermission(requestId, true, "once");
       }
     };
 
@@ -131,6 +137,9 @@ export const PermissionPrompt = () => {
   }, [requestId, busy, respondPermission]);
 
   if (!pendingPermission || !view) return null;
+
+  const domainBadge =
+    pendingPermission.domain_label || pendingPermission.domain || "本机执行";
 
   return (
     <div
@@ -146,9 +155,12 @@ export const PermissionPrompt = () => {
           </h2>
           <p id="permission-prompt-desc" className="permission-prompt__sub">
             {view.subtitle}
+            {pendingPermission.input_summary
+              ? ` · ${pendingPermission.input_summary.slice(0, 80)}`
+              : ""}
           </p>
         </div>
-        <span className="permission-prompt__badge">本机执行</span>
+        <span className="permission-prompt__badge">{domainBadge}</span>
       </div>
 
       {view.meta ? (
@@ -168,15 +180,33 @@ export const PermissionPrompt = () => {
           <button
             ref={denyRef}
             className="permission-prompt__btn permission-prompt__btn--deny"
-            onClick={() => void respond(false)}
+            onClick={() => void respond(false, "once")}
             disabled={busy}
             type="button"
           >
             拒绝
           </button>
           <button
+            className="permission-prompt__btn permission-prompt__btn--deny-soft"
+            onClick={() => void respond(false, "session_deny")}
+            disabled={busy}
+            type="button"
+            title="本会话内同类请求一律拒绝"
+          >
+            本会话拒绝
+          </button>
+          <button
+            className="permission-prompt__btn permission-prompt__btn--allow-soft"
+            onClick={() => void respond(true, "session_allow")}
+            disabled={busy}
+            type="button"
+            title="本会话内同类请求一律允许"
+          >
+            本会话允许
+          </button>
+          <button
             className="permission-prompt__btn permission-prompt__btn--allow"
-            onClick={() => void respond(true)}
+            onClick={() => void respond(true, "once")}
             disabled={busy}
             type="button"
           >
@@ -185,7 +215,9 @@ export const PermissionPrompt = () => {
         </div>
       </div>
 
-      <p className="permission-prompt__hint">Esc 拒绝 · ⌘/Ctrl+Enter 允许</p>
+      <p className="permission-prompt__hint">
+        Esc 拒绝 · ⌘/Ctrl+Enter 允许一次 · 「本会话」仅对当前会话生效
+      </p>
     </div>
   );
 };

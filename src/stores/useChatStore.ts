@@ -3,6 +3,7 @@ import { invoke, listen } from "@/hooks/useTauri";
 import type {
   Message,
   PermissionRequest,
+  RememberScope,
   Session,
   SessionSummary,
   StreamChunk,
@@ -29,7 +30,11 @@ interface ChatState {
   deleteSession: (id: string) => Promise<void>;
   pinSession: (id: string, pinned: boolean) => Promise<void>;
   clearError: () => void;
-  respondPermission: (requestId: string, allowed: boolean) => Promise<void>;
+  respondPermission: (
+    requestId: string,
+    allowed: boolean,
+    remember?: RememberScope,
+  ) => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set, get) => {
@@ -267,6 +272,9 @@ export const useChatStore = create<ChatState>((set, get) => {
     },
 
     deleteSession: async (id: string) => {
+      await invoke("permission_clear_session_grants", { sessionId: id }).catch(
+        () => undefined,
+      );
       await invoke("session_delete", { sessionId: id });
       const { activeSessionId } = get();
       set((s) => ({
@@ -292,9 +300,9 @@ export const useChatStore = create<ChatState>((set, get) => {
       await get().loadSessions();
     },
 
-    respondPermission: async (requestId: string, allowed: boolean) => {
+    respondPermission: async (requestId, allowed, remember = "once") => {
       set({ pendingPermission: null });
-      await invoke("permission_respond", { requestId, allowed });
+      await invoke("permission_respond", { requestId, allowed, remember });
     },
   };
 });

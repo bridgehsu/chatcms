@@ -1,148 +1,200 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { invoke } from "@/hooks/useTauri";
 import type { KnowledgeEntry } from "@/types";
+import { KnowledgeModal } from "./KnowledgeModal";
+
+const formatTime = (ts: number) => {
+  if (!ts) return "—";
+  try {
+    const ms = ts < 1e12 ? ts * 1000 : ts;
+    return new Date(ms).toLocaleString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "—";
+  }
+};
 
 export const KnowledgePanel = () => {
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
-  const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", content: "", tags: "" });
+  const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"idle" | "add" | "edit">("idle");
+  const [editing, setEditing] = useState<KnowledgeEntry | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const refresh = () =>
-    invoke<KnowledgeEntry[]>("knowledge_list").then(setEntries).catch(console.error);
+  const refresh = async () => {
+    const list = await invoke<KnowledgeEntry[]>("knowledge_list");
+    setEntries(list);
+  };
 
   useEffect(() => {
-    refresh();
+    void refresh().catch(console.error);
   }, []);
 
-  const add = async () => {
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter((e) =>
+      [e.title, e.description, e.content, e.tags.join(" ")]
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [entries, query]);
+
+  const openAdd = () => {
     setError("");
-    const tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
-    setBusy("add");
+    setEditing(null);
+    setMode("add");
+  };
+
+  const openEdit = (e: KnowledgeEntry) => {
+    setError("");
+    setEditing(e);
+    setMode("edit");
+  };
+
+  const closeModal = () => {
+    setMode("idle");
+    setEditing(null);
+    setError("");
+  };
+
+  const remove = async (id: string, ev: MouseEvent) => {
+    ev.stopPropagation();
+    if (!window.confirm("确定删除该记忆条目？")) return;
+    setBusy(`remove-${id}`);
+    setError("");
     try {
-      await invoke("knowledge_add", {
-        title: form.title,
-        description: form.description,
-        content: form.content,
-        tags,
-      });
-      setForm({ title: "", description: "", content: "", tags: "" });
-      setAdding(false);
-      refresh();
-    } catch (e) {
-      setError(String(e));
+      await invoke("knowledge_remove", { id });
+      await refresh();
+    } catch (err) {
+      setError(String(err));
     } finally {
       setBusy(null);
     }
   };
 
-  const remove = async (id: string) => {
-    setBusy(id);
-    await invoke("knowledge_remove", { id }).catch(console.error);
-    setBusy(null);
-    refresh();
-  };
-
   return (
-    <div className="mcp-panel">
-      <div className="mcp-header">
-        <span className="mcp-title">Agent 记忆（{entries.length}）</span>
-        <button className="btn-mcp-add" onClick={() => setAdding(true)} type="button">
-          + 添加条目
-        </button>
-      </div>
-      <p className="mcp-empty" style={{ fontSize: 11, marginTop: -4 }}>
-        相关条目会自动注入到系统提示词中。
-      </p>
-
-      <div className="mcp-server-list">
-        {entries.map((e) => (
-          <div key={e.id} className="mcp-server-row">
-            <div className="mcp-server-left" style={{ flexDirection: "column", gap: 2 }}>
-              <div className="mcp-server-name">{e.title}</div>
-              <div className="mcp-server-cmd">{e.description}</div>
-              {e.tags.length > 0 && (
-                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 2 }}>
-                  {e.tags.map((t) => (
-                    <span key={t} className="knowledge-tag">{t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              className="btn-mcp-remove"
-              onClick={() => void remove(e.id)}
-              disabled={busy === e.id}
-              type="button"
-            >
-              {busy === e.id ? "…" : "移除"}
-            </button>
-          </div>
-        ))}
-        {entries.length === 0 && !adding && (
-          <p className="mcp-empty">暂无记忆条目</p>
-        )}
-      </div>
-
-      {adding && (
-        <div className="mcp-add-form">
-          <div className="mcp-form-row">
-            <label>标题</label>
+    <div className="model-panel">
+      <div className="model-toolbar">
+        <div className="model-filters">
+          <div className="model-search">
             <input
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="项目背景"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="搜索标题、描述、内容、标签…"
+              aria-label="搜索记忆"
             />
-          </div>
-          <div className="mcp-form-row">
-            <label>描述（用于匹配）</label>
-            <input
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="简短摘要，便于相关性匹配"
-            />
-          </div>
-          <div className="mcp-form-row">
-            <label>内容</label>
-            <textarea
-              className="mcp-env-input"
-              rows={5}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="将注入到提示词中的完整内容…"
-            />
-          </div>
-          <div className="mcp-form-row">
-            <label>标签（逗号分隔）</label>
-            <input
-              value={form.tags}
-              onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              placeholder="项目, 上下文, 规则"
-            />
-          </div>
-          {error && <div className="mcp-form-error">{error}</div>}
-          <div className="modal-actions" style={{ marginTop: 0 }}>
-            <button
-              onClick={() => {
-                setAdding(false);
-                setError("");
-              }}
-              type="button"
-            >
-              取消
-            </button>
-            <button
-              className="btn-primary"
-              onClick={() => void add()}
-              disabled={!form.title || !form.content || busy === "add"}
-              type="button"
-            >
-              {busy === "add" ? "保存中…" : "添加"}
-            </button>
           </div>
         </div>
-      )}
+        <button className="model-btn-add" onClick={openAdd} type="button">
+          + 新建记忆
+        </button>
+      </div>
+
+      {error ? <div className="mcp-form-error">{error}</div> : null}
+
+      <div className="model-table-wrap">
+        <table className="model-table">
+          <thead>
+            <tr>
+              <th className="model-table__idx">#</th>
+              <th>标题</th>
+              <th>描述</th>
+              <th>标签</th>
+              <th>创建</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="model-table__empty">
+                  {entries.length === 0
+                    ? "暂无记忆条目，相关内容会注入对话提示词"
+                    : "没有匹配的记忆"}
+                </td>
+              </tr>
+            ) : (
+              filtered.map((e, index) => (
+                <tr
+                  key={e.id}
+                  className="model-table__row"
+                  onClick={() => openEdit(e)}
+                >
+                  <td className="model-table__idx model-table__mono">
+                    {index + 1}
+                  </td>
+                  <td>
+                    <span className="model-table__name">{e.title}</span>
+                  </td>
+                  <td>
+                    <div className="skill-table__desc">
+                      {e.description || "—"}
+                    </div>
+                  </td>
+                  <td>
+                    {e.tags.length > 0 ? (
+                      <div className="knowledge-table__tags">
+                        {e.tags.map((t) => (
+                          <span key={t} className="knowledge-tag">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="model-status-idle">—</span>
+                    )}
+                  </td>
+                  <td className="model-table__mono">
+                    {formatTime(e.created_at)}
+                  </td>
+                  <td>
+                    <div
+                      className="model-table__actions"
+                      onClick={(ev) => ev.stopPropagation()}
+                    >
+                      <button
+                        className="btn-mcp-action"
+                        onClick={() => openEdit(e)}
+                        type="button"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        className="btn-mcp-remove"
+                        onClick={(ev) => void remove(e.id, ev)}
+                        disabled={busy === `remove-${e.id}`}
+                        type="button"
+                      >
+                        {busy === `remove-${e.id}` ? "…" : "删除"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {mode !== "idle" ? (
+        <KnowledgeModal
+          mode={mode}
+          entry={editing}
+          onClose={closeModal}
+          onSaved={async () => {
+            closeModal();
+            await refresh();
+          }}
+        />
+      ) : null}
     </div>
   );
 };

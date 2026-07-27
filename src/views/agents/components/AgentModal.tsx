@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@/hooks/useTauri";
-import type { AgentProfile, Skill } from "@/types";
+import type { AgentProfile, DomainPolicy, Skill } from "@/types";
 
 type SkillsMode = "all" | "none" | "allowlist";
+
+const OVERRIDE_DOMAINS: { id: string; label: string }[] = [
+  { id: "file_read", label: "文件读取" },
+  { id: "file_write", label: "文件写入" },
+  { id: "shell", label: "终端" },
+  { id: "mcp", label: "MCP" },
+  { id: "agent", label: "子代理" },
+  { id: "network", label: "网络" },
+  { id: "browser", label: "浏览器" },
+  { id: "app", label: "应用" },
+];
 
 type FormState = {
   slug: string;
@@ -14,6 +25,7 @@ type FormState = {
   skillsMode: SkillsMode;
   skills: string[];
   allowAsSubagent: boolean;
+  permissionOverrides: Record<string, DomainPolicy>;
 };
 
 const emptyForm = (): FormState => ({
@@ -26,6 +38,7 @@ const emptyForm = (): FormState => ({
   skillsMode: "all",
   skills: [],
   allowAsSubagent: true,
+  permissionOverrides: {},
 });
 
 const fromAgent = (a: AgentProfile): FormState => {
@@ -43,6 +56,7 @@ const fromAgent = (a: AgentProfile): FormState => {
     skillsMode,
     skills: a.skills ?? [],
     allowAsSubagent: a.allow_as_subagent,
+    permissionOverrides: { ...(a.permission_overrides ?? {}) },
   };
 };
 
@@ -110,6 +124,7 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
       enabled: form.enabled,
       skills: toSkillsPayload(form),
       allowAsSubagent: form.allowAsSubagent,
+      permissionOverrides: form.permissionOverrides,
     };
     try {
       if (mode === "edit" && agent) {
@@ -269,6 +284,34 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
               />
               <span>可作为子代理（spawn_agent）</span>
             </label>
+          </div>
+
+          <div className="mcp-form-row">
+            <label>权限覆盖（未设 = 继承全局域策略）</label>
+            <div className="agent-perm-overrides">
+              {OVERRIDE_DOMAINS.map((d) => (
+                <div key={d.id} className="agent-perm-overrides__row">
+                  <span>{d.label}</span>
+                  <select
+                    value={form.permissionOverrides[d.id] ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value as DomainPolicy | "";
+                      setForm((prev) => {
+                        const next = { ...prev.permissionOverrides };
+                        if (!v) delete next[d.id];
+                        else next[d.id] = v;
+                        return { ...prev, permissionOverrides: next };
+                      });
+                    }}
+                  >
+                    <option value="">继承</option>
+                    <option value="allow">允许</option>
+                    <option value="ask">询问</option>
+                    <option value="deny">拒绝</option>
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
 
           {error && <div className="mcp-form-error">{error}</div>}
