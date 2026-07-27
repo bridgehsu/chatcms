@@ -9,7 +9,6 @@ use crate::tools;
 
 use super::dispatch::dispatch_sub_tool;
 use super::state::AgentState;
-use super::turns::{assistant_content_blocks, tool_result_block};
 
 /// 跑隔离的子 Agent 循环（不落库会话、不弹权限确认）。
 pub async fn run_sub_agent(
@@ -52,17 +51,15 @@ pub async fn run_sub_agent(
             break;
         }
 
-        api_messages.push(json!({
-            "role": "assistant",
-            "content": assistant_content_blocks(&output),
-        }));
-
-        let mut result_blocks = Vec::new();
+        let mut results = Vec::new();
         for tc in &output.tool_calls {
-            let result = dispatch_sub_tool(tc, &app, &mcp_tool_names).await;
-            result_blocks.push(tool_result_block(&result));
+            results.push(dispatch_sub_tool(tc, &app, &mcp_tool_names).await);
         }
-        api_messages.push(json!({"role": "user", "content": result_blocks}));
+        api_messages.extend(provider::encode_tool_turn(
+            config.provider.kind.clone(),
+            &output,
+            &results,
+        ));
     }
 
     Ok(final_text)

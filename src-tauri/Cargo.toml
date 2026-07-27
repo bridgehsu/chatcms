@@ -1,6 +1,6 @@
 [package]
 name = "chatcms"
-version = "0.0.3"
+version = "0.0.4"
 description = "ChatCMS Desktop Agent"
 authors = ["xukui"]
 edition = "2021"

@@ -70,7 +70,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     const { activeSessionId } = get();
     if (session_id !== activeSessionId && activeSessionId !== null) return;
 
-    const display = `[calling: ${name}]\n${JSON.stringify(input, null, 2)}`;
+    const display = `[calling: ${name}]\n${JSON.stringify(input)}`;
     const msg: Message = {
       id: `tool-call-${id}`,
       role: "tool",
@@ -104,6 +104,16 @@ export const useChatStore = create<ChatState>((set, get) => {
   // ── permission-request ───────────────────────────────────────────────────
   listen<PermissionRequest>("permission-request", (event) => {
     set({ pendingPermission: event.payload });
+  });
+
+  // ── Telegram / 外部频道写入会话后刷新列表 ───────────────────────────────
+  listen<{ source?: string; session_id?: string }>("sessions-changed", (event) => {
+    void get().loadSessions();
+    const sid = event.payload.session_id;
+    const { activeSessionId } = get();
+    if (sid && sid === activeSessionId) {
+      void get().selectSession(sid);
+    }
   });
 
   // ── sub-agent events ──────────────────────────────────────────────────────

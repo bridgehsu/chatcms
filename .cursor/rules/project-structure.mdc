@@ -39,7 +39,7 @@ src/
 │   ├── nav.ts              # 一级导航项与标题
 │   └── components/         # Sidebar、Topbar、Settings/Permission 弹窗
 ├── views/
-│   ├── chat/               # 智能会话（SessionList + ChatWindow）
+│   ├── chat/               # 智能会话（SessionList + ChatWindow + PermissionPrompt + ToolMessage）
 │   ├── map/                # 业务地图看板（分区入口 / 笔记 / 时钟）
 │   ├── content/            # 内容管理 · AI 笔记（Notion 风格）
 │   ├── images/             # 图片管理 · AI 生图与本地保存

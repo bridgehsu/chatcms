@@ -8,13 +8,11 @@ import {
 import { useChatStore } from "@/stores/useChatStore";
 import { useProviderStore } from "@/stores/useProviderStore";
 import type { Message } from "@/types";
+import { PermissionPrompt } from "./PermissionPrompt";
+import { ToolMessage } from "./ToolMessage";
 
 const MessageBubble = ({ msg }: { msg: Message }) => {
   if (msg.role === "tool") {
-    const lines = msg.content.split("\n");
-    const header = lines[0];
-    const body = lines.slice(1).join("\n");
-    const isError = header.startsWith("[error]") || body.includes("[error]");
     return (
       <div className="message tool">
         <div className="message-row">
@@ -22,10 +20,7 @@ const MessageBubble = ({ msg }: { msg: Message }) => {
             <IconBot />
           </span>
           <div className="message-col">
-            <div className={`message-bubble ${isError ? "is-error" : ""}`}>
-              <div className="tool-header">{header}</div>
-              {body && <pre className="tool-body">{body}</pre>}
-            </div>
+            <ToolMessage content={msg.content} />
           </div>
         </div>
       </div>
@@ -57,6 +52,7 @@ export const ChatWindow = () => {
     streamingContent,
     isStreaming,
     error,
+    pendingPermission,
     sendMessage,
     clearError,
   } = useChatStore();
@@ -71,7 +67,7 @@ export const ChatWindow = () => {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeSession?.messages, streamingContent, error]);
+  }, [activeSession?.messages, streamingContent, error, pendingPermission]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -173,6 +169,7 @@ export const ChatWindow = () => {
       </div>
 
       <div className="input-bar">
+        <PermissionPrompt />
         <div className="composer">
           <textarea
             ref={textareaRef}
@@ -182,12 +179,12 @@ export const ChatWindow = () => {
             onKeyDown={handleKeyDown}
             placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"
             rows={1}
-            disabled={isStreaming}
+            disabled={isStreaming || !!pendingPermission}
           />
           <button
             className="btn-send"
             onClick={() => void handleSend()}
-            disabled={isStreaming || !input.trim()}
+            disabled={isStreaming || !!pendingPermission || !input.trim()}
             type="button"
             aria-label="发送"
           >

@@ -20,7 +20,7 @@ src/
 ├── layout/                 # 主壳：Sidebar、Topbar、壳级弹窗
 │   ├── AppLayout.tsx
 │   ├── nav.ts              # 一级导航配置
-│   └── components/         # Sidebar、Topbar、PermissionModal
+│   └── components/         # Sidebar、Topbar、SettingsModal
 ├── views/<页>/             # 页面入口（路由一级页）
 │   ├── index.tsx           # 页面组装
 │   ├── components/         # 仅本页私有组件

@@ -339,8 +339,13 @@ async fn stream_openai(
     );
 
     let mut tool_calls: Vec<ToolCall> = tool_accum
-        .into_values()
-        .map(|(id, name, args)| {
+        .into_iter()
+        .map(|(idx, (id, name, args))| {
+            let id = if id.is_empty() {
+                format!("call_{idx}")
+            } else {
+                id
+            };
             let input: Value = serde_json::from_str(&args)
                 .unwrap_or(Value::Object(Default::default()));
             ToolCall { id, name, input }
@@ -384,4 +389,117 @@ pub fn messages_to_openai(messages: &[Message]) -> Vec<Value> {
             })
         })
         .collect()
+}
+
+/// 将「助手工具调用 + 工具结果」编码为当前协议的 API messages（行业标准：loop 厂商无关，adapter 负责 wire format）。
+pub fn encode_tool_turn(
+    kind: ProviderKind,
+    output: &ProviderOutput,
+    results: &[crate::tools::ToolResult],
+) -> Vec<Value> {
+    match kind {
+        ProviderKind::Anthropic => encode_tool_turn_anthropic(output, results),
+        ProviderKind::OpenAI => encode_tool_turn_openai(output, results),
+    }
+}
+
+fn encode_tool_turn_anthropic(
+    output: &ProviderOutput,
+    results: &[crate::tools::ToolResult],
+) -> Vec<Value> {
+    let mut content = Vec::new();
+    if !output.text.is_empty() {
+        content.push(json!({"type": "text", "text": output.text}));
+    }
+    for tc in &output.tool_calls {
+        content.push(json!({
+            "type": "tool_use",
+            "id": tc.id,
+            "name": tc.name,
+            "input": tc.input,
+        }));
+    }
+
+    let result_blocks: Vec<Value> = results
+        .iter()
+        .map(|r| {
+            json!({
+                "type": "tool_result",
+                "tool_use_id": r.id,
+                "content": r.content,
+                "is_error": r.is_error,
+            })
+        })
+        .collect();
+
+    vec![
+        json!({"role": "assistant", "content": content}),
+        json!({"role": "user", "content": result_blocks}),
+    ]
+}
+
+fn encode_tool_turn_openai(
+    output: &ProviderOutput,
+    results: &[crate::tools::ToolResult],
+) -> Vec<Value> {
+    let tool_calls: Vec<Value> = output
+        .tool_calls
+        .iter()
+        .enumerate()
+        .map(|(i, tc)| {
+            let id = if tc.id.is_empty() {
+                format!("call_{i}")
+            } else {
+                tc.id.clone()
+            };
+            let arguments = serde_json::to_string(&tc.input).unwrap_or_else(|_| "{}".into());
+            json!({
+                "id": id,
+                "type": "function",
+                "function": {
+                    "name": tc.name,
+                    "arguments": arguments,
+                }
+            })
+        })
+        .collect();
+
+    // Chat Completions：有 tool_calls 时 content 常用 null；部分兼容网关更吃空字符串
+    let assistant_content = if output.text.is_empty() {
+        Value::Null
+    } else {
+        json!(output.text)
+    };
+
+    let mut msgs = vec![json!({
+        "role": "assistant",
+        "content": assistant_content,
+        "tool_calls": tool_calls,
+    })];
+
+    for (i, result) in results.iter().enumerate() {
+        let tool_call_id = if result.id.is_empty() {
+            output
+                .tool_calls
+                .get(i)
+                .map(|tc| {
+                    if tc.id.is_empty() {
+                        format!("call_{i}")
+                    } else {
+                        tc.id.clone()
+                    }
+                })
+                .unwrap_or_else(|| format!("call_{i}"))
+        } else {
+            result.id.clone()
+        };
+
+        msgs.push(json!({
+            "role": "tool",
+            "tool_call_id": tool_call_id,
+            "content": result.content,
+        }));
+    }
+
+    msgs
 }

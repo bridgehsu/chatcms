@@ -1,7 +1,7 @@
 //! 主会话入口：组装 messages / tools，跑 Agent Loop，直到模型不再调用工具。
 
 use anyhow::Result;
-use serde_json::{json, Value};
+use serde_json::Value;
 use tauri::{AppHandle, State};
 
 use crate::config::{AppConfig, ProviderKind};
@@ -14,8 +14,7 @@ use crate::tools;
 use super::dispatch::dispatch_tool;
 use super::state::AgentState;
 use super::turns::{
-    assistant_content_blocks, emit_tool_call, emit_tool_result, save_sessions_snapshot,
-    tool_display, tool_result_block,
+    emit_tool_call, emit_tool_result, save_sessions_snapshot, tool_display,
 };
 
 /// 主聊天入口：准备上下文 → Agent Loop → 返回 session_id。
@@ -141,8 +140,8 @@ async fn run_agent_loop(
             break;
         }
 
-        // 有工具：执行并把结果回灌进 api_messages，继续下一圈
-        append_tool_turn(app, state, sid, api_messages, &output).await;
+        // 有工具：执行并把结果按当前协议回灌进 api_messages，继续下一圈
+        append_tool_turn(app, state, &config.provider.kind, sid, api_messages, &output).await;
     }
     Ok(())
 }
@@ -169,26 +168,20 @@ fn finalize_assistant_turn(
     save_sessions_snapshot(app, state);
 }
 
-/// 把 assistant(tool_use) + 各工具执行结果 追加进 api_messages，并同步 UI / 会话。
+/// 执行工具，再由 provider adapter 编码回灌消息（Anthropic tool_use / OpenAI tool_calls）。
 async fn append_tool_turn(
     app: &AppHandle,
     state: &State<'_, AgentState>,
+    kind: &ProviderKind,
     sid: &str,
     api_messages: &mut Vec<Value>,
     output: &ProviderOutput,
 ) {
-    api_messages.push(json!({
-        "role": "assistant",
-        "content": assistant_content_blocks(output),
-    }));
-
-    let mut result_blocks: Vec<Value> = Vec::new();
+    let mut results: Vec<tools::ToolResult> = Vec::new();
     for tc in &output.tool_calls {
-        let result = execute_one_tool(app, state, sid, tc).await;
-        result_blocks.push(tool_result_block(&result));
+        results.push(execute_one_tool(app, state, sid, tc).await);
     }
-
-    api_messages.push(json!({"role": "user", "content": result_blocks}));
+    api_messages.extend(provider::encode_tool_turn(kind.clone(), output, &results));
 }
 
 /// 执行单个工具：通知前端 → dispatch → 写入 Tool 消息 → 落盘。

@@ -60,6 +60,26 @@ export const ChannelPanel = () => {
     }
   };
 
+  const restart = async () => {
+    setError("");
+    setBusy(true);
+    try {
+      await invoke("channel_telegram_set", {
+        token,
+        allowedIds: allowedIds
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      });
+      await invoke("channel_telegram_start");
+      await refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="mcp-panel">
       <div className="mcp-header">
@@ -70,7 +90,7 @@ export const ChannelPanel = () => {
         />
       </div>
       <p className="mcp-empty" style={{ fontSize: 11, marginTop: -4 }}>
-        启动后可通过 Telegram 与 Agent 对话。
+        启动后可通过 Telegram 与 Agent 对话。重复点「启动」会先停掉旧轮询，避免 Conflict。
       </p>
 
       <div className="mcp-add-form">
@@ -105,12 +125,19 @@ export const ChannelPanel = () => {
           >
             {busy ? "…" : status.running ? "停止机器人" : "启动机器人"}
           </button>
+          <button
+            onClick={() => void restart()}
+            disabled={busy || !token.trim()}
+            type="button"
+          >
+            {busy ? "…" : "重新启动"}
+          </button>
         </div>
       </div>
 
       {status.running && (
         <div className="channel-status-box">
-          机器人运行中。在 Telegram 向机器人发消息即可开始对话。
+          机器人运行中。在 Telegram 向机器人发消息即可；会话会出现在「智能会话」左侧列表。
         </div>
       )}
     </div>

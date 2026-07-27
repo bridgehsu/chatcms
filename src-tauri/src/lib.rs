@@ -400,9 +400,19 @@ fn knowledge_remove(
 #[tauri::command]
 async fn channel_telegram_get(state: State<'_, AgentState>) -> Result<serde_json::Value, String> {
     let ch = state.channel.lock().await;
-    let running = ch.telegram_running.load(std::sync::atomic::Ordering::SeqCst);
-    let token = ch.config.telegram.as_ref().map(|t| t.token.clone()).unwrap_or_default();
-    let allowed_ids = ch.config.telegram.as_ref().map(|t| t.allowed_ids.clone()).unwrap_or_default();
+    let running = ch.is_telegram_running();
+    let token = ch
+        .config
+        .telegram
+        .as_ref()
+        .map(|t| t.token.clone())
+        .unwrap_or_default();
+    let allowed_ids = ch
+        .config
+        .telegram
+        .as_ref()
+        .map(|t| t.allowed_ids.clone())
+        .unwrap_or_default();
     Ok(json!({ "token": token, "allowed_ids": allowed_ids, "running": running }))
 }
 
@@ -426,28 +436,14 @@ async fn channel_telegram_start(
     state: State<'_, AgentState>,
 ) -> Result<(), String> {
     let mut ch = state.channel.lock().await;
-    if ch.telegram_running.load(std::sync::atomic::Ordering::SeqCst) {
-        return Ok(()); // already running
-    }
-    let Some(tg_config) = ch.config.telegram.clone() else {
-        return Err("Telegram not configured".to_string());
-    };
-    if tg_config.token.is_empty() {
-        return Err("Telegram token is empty".to_string());
-    }
-
-    ch.telegram_running.store(true, std::sync::atomic::Ordering::SeqCst);
-    let running = ch.telegram_running.clone();
-    let sessions = ch.telegram_sessions.clone();
-
-    channels::start_telegram_poller(app, tg_config, sessions, running);
-    Ok(())
+    // 每次启动都先停旧 poller，避免热重载/重复点击导致 getUpdates Conflict
+    channels::restart_telegram_poller(&mut ch, app).await
 }
 
 #[tauri::command]
 async fn channel_telegram_stop(state: State<'_, AgentState>) -> Result<(), String> {
-    let ch = state.channel.lock().await;
-    ch.telegram_running.store(false, std::sync::atomic::Ordering::SeqCst);
+    let mut ch = state.channel.lock().await;
+    channels::stop_telegram_poller(&mut ch).await;
     Ok(())
 }
 
