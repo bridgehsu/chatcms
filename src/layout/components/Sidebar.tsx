@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { IconSidebar } from "@/components/icons";
+import { ThemeToggle } from "@/layout/components/ThemeToggle";
 import { NAV_ITEMS, SETTINGS_ITEM } from "@/layout/nav";
 
 interface Props {
@@ -90,24 +91,29 @@ export const Sidebar = ({ onOpenSettings }: Props) => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="nav-slot">
-          <button
-            type="button"
-            className="nav-item"
-            aria-label={label}
-            title={expanded ? undefined : label}
-            onClick={onOpenSettings}
-          >
-            <span className="nav-icon">
-              <Icon />
-            </span>
-            <span className="nav-label">{label}</span>
-            {!expanded && (
-              <span className="nav-tooltip" role="tooltip">
-                {label}
+        <div className={`sidebar-footer__row${expanded ? "" : " is-collapsed"}`}>
+          <div className="nav-slot sidebar-footer__settings">
+            <button
+              type="button"
+              className="nav-item"
+              aria-label={label}
+              title={expanded ? undefined : label}
+              onClick={onOpenSettings}
+            >
+              <span className="nav-icon">
+                <Icon />
               </span>
-            )}
-          </button>
+              <span className="nav-label">{label}</span>
+              {!expanded && (
+                <span className="nav-tooltip" role="tooltip">
+                  {label}
+                </span>
+              )}
+            </button>
+          </div>
+          <div className="sidebar-footer__theme">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </aside>

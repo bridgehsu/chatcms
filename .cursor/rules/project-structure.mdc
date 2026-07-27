@@ -61,7 +61,8 @@ src/
 │   └── global.css
 ├── stores/
 │   ├── useChatStore.ts
-│   └── useProviderStore.ts
+│   ├── useProviderStore.ts
+│   └── useThemeStore.ts    # 外观：light / dark 单击切换
 ├── config/
 │   ├── modelPresets.ts     # 模型预设（Claude/GPT/DeepSeek/Kimi/千问）
 │   ├── platformPresets.ts  # 内容平台预设（微信/抖音/小红书等）

@@ -233,6 +233,103 @@ html, body, #root { height: 100%; }
   padding: 8px 10px 12px;
 }
 
+.sidebar-footer__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.sidebar-footer__row.is-collapsed {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-footer__settings {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-footer__row.is-collapsed .sidebar-footer__settings {
+  flex: none;
+}
+
+.sidebar-footer__theme {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 侧栏主题：单击浅色 ↔ 深色 */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    color 140ms var(--ease-out),
+    background 140ms var(--ease-out);
+}
+
+.theme-switch:hover {
+  color: var(--text);
+  background: var(--bg-3);
+}
+
+.theme-switch:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.theme-switch__icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.theme-switch__sun,
+.theme-switch__moon {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  line-height: 0;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.theme-switch__icon[data-active="sun"] .theme-switch__sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-switch__icon[data-active="sun"] .theme-switch__moon {
+  opacity: 0;
+  transform: rotate(-30deg) scale(0.6);
+  pointer-events: none;
+}
+
+.theme-switch__icon[data-active="moon"] .theme-switch__moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-switch__icon[data-active="moon"] .theme-switch__sun {
+  opacity: 0;
+  transform: rotate(30deg) scale(0.6);
+  pointer-events: none;
+}
+
 .btn-new {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
@@ -691,7 +788,7 @@ html, body, #root { height: 100%; }
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--border) 90%, #fff 6%);
-  background: #1a1d26;
+  background: var(--surface-chat-bubble);
   color: var(--text);
   font-size: 14px;
   line-height: 1.6;
@@ -710,7 +807,7 @@ html, body, #root { height: 100%; }
   top: 12px;
   width: 10px;
   height: 10px;
-  background: #1a1d26;
+  background: var(--surface-chat-bubble);
   border-left: 1px solid color-mix(in srgb, var(--border) 90%, #fff 6%);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 90%, #fff 6%);
   transform: rotate(45deg);
@@ -848,10 +945,10 @@ html, body, #root { height: 100%; }
   font-family: var(--mono);
   font-size: 12px;
   line-height: 1.45;
-  color: #dbe7f5;
+  color: var(--surface-code-fg);
   padding: 8px 10px;
   border-radius: 8px;
-  background: #121722;
+  background: var(--surface-tool);
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   white-space: pre-wrap;
   word-break: break-word;
@@ -867,9 +964,9 @@ html, body, #root { height: 100%; }
   margin: 0;
   padding: 8px 10px;
   border-radius: 8px;
-  background: #0e131c;
+  background: var(--surface-code);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  color: #b6c2d4;
+  color: var(--surface-code-fg);
   font-family: var(--mono);
   font-size: 11.5px;
   line-height: 1.45;
@@ -1091,6 +1188,13 @@ html, body, #root { height: 100%; }
 
 .settings-modal__titlebar-spacer {
   justify-self: end;
+}
+
+.settings-modal__titlebar-end {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  padding-right: 4px;
 }
 
 /* 顶部：图标 + 文字 Tab */
@@ -1506,8 +1610,8 @@ html, body, #root { height: 100%; }
   overflow: auto;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #141922;
-  color: #d7e3f4;
+  background: var(--surface-code);
+  color: var(--surface-code-fg);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
   font-size: 12px;
   line-height: 1.45;

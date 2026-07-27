@@ -1,6 +1,7 @@
-/* ChatCMS 设计 token — OpenClaw claw（dark）主题 */
+/* ChatCMS 设计 token — OpenClaw claw 主题（深色默认 + 浅色） */
 
-:root {
+:root,
+[data-theme="dark"] {
   /* OpenClaw 核心色板 */
   --oc-bg: #0e1015;
   --oc-bg-elevated: #191c24;
@@ -77,9 +78,69 @@
   --mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
 
+  /* 气泡 / 工具卡等局部面 */
+  --surface-chat-bubble: #1a1d26;
+  --surface-tool: #121722;
+  --surface-code: #0e131c;
+  --surface-code-fg: #d7e3f4;
+
   font-family: var(--font-body);
   font-size: var(--font-size-md);
   color: var(--color-text);
   background: var(--color-bg);
   color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --oc-bg: #f3f4f6;
+  --oc-bg-elevated: #ffffff;
+  --oc-bg-hover: #eef0f3;
+  --oc-card: #ffffff;
+  --oc-text: #1c1f26;
+  --oc-muted: #6b7280;
+  --oc-border: #e5e7eb;
+  --oc-border-strong: #d1d5db;
+  --oc-accent: #e11d48;
+  --oc-accent-hover: #be123c;
+  --oc-accent-subtle: rgba(225, 29, 72, 0.1);
+  --oc-accent-2: #0d9488;
+  --oc-primary: #be123c;
+  --oc-danger: #dc2626;
+  --oc-ok: #16a34a;
+  --oc-warn: #d97706;
+
+  --color-bg: var(--oc-bg);
+  --color-bg-2: var(--oc-bg-elevated);
+  --color-bg-3: var(--oc-bg-hover);
+  --color-border: var(--oc-border-strong);
+  --color-text: var(--oc-text);
+  --color-text-dim: var(--oc-muted);
+  --color-accent: var(--oc-accent);
+  --color-accent-hover: var(--oc-accent-hover);
+  --color-user-bg: var(--oc-accent-subtle);
+  --color-assistant-bg: var(--oc-card);
+  --color-danger: var(--oc-danger);
+  --color-danger-text: #b91c1c;
+
+  --bg: var(--oc-bg);
+  --bg-1: var(--oc-bg);
+  --bg-2: var(--oc-bg-elevated);
+  --bg-3: var(--oc-bg-hover);
+  --border: var(--oc-border-strong);
+  --text: var(--oc-text);
+  --text-dim: var(--oc-muted);
+  --accent: var(--oc-accent);
+  --accent-hover: var(--oc-accent-hover);
+  --user-bg: var(--oc-accent-subtle);
+  --assistant-bg: var(--oc-card);
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.1);
+
+  --surface-chat-bubble: #ffffff;
+  --surface-tool: #f8fafc;
+  --surface-code: #f1f5f9;
+  --surface-code-fg: #0f172a;
+
+  color-scheme: light;
 }

@@ -20,3 +20,5 @@ export { IconBot } from "./IconBot";
 export { IconSidebar } from "./IconSidebar";
 export { IconLock } from "./IconLock";
 export { IconChevron } from "./IconChevron";
+export { IconSun } from "./IconSun";
+export { IconMoon } from "./IconMoon";
