@@ -13,6 +13,7 @@ export interface Session {
   messages: Message[];
   created_at: number;
   updated_at: number;
+  pinned?: boolean;
 }
 
 export interface SessionSummary {
@@ -20,6 +21,7 @@ export interface SessionSummary {
   title: string;
   updated_at: number;
   message_count: number;
+  pinned?: boolean;
 }
 
 export interface StreamChunk {

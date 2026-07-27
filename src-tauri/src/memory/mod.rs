@@ -8,6 +8,8 @@ pub struct Session {
     pub messages: Vec<Message>,
     pub created_at: u64,
     pub updated_at: u64,
+    #[serde(default)]
+    pub pinned: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,6 +41,7 @@ impl Session {
             messages: vec![],
             created_at: now,
             updated_at: now,
+            pinned: false,
         }
     }
 

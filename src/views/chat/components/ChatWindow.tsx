@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { IconBot, IconChat, IconSend, IconUser } from "@/components/icons";
+import { IconSend } from "@/components/icons";
 import { Select } from "@/components/Select";
 import {
   FAMILY_OPTIONS,
@@ -8,39 +8,38 @@ import {
 import { useChatStore } from "@/stores/useChatStore";
 import { useProviderStore } from "@/stores/useProviderStore";
 import type { Message } from "@/types";
+import { MarkdownContent } from "./MarkdownContent";
 import { PermissionPrompt } from "./PermissionPrompt";
 import { ToolMessage } from "./ToolMessage";
 
+/**
+ * 消息行（ChatGPT / Claude 范式）
+ * - 无头像
+ * - 用户：右对齐胶囊，纯文本
+ * - 助手：左对齐 Markdown 渲染
+ * - 工具：左对齐工具卡
+ */
 const MessageBubble = ({ msg }: { msg: Message }) => {
   if (msg.role === "tool") {
     return (
-      <div className="message tool">
-        <div className="message-row">
-          <span className="message-avatar message-avatar--tool" aria-label="工具">
-            <IconBot />
-          </span>
-          <div className="message-col">
-            <ToolMessage content={msg.content} />
-          </div>
-        </div>
+      <div className="message message--tool">
+        <ToolMessage content={msg.content} />
       </div>
     );
   }
 
-  const isUser = msg.role === "user";
+  if (msg.role === "user") {
+    return (
+      <div className="message message--user">
+        <div className="message-body message-body--bubble">{msg.content}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`message ${msg.role}`}>
-      <div className="message-row">
-        <span
-          className={`message-avatar message-avatar--${msg.role}`}
-          aria-label={isUser ? "我" : "助手"}
-        >
-          {isUser ? <IconUser /> : <IconBot />}
-        </span>
-        <div className="message-col">
-          <div className="message-bubble">{msg.content}</div>
-        </div>
+    <div className={`message message--${msg.role}`}>
+      <div className="message-body message-body--md">
+        <MarkdownContent content={msg.content} />
       </div>
     </div>
   );
@@ -58,16 +57,19 @@ export const ChatWindow = () => {
   } = useChatStore();
   const { familyId, versionId, load, selectFamily, selectVersion } = useProviderStore();
   const [input, setInput] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  // 只滚消息容器，避免 scrollIntoView 带动整页导致会话区「空白」
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeSession?.messages, streamingContent, error, pendingPermission]);
+    const root = messagesRef.current;
+    if (!root) return;
+    root.scrollTop = root.scrollHeight;
+  }, [activeSession?.id, activeSession?.messages, streamingContent, error, pendingPermission]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -119,53 +121,41 @@ export const ChatWindow = () => {
         </div>
       </div>
 
-      <div className="messages">
-        {isEmpty && (
-          <div className="empty-state">
-            <div className="empty-state__icon">
-              <IconChat />
+      <div className="messages" ref={messagesRef}>
+        <div className="messages__inner">
+          {isEmpty && (
+            <div className="empty-state">
+              <p className="empty-state__title">有什么可以帮你的？</p>
+              <p className="empty-state__hint">
+                在下方输入问题，或先到侧栏「模型配置」填写 API 密钥
+              </p>
             </div>
-            <p className="empty-state__title">开始对话</p>
-            <p className="empty-state__hint">
-              在下方输入问题，或先到侧栏「模型配置」填写 API 密钥
-            </p>
-          </div>
-        )}
+          )}
 
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} msg={msg} />
-        ))}
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} />
+          ))}
 
-        {isStreaming && (
-          <div className="message assistant streaming">
-            <div className="message-row">
-              <span className="message-avatar message-avatar--assistant" aria-label="助手">
-                <IconBot />
-              </span>
-              <div className="message-col">
-                <div className="message-bubble">
-                  {streamingContent || "思考中…"}
-                  <span className="cursor" />
-                </div>
+          {isStreaming && (
+            <div className="message message--assistant message--streaming">
+              <div className="message-body message-body--md">
+                <MarkdownContent content={streamingContent} streaming />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {error && (
-          <div className="message system error-banner" onClick={() => clearError()}>
-            <div className="message-row">
-              <span className="message-avatar message-avatar--error" aria-label="错误">
-                !
-              </span>
-              <div className="message-col">
-                <div className="message-bubble is-error">{error}</div>
-              </div>
-            </div>
-          </div>
-        )}
+          {error && (
+            <button
+              type="button"
+              className="message message--error"
+              onClick={() => clearError()}
+              title="点击关闭"
+            >
+              <div className="message-body message-body--error">{error}</div>
+            </button>
+          )}
 
-        <div ref={bottomRef} />
+        </div>
       </div>
 
       <div className="input-bar">

@@ -25,6 +25,9 @@ interface ChatState {
   selectSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   newSession: () => void;
+  renameSession: (id: string, title: string) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
+  pinSession: (id: string, pinned: boolean) => Promise<void>;
   clearError: () => void;
   respondPermission: (requestId: string, allowed: boolean) => Promise<void>;
 }
@@ -172,6 +175,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         activeSessionId: id,
         activeSession: session,
         streamingContent: "",
+        isStreaming: false,
         error: null,
       });
     },
@@ -244,6 +248,48 @@ export const useChatStore = create<ChatState>((set, get) => {
         isStreaming: false,
         error: null,
       });
+    },
+
+    renameSession: async (id: string, title: string) => {
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      await invoke("session_rename", { sessionId: id, title: trimmed });
+      set((s) => ({
+        sessions: s.sessions.map((item) =>
+          item.id === id ? { ...item, title: trimmed } : item
+        ),
+        activeSession:
+          s.activeSession?.id === id
+            ? { ...s.activeSession, title: trimmed }
+            : s.activeSession,
+      }));
+      await get().loadSessions();
+    },
+
+    deleteSession: async (id: string) => {
+      await invoke("session_delete", { sessionId: id });
+      const { activeSessionId } = get();
+      set((s) => ({
+        sessions: s.sessions.filter((item) => item.id !== id),
+      }));
+      if (activeSessionId === id) {
+        get().newSession();
+      }
+      await get().loadSessions();
+    },
+
+    pinSession: async (id: string, pinned: boolean) => {
+      await invoke("session_pin", { sessionId: id, pinned });
+      set((s) => ({
+        sessions: s.sessions.map((item) =>
+          item.id === id ? { ...item, pinned } : item
+        ),
+        activeSession:
+          s.activeSession?.id === id
+            ? { ...s.activeSession, pinned }
+            : s.activeSession,
+      }));
+      await get().loadSessions();
     },
 
     respondPermission: async (requestId: string, allowed: boolean) => {
