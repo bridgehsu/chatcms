@@ -10,6 +10,7 @@ import {
   IconLock,
   IconMap,
   IconMcp,
+  IconMedia,
   IconMemory,
   IconProvider,
   IconSettings,
@@ -84,6 +85,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     label: "视频管理",
     description: "视频列表：上传、AI 生成与网页导入成片",
     Icon: IconVideos,
+  },
+  {
+    kind: "leaf",
+    path: "/media-platforms",
+    label: "媒体管理",
+    description: "维护各平台发布/采集注入页与脚本（草稿 / 已发布）",
+    Icon: IconMedia,
   },
   {
     kind: "leaf",
@@ -196,6 +204,9 @@ const leafForPath = (pathname: string) => {
 export const titleForPath = (pathname: string): string => {
   if (pathname === "/images/generate") return "AI 生成图片";
   if (pathname === "/videos/generate") return "AI 生成视频";
+  if (pathname.match(/^\/media-platforms\/[^/]+\/collect-script$/))
+    return "采集脚本";
+  if (pathname.match(/^\/media-platforms\/[^/]+\/script$/)) return "填表脚本";
   return leafForPath(pathname)?.label ?? "ChatCMS";
 };
 
@@ -206,6 +217,12 @@ export const subtitleForPath = (pathname: string): string | undefined => {
   }
   if (pathname === "/videos/generate") {
     return "填写提示词生成视频，完成后回到视频列表";
+  }
+  if (pathname.match(/^\/media-platforms\/[^/]+\/collect-script$/)) {
+    return "编辑采集草稿并发布；扩展桥仅消费已发布采集脚本";
+  }
+  if (pathname.match(/^\/media-platforms\/[^/]+\/script$/)) {
+    return "编辑草稿并发布；扩展桥仅消费已发布脚本";
   }
   return leafForPath(pathname)?.description;
 };

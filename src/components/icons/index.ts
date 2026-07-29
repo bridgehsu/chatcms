@@ -6,6 +6,7 @@ export { IconImages } from "./IconImages";
 export { IconContent } from "./IconContent";
 export { IconVideos } from "./IconVideos";
 export { IconAccounts } from "./IconAccounts";
+export { IconMedia } from "./IconMedia";
 export { IconCron } from "./IconCron";
 export { IconSkills } from "./IconSkills";
 export { IconAgents } from "./IconAgents";

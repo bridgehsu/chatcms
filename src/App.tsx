@@ -6,6 +6,11 @@ import { ContentPage } from "@/views/content";
 import { ImagesPage, ImageGeneratePage } from "@/views/images";
 import { VideosPage, VideoGeneratePage } from "@/views/videos";
 import { AccountsPage } from "@/views/accounts";
+import {
+  MediaPlatformsPage,
+  MediaScriptPage,
+  CollectScriptPage,
+} from "@/views/media-platforms";
 import { SchedulesPage, WorkflowEditorPage } from "@/views/schedules";
 import { SkillsPage } from "@/views/skills";
 import { AgentsPage } from "@/views/agents";
@@ -30,6 +35,15 @@ const App = () => (
         <Route path="images/generate" element={<ImageGeneratePage />} />
         <Route path="videos" element={<VideosPage />} />
         <Route path="videos/generate" element={<VideoGeneratePage />} />
+        <Route path="media-platforms" element={<MediaPlatformsPage />} />
+        <Route
+          path="media-platforms/:platformId/script"
+          element={<MediaScriptPage />}
+        />
+        <Route
+          path="media-platforms/:platformId/collect-script"
+          element={<CollectScriptPage />}
+        />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="schedules" element={<SchedulesPage />} />
         <Route path="schedules/:projectId" element={<WorkflowEditorPage />} />

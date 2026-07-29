@@ -7,6 +7,7 @@ mod config;
 mod images;
 mod knowledge;
 mod mcp;
+mod media_platforms;
 mod memory;
 mod permission;
 mod persist;
@@ -964,6 +965,163 @@ fn account_remove(app: tauri::AppHandle, id: String) -> Result<(), String> {
     accounts::remove(&app, id)
 }
 
+// ── Media platforms / publish scripts ─────────────────────────────────────────
+
+#[tauri::command]
+fn media_platform_list(app: tauri::AppHandle) -> Vec<media_platforms::MediaPlatform> {
+    media_platforms::list_platforms(&app)
+}
+
+#[tauri::command]
+fn media_platform_list_page(
+    app: tauri::AppHandle,
+    query: Option<String>,
+    kind: Option<String>,
+    page: u32,
+    page_size: u32,
+) -> media_platforms::MediaPlatformPage {
+    media_platforms::list_platforms_page(&app, query, kind, page, page_size)
+}
+
+#[tauri::command]
+fn media_platform_get(
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<media_platforms::MediaPlatform, String> {
+    media_platforms::get_platform(&app, &id).ok_or_else(|| "平台不存在".into())
+}
+
+#[tauri::command]
+fn media_platform_upsert(
+    app: tauri::AppHandle,
+    id: Option<String>,
+    code: String,
+    name: String,
+    kind: String,
+    inject_url: String,
+    home_url: String,
+    enabled: bool,
+    notes: String,
+) -> Result<media_platforms::MediaPlatform, String> {
+    media_platforms::upsert_platform(
+        &app,
+        id,
+        code,
+        name,
+        kind,
+        inject_url,
+        home_url,
+        enabled,
+        notes,
+    )
+}
+
+#[tauri::command]
+fn media_platform_set_enabled(
+    app: tauri::AppHandle,
+    id: String,
+    enabled: bool,
+) -> Result<media_platforms::MediaPlatform, String> {
+    media_platforms::set_platform_enabled(&app, id, enabled)
+}
+
+#[tauri::command]
+fn media_platform_remove(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    media_platforms::remove_platform(&app, id)
+}
+
+#[tauri::command]
+fn publish_script_get(
+    app: tauri::AppHandle,
+    platform_id: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::get_or_create_script(&app, platform_id)
+}
+
+#[tauri::command]
+fn publish_script_list(
+    app: tauri::AppHandle,
+    platform_id: Option<String>,
+) -> Vec<media_platforms::PublishScriptView> {
+    media_platforms::list_scripts(&app, platform_id)
+}
+
+#[tauri::command]
+fn publish_script_save_draft(
+    app: tauri::AppHandle,
+    platform_id: String,
+    draft_script: String,
+    match_url: String,
+    changelog: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::save_script_draft(&app, platform_id, draft_script, match_url, changelog)
+}
+
+#[tauri::command]
+fn publish_script_publish(
+    app: tauri::AppHandle,
+    platform_id: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::publish_script(&app, platform_id)
+}
+
+#[tauri::command]
+fn publish_script_discard_draft(
+    app: tauri::AppHandle,
+    platform_id: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::discard_script_draft(&app, platform_id)
+}
+
+#[tauri::command]
+fn collect_script_get(
+    app: tauri::AppHandle,
+    platform_id: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::get_or_create_collect_script(&app, platform_id)
+}
+
+#[tauri::command]
+fn collect_script_list(
+    app: tauri::AppHandle,
+    platform_id: Option<String>,
+) -> Vec<media_platforms::PublishScriptView> {
+    media_platforms::list_collect_scripts(&app, platform_id)
+}
+
+#[tauri::command]
+fn collect_script_save_draft(
+    app: tauri::AppHandle,
+    platform_id: String,
+    draft_script: String,
+    match_url: String,
+    changelog: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::save_collect_script_draft(
+        &app,
+        platform_id,
+        draft_script,
+        match_url,
+        changelog,
+    )
+}
+
+#[tauri::command]
+fn collect_script_publish(
+    app: tauri::AppHandle,
+    platform_id: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::publish_collect_script(&app, platform_id)
+}
+
+#[tauri::command]
+fn collect_script_discard_draft(
+    app: tauri::AppHandle,
+    platform_id: String,
+) -> Result<media_platforms::PublishScriptView, String> {
+    media_platforms::discard_collect_script_draft(&app, platform_id)
+}
+
 // ── Schedule projects / workflows ─────────────────────────────────────────────
 
 #[tauri::command]
@@ -1328,6 +1486,22 @@ pub fn run() {
             account_add,
             account_update,
             account_remove,
+            media_platform_list,
+            media_platform_list_page,
+            media_platform_get,
+            media_platform_upsert,
+            media_platform_set_enabled,
+            media_platform_remove,
+            publish_script_get,
+            publish_script_list,
+            publish_script_save_draft,
+            publish_script_publish,
+            publish_script_discard_draft,
+            collect_script_get,
+            collect_script_list,
+            collect_script_save_draft,
+            collect_script_publish,
+            collect_script_discard_draft,
             schedule_list,
             schedule_get,
             schedule_add,

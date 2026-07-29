@@ -3309,6 +3309,46 @@ body,
 .mcp-form-error { color: #ff6b6b; font-size: 12px; }
 .mcp-form-ok { color: #3ecf8e; font-size: 12px; }
 
+/* ── Media platforms / publish scripts ────────────────────────────────────── */
+.media-script-back {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.media-script-back:hover {
+  color: var(--accent);
+}
+.media-script-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.media-script-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.media-script-editor {
+  width: 100%;
+  min-height: 360px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated, var(--bg));
+  color: var(--text);
+  outline: none;
+}
+.media-script-editor:focus {
+  border-color: var(--accent);
+}
+
 /* ── Publish to browser ───────────────────────────────────────────────────── */
 .publish-modal__content {
   width: 100%;

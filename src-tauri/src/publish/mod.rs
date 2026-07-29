@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use axum::body::Body;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, post};
@@ -19,6 +19,7 @@ use tauri::AppHandle;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
+use crate::media_platforms;
 use crate::persist;
 
 pub const BRIDGE_PORT: u16 = 17890;
@@ -166,6 +167,9 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
         .route("/api/draft/{id}", get(get_draft))
         .route("/media/import", post(import_media))
         .route("/media/{kind}/{id}", get(get_media))
+        .route("/publish/platforms", get(list_publish_platforms))
+        .route("/publish/script", get(get_publish_script))
+        .route("/collect/script", get(get_collect_script))
         .route("/health", get(|| async { "ok" }))
         .merge(crate::chat_bridge::routes())
         .layer(cors)
@@ -199,6 +203,69 @@ async fn get_draft(
     match bridge.get_draft(&id) {
         Some(d) => Json(d).into_response(),
         None => (StatusCode::NOT_FOUND, "draft not found").into_response(),
+    }
+}
+
+async fn list_publish_platforms(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
+    };
+    Json(media_platforms::bridge_list_platforms(&app)).into_response()
+}
+
+#[derive(Debug, Deserialize)]
+struct PublishScriptQuery {
+    /// 平台 code（如 DYNAMIC_REDNOTE）或内部 id
+    platform: String,
+    #[serde(default)]
+    kind: Option<String>,
+}
+
+async fn get_publish_script(
+    State(bridge): State<PublishBridge>,
+    Query(q): Query<PublishScriptQuery>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
+    };
+    match media_platforms::bridge_get_script(&app, &q.platform) {
+        Ok(script) => {
+            if let Some(kind) = q.kind.filter(|k| !k.trim().is_empty()) {
+                if !script.kind.eq_ignore_ascii_case(kind.trim()) {
+                    return (
+                        StatusCode::NOT_FOUND,
+                        format!("脚本类型不匹配，期望 {}，实际 {}", kind, script.kind),
+                    )
+                        .into_response();
+                }
+            }
+            Json(script).into_response()
+        }
+        Err(e) => (StatusCode::NOT_FOUND, e).into_response(),
+    }
+}
+
+async fn get_collect_script(
+    State(bridge): State<PublishBridge>,
+    Query(q): Query<PublishScriptQuery>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
+    };
+    match media_platforms::bridge_get_collect_script(&app, &q.platform) {
+        Ok(script) => {
+            if let Some(kind) = q.kind.filter(|k| !k.trim().is_empty()) {
+                if !script.kind.eq_ignore_ascii_case(kind.trim()) {
+                    return (
+                        StatusCode::NOT_FOUND,
+                        format!("脚本类型不匹配，期望 {}，实际 {}", kind, script.kind),
+                    )
+                        .into_response();
+                }
+            }
+            Json(script).into_response()
+        }
+        Err(e) => (StatusCode::NOT_FOUND, e).into_response(),
     }
 }
 

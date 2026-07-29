@@ -254,6 +254,52 @@ export interface PlatformAccount {
   updated_at: number;
 }
 
+// ── Media platforms / publish scripts ─────────────────────────────────────────
+
+export type MediaPublishKind = "dynamic" | "article" | "video";
+
+export interface MediaPlatform {
+  id: string;
+  code: string;
+  name: string;
+  kind: MediaPublishKind | string;
+  inject_url: string;
+  home_url: string;
+  enabled: boolean;
+  notes: string;
+  updated_at: number;
+}
+
+export interface MediaPlatformPageItem extends MediaPlatform {
+  script_is_published: boolean;
+  script_has_unpublished_draft: boolean;
+  script_published_version: number;
+  collect_script_is_published: boolean;
+  collect_script_has_unpublished_draft: boolean;
+  collect_script_published_version: number;
+}
+
+export interface MediaPlatformPage {
+  items: MediaPlatformPageItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface PublishScriptView {
+  id: string;
+  platform_id: string;
+  kind: string;
+  draft_script: string;
+  published_script: string;
+  published_version: number;
+  match_url: string;
+  changelog: string;
+  updated_at: number;
+  has_unpublished_draft: boolean;
+  is_published: boolean;
+}
+
 // ── Schedule / workflow ───────────────────────────────────────────────────────
 
 export type WorkflowNodeType =
