@@ -5,7 +5,33 @@ export type GeneratedImage = {
   size: string;
   path: string;
   created_at: number;
+  note?: string;
+  updated_at?: number;
 };
+
+export type MediaSourceKind = "ai" | "upload" | "web";
+
+export const mediaSourceOf = (model: string): MediaSourceKind => {
+  if (model === "web_import") return "web";
+  if (model === "local_upload") return "upload";
+  return "ai";
+};
+
+export const mediaSourceLabel = (model: string): string => {
+  switch (mediaSourceOf(model)) {
+    case "web":
+      return "网页";
+    case "upload":
+      return "上传";
+    default:
+      return "AI";
+  }
+};
+
+export const mediaUpdatedAt = (item: {
+  created_at: number;
+  updated_at?: number;
+}): number => (item.updated_at && item.updated_at > 0 ? item.updated_at : item.created_at);
 
 export const IMAGE_MODELS = [
   { value: "dall-e-3", label: "DALL·E 3" },

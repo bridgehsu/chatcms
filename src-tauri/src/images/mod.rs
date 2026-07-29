@@ -22,6 +22,12 @@ pub struct GeneratedImage {
     /// 绝对路径
     pub path: String,
     pub created_at: i64,
+    /// 备注
+    #[serde(default)]
+    pub note: String,
+    /// 最近修改时间；旧数据缺省时为 0，前端回退 created_at
+    #[serde(default)]
+    pub updated_at: i64,
 }
 
 #[derive(Deserialize)]
@@ -166,13 +172,16 @@ pub async fn generate(
     let path = images_dir(app)?.join(format!("{id}.png"));
     fs::write(&path, &bytes).context("保存图片失败")?;
 
+    let ts = now_ms();
     let record = GeneratedImage {
         id,
         prompt,
         model,
         size,
         path: path.to_string_lossy().to_string(),
-        created_at: now_ms(),
+        created_at: ts,
+        note: String::new(),
+        updated_at: ts,
     };
 
     let mut list = crate::persist::load_images(app);
@@ -180,6 +189,206 @@ pub async fn generate(
     crate::persist::save_images(app, &list);
 
     Ok(record)
+}
+
+/// 从网页 URL 下载并写入图片库（扩展「保存素材」）。
+pub async fn import_from_url(
+    app: &AppHandle,
+    url: &str,
+    page_url: Option<&str>,
+    title: Option<&str>,
+) -> Result<GeneratedImage> {
+    const MAX_BYTES: usize = 20 * 1024 * 1024;
+    let url = url.trim();
+    if url.is_empty() {
+        bail!("图片地址为空");
+    }
+    if url.starts_with("data:") || url.starts_with("blob:") {
+        bail!("不支持 data/blob 地址");
+    }
+
+    let client = Client::new();
+    let mut req = client.get(url);
+    if let Some(referer) = page_url.map(str::trim).filter(|s| !s.is_empty()) {
+        req = req.header("Referer", referer);
+        if let Ok(origin) = reqwest::Url::parse(referer) {
+            let origin = origin.origin().ascii_serialization();
+            req = req.header("Origin", origin);
+        }
+    }
+    req = req
+        .header(
+            "User-Agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        )
+        .header("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8");
+
+    let resp = req.send().await.context("下载图片失败")?;
+    let status = resp.status();
+    if !status.is_success() {
+        bail!("下载图片失败 ({status})");
+    }
+    let content_type = resp
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+    let bytes = resp.bytes().await.context("读取图片内容失败")?;
+    if bytes.len() > MAX_BYTES {
+        bail!("图片超过 20MB 上限");
+    }
+    import_bytes(app, bytes.to_vec(), &content_type, url, title, "web_import")
+}
+
+/// 扩展已拉取 / 本机上传的字节直接入库。
+pub fn import_bytes(
+    app: &AppHandle,
+    bytes: Vec<u8>,
+    content_type: &str,
+    source_hint: &str,
+    title: Option<&str>,
+    model: &str,
+) -> Result<GeneratedImage> {
+    const MAX_BYTES: usize = 20 * 1024 * 1024;
+    if bytes.is_empty() {
+        bail!("图片内容为空");
+    }
+    if bytes.len() > MAX_BYTES {
+        bail!("图片超过 20MB 上限");
+    }
+    let ct = content_type.to_lowercase();
+    if ct.contains("text/html") || ct.contains("application/json") {
+        bail!("地址返回的不是图片（可能被防盗链拦截）");
+    }
+    if !looks_like_image(&bytes) && !ct.starts_with("image/") {
+        bail!("内容不是有效图片");
+    }
+
+    let ext = guess_image_ext(source_hint, content_type);
+    let id = Uuid::new_v4().to_string();
+    let path = images_dir(app)?.join(format!("{id}.{ext}"));
+    fs::write(&path, &bytes).context("保存图片失败")?;
+
+    let prompt = title
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(source_hint)
+        .chars()
+        .take(200)
+        .collect::<String>();
+
+    let model = if model.trim().is_empty() {
+        "local_upload".to_string()
+    } else {
+        model.trim().to_string()
+    };
+
+    let ts = now_ms();
+    let record = GeneratedImage {
+        id,
+        prompt,
+        model,
+        size: "imported".into(),
+        path: path.to_string_lossy().to_string(),
+        created_at: ts,
+        note: String::new(),
+        updated_at: ts,
+    };
+
+    let mut list = crate::persist::load_images(app);
+    list.insert(0, record.clone());
+    crate::persist::save_images(app, &list);
+    Ok(record)
+}
+
+/// 本机上传：base64 → 图片库。
+pub fn upload_base64(
+    app: &AppHandle,
+    data_base64: &str,
+    filename: &str,
+    content_type: Option<&str>,
+) -> Result<GeneratedImage> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data_base64.trim())
+        .context("图片 Base64 解码失败")?;
+    let name = filename.trim();
+    let title = if name.is_empty() { None } else { Some(name) };
+    let ct = content_type.unwrap_or("").trim();
+    let hint = if name.is_empty() { "upload.png" } else { name };
+    import_bytes(app, bytes, ct, hint, title, "local_upload")
+}
+
+/// 更新名称与备注。
+pub fn update(
+    app: &AppHandle,
+    id: String,
+    title: String,
+    note: String,
+) -> Result<GeneratedImage> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        bail!("名称不能为空");
+    }
+    let note = note.chars().take(500).collect::<String>();
+    let mut list = crate::persist::load_images(app);
+    let Some(item) = list.iter_mut().find(|i| i.id == id) else {
+        bail!("图片不存在");
+    };
+    item.prompt = title.chars().take(200).collect();
+    item.note = note;
+    item.updated_at = now_ms();
+    let updated = item.clone();
+    crate::persist::save_images(app, &list);
+    Ok(updated)
+}
+
+fn looks_like_image(bytes: &[u8]) -> bool {
+    if bytes.len() < 12 {
+        return false;
+    }
+    // JPEG / PNG / GIF / WEBP
+    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        return true;
+    }
+    if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
+        return true;
+    }
+    if bytes.starts_with(b"GIF8") {
+        return true;
+    }
+    if bytes.starts_with(b"RIFF") && bytes[8..12] == *b"WEBP" {
+        return true;
+    }
+    false
+}
+
+fn guess_image_ext(url: &str, content_type: &str) -> &'static str {
+    let ct = content_type.to_lowercase();
+    if ct.contains("jpeg") || ct.contains("jpg") {
+        return "jpg";
+    }
+    if ct.contains("webp") {
+        return "webp";
+    }
+    if ct.contains("gif") {
+        return "gif";
+    }
+    if ct.contains("png") {
+        return "png";
+    }
+    let path = url.split('?').next().unwrap_or(url).to_lowercase();
+    if path.ends_with(".jpg") || path.ends_with(".jpeg") {
+        return "jpg";
+    }
+    if path.ends_with(".webp") {
+        return "webp";
+    }
+    if path.ends_with(".gif") {
+        return "gif";
+    }
+    "png"
 }
 
 pub fn list(app: &AppHandle) -> Vec<GeneratedImage> {

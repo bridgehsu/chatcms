@@ -51,9 +51,10 @@ src/
 │   ├── mcp/                # MCP 管理 · 表格/预设/工具列表
 │   ├── permissions/        # 权限模式面板组件（路由在 settings）
 │   ├── model-config/       # 模型配置表格 + 弹窗 CRUD
-│   └── settings/           # 系统设置页：权限 / 记忆 / 渠道
+│   ├── settings/           # 系统设置页：权限 / 记忆 / 渠道
+│   └── publish/            # 发布到浏览器插件（自动填表桥接弹窗）
 ├── components/
-│   ├── PlaceholderPage.tsx
+│   ├── Soon.tsx
 │   └── icons/
 ├── hooks/
 │   └── useTauri.ts
@@ -69,7 +70,8 @@ src/
 │   ├── modelPresets.ts     # 模型预设（Claude/GPT/DeepSeek/Kimi/千问）
 │   ├── platformPresets.ts  # 内容平台预设（微信/抖音/小红书等）
 │   ├── mcpPresets.ts       # 常用 MCP 服务器预设
-│   └── channelPresets.ts   # 聊天渠道目录（Telegram/Discord/飞书等）
+│   ├── channelPresets.ts   # 聊天渠道目录（Telegram/Discord/飞书等）
+│   └── publishPlatforms.ts # 浏览器发布平台（对齐 chatcms-extesion）
 └── types/
     └── index.ts
 ```
@@ -95,6 +97,7 @@ src-tauri/src/
 ├── memory/mod.rs        # Session / Message
 ├── knowledge/mod.rs     # 知识库检索 → system prompt
 ├── channels/mod.rs      # 多 IM 渠道（各平台可并行；同 kind 一份；现仅 Telegram 运行时）
+├── publish/mod.rs       # 本机发布桥 127.0.0.1:17890 → 浏览器插件自动填表
 ├── accounts/mod.rs      # 多平台账号与密钥 CRUD
 ├── schedules/mod.rs     # 任务调度项目 + 工作流图 CRUD
 ├── skills/mod.rs        # OpenClaw 风格 Skills（SKILL.md）+ 提示词注入

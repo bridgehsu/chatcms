@@ -3,8 +3,8 @@ import { AppLayout } from "@/layout/AppLayout";
 import { ChatPage } from "@/views/chat";
 import { MapPage } from "@/views/map";
 import { ContentPage } from "@/views/content";
-import { ImagesPage } from "@/views/images";
-import { VideosPage } from "@/views/videos";
+import { ImagesPage, ImageGeneratePage } from "@/views/images";
+import { VideosPage, VideoGeneratePage } from "@/views/videos";
 import { AccountsPage } from "@/views/accounts";
 import { SchedulesPage, WorkflowEditorPage } from "@/views/schedules";
 import { SkillsPage } from "@/views/skills";
@@ -27,7 +27,9 @@ const App = () => (
         <Route path="map" element={<MapPage />} />
         <Route path="content" element={<ContentPage />} />
         <Route path="images" element={<ImagesPage />} />
+        <Route path="images/generate" element={<ImageGeneratePage />} />
         <Route path="videos" element={<VideosPage />} />
+        <Route path="videos/generate" element={<VideoGeneratePage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="schedules" element={<SchedulesPage />} />
         <Route path="schedules/:projectId" element={<WorkflowEditorPage />} />

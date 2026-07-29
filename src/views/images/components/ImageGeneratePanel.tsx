@@ -22,23 +22,14 @@ export const ImageGeneratePanel = ({ busy, error, onGenerate, onClearError }: Pr
   };
 
   return (
-    <section className="images-generate">
-      <header className="images-generate__head">
-        <div>
-          <h2 className="images-generate__title">AI 生成图片</h2>
-          <p className="images-generate__desc">
-            使用当前模型配置中的 OpenAI 兼容接口生成并自动保存
-          </p>
-        </div>
-      </header>
-
+    <div className="images-generate images-generate--page">
       <label className="images-generate__label">提示词</label>
       <textarea
         className="images-generate__prompt"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         placeholder="描述你想生成的画面，例如：赛博朋克风格的城市夜景，霓虹灯倒映在雨后街道…"
-        rows={5}
+        rows={6}
       />
 
       <div className="images-generate__row">
@@ -72,6 +63,6 @@ export const ImageGeneratePanel = ({ busy, error, onGenerate, onClearError }: Pr
       >
         {busy ? "生成中…" : "生成并保存"}
       </button>
-    </section>
+    </div>
   );
 };

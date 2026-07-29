@@ -1,8 +1,10 @@
 import { ImagesBoard } from "./components/ImagesBoard";
 
-/** 图片管理 · AI 生图与保存 */
+export { ImageGeneratePage } from "./components/ImageGeneratePage";
+
+/** 图片管理 · 列表素材库 */
 export const ImagesPage = () => (
-  <div className="page page-scroll images-page">
+  <div className="page page-scroll">
     <ImagesBoard />
   </div>
 );

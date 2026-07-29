@@ -75,14 +75,14 @@ export const NAV_ENTRIES: NavEntry[] = [
     kind: "leaf",
     path: "/images",
     label: "图片管理",
-    description: "AI 生图与素材管理，文件保存在本机",
+    description: "图片列表：上传、AI 生成与网页导入素材",
     Icon: IconImages,
   },
   {
     kind: "leaf",
     path: "/videos",
     label: "视频管理",
-    description: "AI 生视频与成片管理，文件保存在本机",
+    description: "视频列表：上传、AI 生成与网页导入成片",
     Icon: IconVideos,
   },
   {
@@ -193,12 +193,22 @@ const leafForPath = (pathname: string) => {
   return undefined;
 };
 
-export const titleForPath = (pathname: string): string =>
-  leafForPath(pathname)?.label ?? "ChatCMS";
+export const titleForPath = (pathname: string): string => {
+  if (pathname === "/images/generate") return "AI 生成图片";
+  if (pathname === "/videos/generate") return "AI 生成视频";
+  return leafForPath(pathname)?.label ?? "ChatCMS";
+};
 
 /** 顶部标题下方的页面说明 */
-export const subtitleForPath = (pathname: string): string | undefined =>
-  leafForPath(pathname)?.description;
+export const subtitleForPath = (pathname: string): string | undefined => {
+  if (pathname === "/images/generate") {
+    return "填写提示词生成图片，完成后回到图片列表";
+  }
+  if (pathname === "/videos/generate") {
+    return "填写提示词生成视频，完成后回到视频列表";
+  }
+  return leafForPath(pathname)?.description;
+};
 
 /** 当前路径是否属于某分组 */
 export const groupContainsPath = (group: NavGroup, pathname: string): boolean =>

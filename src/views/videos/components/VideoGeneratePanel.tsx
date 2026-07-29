@@ -28,23 +28,14 @@ export const VideoGeneratePanel = ({ busy, error, onGenerate, onClearError }: Pr
   };
 
   return (
-    <section className="images-generate">
-      <header className="images-generate__head">
-        <div>
-          <h2 className="images-generate__title">AI 生成视频</h2>
-          <p className="images-generate__desc">
-            使用当前模型配置的 OpenAI Videos 接口（如 Sora 2）异步生成并自动保存；可能需要数分钟
-          </p>
-        </div>
-      </header>
-
+    <div className="images-generate images-generate--page">
       <label className="images-generate__label">提示词</label>
       <textarea
         className="images-generate__prompt"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         placeholder="描述镜头与运动，例如：雨后街道的霓虹倒影，镜头缓慢推进，电影感光影…"
-        rows={5}
+        rows={6}
       />
 
       <div className="videos-generate__row">
@@ -87,6 +78,6 @@ export const VideoGeneratePanel = ({ busy, error, onGenerate, onClearError }: Pr
       >
         {busy ? "生成中，请稍候…" : "生成并保存"}
       </button>
-    </section>
+    </div>
   );
 };

@@ -7,7 +7,16 @@ export type GeneratedVideo = {
   path: string;
   created_at: number;
   remote_id?: string | null;
+  note?: string;
+  updated_at?: number;
 };
+
+export {
+  mediaSourceOf,
+  mediaSourceLabel,
+  mediaUpdatedAt,
+  type MediaSourceKind,
+} from "../images/types";
 
 export const VIDEO_MODELS = [
   { value: "sora-2", label: "Sora 2" },

@@ -25,6 +25,12 @@ pub struct GeneratedVideo {
     pub created_at: i64,
     /// 远端 job id（若有）
     pub remote_id: Option<String>,
+    /// 备注
+    #[serde(default)]
+    pub note: String,
+    /// 最近修改时间；旧数据缺省时为 0
+    #[serde(default)]
+    pub updated_at: i64,
 }
 
 #[derive(Deserialize)]
@@ -263,6 +269,7 @@ fn save_bytes(
     let path = videos_dir(app)?.join(format!("{id}.mp4"));
     fs::write(&path, &bytes).context("保存视频失败")?;
 
+    let ts = now_ms();
     let record = GeneratedVideo {
         id,
         prompt,
@@ -270,14 +277,194 @@ fn save_bytes(
         size,
         seconds,
         path: path.to_string_lossy().to_string(),
-        created_at: now_ms(),
+        created_at: ts,
         remote_id,
+        note: String::new(),
+        updated_at: ts,
     };
 
     let mut list = crate::persist::load_videos(app);
     list.insert(0, record.clone());
     crate::persist::save_videos(app, &list);
     Ok(record)
+}
+
+/// 从网页 URL 下载并写入视频库（扩展「保存素材」）。
+pub async fn import_from_url(
+    app: &AppHandle,
+    url: &str,
+    page_url: Option<&str>,
+    title: Option<&str>,
+) -> Result<GeneratedVideo> {
+    const MAX_BYTES: usize = 200 * 1024 * 1024;
+    let url = url.trim();
+    if url.is_empty() {
+        bail!("视频地址为空");
+    }
+    if url.starts_with("data:") || url.starts_with("blob:") {
+        bail!("不支持 data/blob 地址");
+    }
+    // 常见流式地址无法整文件落盘
+    let lower = url.to_lowercase();
+    if lower.contains(".m3u8") || lower.contains("application/vnd.apple.mpegurl") {
+        bail!("不支持 HLS 流地址");
+    }
+
+    let client = Client::new();
+    let mut req = client.get(url);
+    if let Some(referer) = page_url.map(str::trim).filter(|s| !s.is_empty()) {
+        req = req.header("Referer", referer);
+        if let Ok(origin) = reqwest::Url::parse(referer) {
+            let origin = origin.origin().ascii_serialization();
+            req = req.header("Origin", origin);
+        }
+    }
+    req = req
+        .header(
+            "User-Agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        )
+        .header("Accept", "video/*,*/*;q=0.8");
+
+    let resp = req.send().await.context("下载视频失败")?;
+    let status = resp.status();
+    if !status.is_success() {
+        bail!("下载视频失败 ({status})");
+    }
+    let content_type = resp
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+    let bytes = resp.bytes().await.context("读取视频内容失败")?;
+    if bytes.len() > MAX_BYTES {
+        bail!("视频超过 200MB 上限");
+    }
+    import_bytes(app, bytes.to_vec(), &content_type, url, title, "web_import")
+}
+
+/// 扩展已拉取 / 本机上传的字节直接入库。
+pub fn import_bytes(
+    app: &AppHandle,
+    bytes: Vec<u8>,
+    content_type: &str,
+    source_hint: &str,
+    title: Option<&str>,
+    model: &str,
+) -> Result<GeneratedVideo> {
+    const MAX_BYTES: usize = 200 * 1024 * 1024;
+    if bytes.is_empty() {
+        bail!("视频内容为空");
+    }
+    if bytes.len() > MAX_BYTES {
+        bail!("视频超过 200MB 上限");
+    }
+    let ct = content_type.to_lowercase();
+    if ct.contains("text/html") || ct.contains("application/json") {
+        bail!("地址返回的不是视频（可能被防盗链拦截）");
+    }
+
+    let ext = guess_video_ext(source_hint, content_type);
+    let id = Uuid::new_v4().to_string();
+    let path = videos_dir(app)?.join(format!("{id}.{ext}"));
+    fs::write(&path, &bytes).context("保存视频失败")?;
+
+    let prompt = title
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(source_hint)
+        .chars()
+        .take(200)
+        .collect::<String>();
+
+    let model = if model.trim().is_empty() {
+        "local_upload".to_string()
+    } else {
+        model.trim().to_string()
+    };
+
+    let ts = now_ms();
+    let record = GeneratedVideo {
+        id,
+        prompt,
+        model,
+        size: "imported".into(),
+        seconds: "".into(),
+        path: path.to_string_lossy().to_string(),
+        created_at: ts,
+        remote_id: None,
+        note: String::new(),
+        updated_at: ts,
+    };
+
+    let mut list = crate::persist::load_videos(app);
+    list.insert(0, record.clone());
+    crate::persist::save_videos(app, &list);
+    Ok(record)
+}
+
+/// 本机上传：base64 → 视频库。
+pub fn upload_base64(
+    app: &AppHandle,
+    data_base64: &str,
+    filename: &str,
+    content_type: Option<&str>,
+) -> Result<GeneratedVideo> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data_base64.trim())
+        .context("视频 Base64 解码失败")?;
+    let name = filename.trim();
+    let title = if name.is_empty() { None } else { Some(name) };
+    let ct = content_type.unwrap_or("").trim();
+    let hint = if name.is_empty() { "upload.mp4" } else { name };
+    import_bytes(app, bytes, ct, hint, title, "local_upload")
+}
+
+/// 更新名称与备注。
+pub fn update(
+    app: &AppHandle,
+    id: String,
+    title: String,
+    note: String,
+) -> Result<GeneratedVideo> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        bail!("名称不能为空");
+    }
+    let note = note.chars().take(500).collect::<String>();
+    let mut list = crate::persist::load_videos(app);
+    let Some(item) = list.iter_mut().find(|i| i.id == id) else {
+        bail!("视频不存在");
+    };
+    item.prompt = title.chars().take(200).collect();
+    item.note = note;
+    item.updated_at = now_ms();
+    let updated = item.clone();
+    crate::persist::save_videos(app, &list);
+    Ok(updated)
+}
+
+fn guess_video_ext(url: &str, content_type: &str) -> &'static str {
+    let ct = content_type.to_lowercase();
+    if ct.contains("webm") {
+        return "webm";
+    }
+    if ct.contains("quicktime") || ct.contains("mov") {
+        return "mov";
+    }
+    if ct.contains("mp4") || ct.contains("mpeg") {
+        return "mp4";
+    }
+    let path = url.split('?').next().unwrap_or(url).to_lowercase();
+    if path.ends_with(".webm") {
+        return "webm";
+    }
+    if path.ends_with(".mov") {
+        return "mov";
+    }
+    "mp4"
 }
 
 pub fn list(app: &AppHandle) -> Vec<GeneratedVideo> {

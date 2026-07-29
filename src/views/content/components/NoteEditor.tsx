@@ -3,9 +3,10 @@ import type { AiNote } from "../types";
 type Props = {
   note: AiNote | null;
   onChange: (patch: Partial<Pick<AiNote, "title" | "content" | "icon">>) => void;
+  onPublish?: (note: AiNote) => void;
 };
 
-export const NoteEditor = ({ note, onChange }: Props) => {
+export const NoteEditor = ({ note, onChange, onPublish }: Props) => {
   if (!note) {
     return (
       <div className="note-editor note-editor--empty">
@@ -16,6 +17,16 @@ export const NoteEditor = ({ note, onChange }: Props) => {
 
   return (
     <div className="note-editor">
+      <div className="note-editor__toolbar">
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={!note.content.trim() && !note.title.trim()}
+          onClick={() => onPublish?.(note)}
+        >
+          发布到浏览器
+        </button>
+      </div>
       <div className="note-editor__canvas">
         <button
           type="button"

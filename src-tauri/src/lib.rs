@@ -2,6 +2,7 @@ mod agent;
 mod accounts;
 mod agents;
 mod channels;
+mod chat_bridge;
 mod config;
 mod images;
 mod knowledge;
@@ -10,6 +11,7 @@ mod memory;
 mod permission;
 mod persist;
 mod provider;
+mod publish;
 mod schedules;
 mod skills;
 mod tools;
@@ -20,6 +22,7 @@ use config::{AppConfig, ProviderConfig, ProviderKind, ProviderProfile, ProviderP
 use knowledge::KnowledgeEntry;
 use mcp::{McpManager, McpServerConfig, McpServerInfo};
 use memory::Session;
+use publish::PublishBridge;
 use serde_json::json;
 use tauri::{Manager, State};
 
@@ -818,6 +821,32 @@ fn image_delete(app: tauri::AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn image_upload(
+    app: tauri::AppHandle,
+    data_base64: String,
+    filename: String,
+    content_type: Option<String>,
+) -> Result<images::GeneratedImage, String> {
+    images::upload_base64(
+        &app,
+        &data_base64,
+        &filename,
+        content_type.as_deref(),
+    )
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn image_update(
+    app: tauri::AppHandle,
+    id: String,
+    title: String,
+    note: String,
+) -> Result<images::GeneratedImage, String> {
+    images::update(&app, id, title, note).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn image_data_url(path: String) -> Result<String, String> {
     images::read_data_url(path).map_err(|e| e.to_string())
 }
@@ -847,6 +876,32 @@ fn video_list(app: tauri::AppHandle) -> Vec<videos::GeneratedVideo> {
 #[tauri::command]
 fn video_delete(app: tauri::AppHandle, id: String) -> Result<(), String> {
     videos::delete(&app, id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn video_upload(
+    app: tauri::AppHandle,
+    data_base64: String,
+    filename: String,
+    content_type: Option<String>,
+) -> Result<videos::GeneratedVideo, String> {
+    videos::upload_base64(
+        &app,
+        &data_base64,
+        &filename,
+        content_type.as_deref(),
+    )
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn video_update(
+    app: tauri::AppHandle,
+    id: String,
+    title: String,
+    note: String,
+) -> Result<videos::GeneratedVideo, String> {
+    videos::update(&app, id, title, note).map_err(|e| e.to_string())
 }
 
 // ── Platform accounts ─────────────────────────────────────────────────────────
@@ -1145,6 +1200,22 @@ fn agent_remove(
     Ok(())
 }
 
+// ── Publish bridge（浏览器插件自动填表）──────────────────────────────────────
+
+#[tauri::command]
+async fn publish_to_browser(
+    app: tauri::AppHandle,
+    bridge: State<'_, PublishBridge>,
+    sync_data: serde_json::Value,
+) -> Result<String, String> {
+    publish::prepare_and_open(&bridge, &app, sync_data).await
+}
+
+#[tauri::command]
+fn publish_media_base() -> String {
+    publish::PublishBridge::base_url()
+}
+
 // ── App bootstrap ─────────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -1153,9 +1224,15 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(AgentState::new())
+        .manage(PublishBridge::new())
         .setup(|app| {
             let handle = app.handle().clone();
             let state = handle.state::<AgentState>();
+            handle.state::<PublishBridge>().bind_app(handle.clone());
+            let bridge = (*app.state::<PublishBridge>()).clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = bridge.ensure_running().await;
+            });
 
             if let Some(mut config) = persist::load_config(&handle) {
                 config.ensure_profiles();
@@ -1239,10 +1316,14 @@ pub fn run() {
             image_generate,
             image_list,
             image_delete,
+            image_upload,
+            image_update,
             image_data_url,
             video_generate,
             video_list,
             video_delete,
+            video_upload,
+            video_update,
             account_list,
             account_add,
             account_update,
@@ -1263,6 +1344,8 @@ pub fn run() {
             agent_update,
             agent_activate,
             agent_remove,
+            publish_to_browser,
+            publish_media_base,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
