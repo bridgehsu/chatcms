@@ -1,3 +1,5 @@
+pub mod commands;
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};

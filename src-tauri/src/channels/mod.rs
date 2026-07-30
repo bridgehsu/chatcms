@@ -1,6 +1,8 @@
 //! 外部频道：多 IM 渠道注册表；运行时目前仅 Telegram。
 //! 不同平台可同时启用；同一 kind（如 Telegram）仅一份配置 / 一个运行时。
 
+pub mod commands;
+
 use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

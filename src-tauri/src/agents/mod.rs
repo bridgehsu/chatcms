@@ -1,5 +1,7 @@
 //! OpenClaw 风格多 Agent：角色人格、技能白名单、默认启用。
 
+pub mod commands;
+
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use uuid::Uuid;

@@ -1,5 +1,7 @@
 //! AI 生视频：OpenAI Videos API（`/v1/videos`）异步任务 → 下载 MP4 落盘。
 
+pub mod commands;
+
 use anyhow::{bail, Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

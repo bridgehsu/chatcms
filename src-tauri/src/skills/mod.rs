@@ -1,6 +1,8 @@
 //! OpenClaw 风格 Skills：每个技能对应一份 SKILL.md（frontmatter + markdown 正文）。
 //! 启用的技能会进入 Agent 的 system prompt（目录 + 相关正文）。
 
+pub mod commands;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::AppHandle;

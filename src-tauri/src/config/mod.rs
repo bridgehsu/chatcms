@@ -1,3 +1,5 @@
+pub mod commands;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

@@ -1,5 +1,7 @@
 //! 权限内核：自定义模式域策略 → 会话例外 → 审计。
 
+pub mod commands;
+
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 

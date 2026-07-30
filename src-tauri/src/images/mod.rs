@@ -1,5 +1,7 @@
 //! AI 生图：OpenAI 兼容 `/v1/images/generations`，结果落盘并记入 store。
 
+pub mod commands;
+
 use anyhow::{bail, Context, Result};
 use base64::Engine;
 use reqwest::Client;

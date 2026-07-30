@@ -1,5 +1,7 @@
 //! 导航书签：扩展「导航」Tab 与桌面同源。
 
+pub mod commands;
+
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use uuid::Uuid;

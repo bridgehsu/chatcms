@@ -1,6 +1,8 @@
 //! 本机发布桥：把草稿与媒体暴露给浏览器插件（自动填表）。
 //! 默认监听 `127.0.0.1:17890`。
 
+pub mod commands;
+
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
