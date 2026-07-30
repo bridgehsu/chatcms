@@ -13,6 +13,7 @@ use crate::knowledge::KnowledgeEntry;
 use crate::mcp::McpServerConfig;
 use crate::media_platforms::{MediaPlatform, PublishScript};
 use crate::memory::Session;
+use crate::nav_bookmarks::NavBookmark;
 use crate::schedules::ScheduleProject;
 use crate::skills::Skill;
 use crate::videos::GeneratedVideo;
@@ -203,6 +204,23 @@ pub fn load_collect_scripts(app: &AppHandle) -> Vec<PublishScript> {
     };
     store
         .get("collect_scripts")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_nav_bookmarks(app: &AppHandle, bookmarks: &[NavBookmark]) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(bookmarks).unwrap_or_default();
+    store.set("nav_bookmarks", val);
+    let _ = store.save();
+}
+
+pub fn load_nav_bookmarks(app: &AppHandle) -> Vec<NavBookmark> {
+    let Some(store) = open(app) else {
+        return vec![];
+    };
+    store
+        .get("nav_bookmarks")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default()
 }

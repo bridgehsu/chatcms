@@ -2,6 +2,7 @@ export { IconSettings } from "./IconSettings";
 export { IconClose } from "./IconClose";
 export { IconChat } from "./IconChat";
 export { IconMap } from "./IconMap";
+export { IconNav } from "./IconNav";
 export { IconImages } from "./IconImages";
 export { IconContent } from "./IconContent";
 export { IconVideos } from "./IconVideos";

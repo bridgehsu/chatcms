@@ -11,6 +11,7 @@ import {
   IconMap,
   IconMcp,
   IconMedia,
+  IconNav,
   IconMemory,
   IconProvider,
   IconSettings,
@@ -64,6 +65,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     label: "业务地图",
     description: "分区入口、笔记与截止提醒，一览业务全貌",
     Icon: IconMap,
+  },
+  {
+    kind: "leaf",
+    path: "/nav",
+    label: "导航管理",
+    description: "维护快捷导航链接，与浏览器扩展「导航」Tab 同源",
+    Icon: IconNav,
   },
   {
     kind: "leaf",

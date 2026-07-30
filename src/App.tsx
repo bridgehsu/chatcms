@@ -2,6 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/layout/AppLayout";
 import { ChatPage } from "@/views/chat";
 import { MapPage } from "@/views/map";
+import { NavBookmarksPage } from "@/views/nav";
 import { ContentPage } from "@/views/content";
 import { ImagesPage, ImageGeneratePage } from "@/views/images";
 import { VideosPage, VideoGeneratePage } from "@/views/videos";
@@ -30,6 +31,7 @@ const App = () => (
         <Route index element={<Navigate to="/chat" replace />} />
         <Route path="chat" element={<ChatPage />} />
         <Route path="map" element={<MapPage />} />
+        <Route path="nav" element={<NavBookmarksPage />} />
         <Route path="content" element={<ContentPage />} />
         <Route path="images" element={<ImagesPage />} />
         <Route path="images/generate" element={<ImageGeneratePage />} />

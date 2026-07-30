@@ -9,6 +9,7 @@ mod knowledge;
 mod mcp;
 mod media_platforms;
 mod memory;
+mod nav_bookmarks;
 mod permission;
 mod persist;
 mod provider;
@@ -1122,6 +1123,30 @@ fn collect_script_discard_draft(
     media_platforms::discard_collect_script_draft(&app, platform_id)
 }
 
+// ── Nav bookmarks ─────────────────────────────────────────────────────────────
+
+#[tauri::command]
+fn nav_bookmark_list(app: tauri::AppHandle) -> Vec<nav_bookmarks::NavBookmark> {
+    nav_bookmarks::list(&app)
+}
+
+#[tauri::command]
+fn nav_bookmark_upsert(
+    app: tauri::AppHandle,
+    id: Option<String>,
+    title: String,
+    url: String,
+    note: String,
+    sort_order: Option<i32>,
+) -> Result<nav_bookmarks::NavBookmark, String> {
+    nav_bookmarks::upsert(&app, id, title, url, note, sort_order)
+}
+
+#[tauri::command]
+fn nav_bookmark_remove(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    nav_bookmarks::remove(&app, id)
+}
+
 // ── Schedule projects / workflows ─────────────────────────────────────────────
 
 #[tauri::command]
@@ -1502,6 +1527,9 @@ pub fn run() {
             collect_script_save_draft,
             collect_script_publish,
             collect_script_discard_draft,
+            nav_bookmark_list,
+            nav_bookmark_upsert,
+            nav_bookmark_remove,
             schedule_list,
             schedule_get,
             schedule_add,

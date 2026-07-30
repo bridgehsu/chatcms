@@ -300,6 +300,17 @@ export interface PublishScriptView {
   is_published: boolean;
 }
 
+// ── Nav bookmarks ─────────────────────────────────────────────────────────────
+
+export interface NavBookmark {
+  id: string;
+  title: string;
+  url: string;
+  note: string;
+  sort_order: number;
+  updated_at: number;
+}
+
 // ── Schedule / workflow ───────────────────────────────────────────────────────
 
 export type WorkflowNodeType =

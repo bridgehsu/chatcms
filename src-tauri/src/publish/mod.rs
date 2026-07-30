@@ -11,7 +11,7 @@ use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post, put};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -170,6 +170,11 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
         .route("/publish/platforms", get(list_publish_platforms))
         .route("/publish/script", get(get_publish_script))
         .route("/collect/script", get(get_collect_script))
+        .route("/nav/bookmarks", get(list_nav_bookmarks).post(create_nav_bookmark))
+        .route(
+            "/nav/bookmarks/{id}",
+            put(update_nav_bookmark).delete(delete_nav_bookmark),
+        )
         .route("/health", get(|| async { "ok" }))
         .merge(crate::chat_bridge::routes())
         .layer(cors)
@@ -265,6 +270,77 @@ async fn get_collect_script(
             }
             Json(script).into_response()
         }
+        Err(e) => (StatusCode::NOT_FOUND, e).into_response(),
+    }
+}
+
+async fn list_nav_bookmarks(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
+    };
+    Json(crate::nav_bookmarks::list(&app)).into_response()
+}
+
+#[derive(Debug, Deserialize)]
+struct NavBookmarkBody {
+    title: String,
+    url: String,
+    #[serde(default)]
+    note: String,
+    #[serde(default)]
+    sort_order: Option<i32>,
+}
+
+async fn create_nav_bookmark(
+    State(bridge): State<PublishBridge>,
+    Json(body): Json<NavBookmarkBody>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
+    };
+    match crate::nav_bookmarks::upsert(
+        &app,
+        None,
+        body.title,
+        body.url,
+        body.note,
+        body.sort_order,
+    ) {
+        Ok(item) => (StatusCode::CREATED, Json(item)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
+}
+
+async fn update_nav_bookmark(
+    State(bridge): State<PublishBridge>,
+    Path(id): Path<String>,
+    Json(body): Json<NavBookmarkBody>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
+    };
+    match crate::nav_bookmarks::upsert(
+        &app,
+        Some(id),
+        body.title,
+        body.url,
+        body.note,
+        body.sort_order,
+    ) {
+        Ok(item) => Json(item).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
+}
+
+async fn delete_nav_bookmark(
+    State(bridge): State<PublishBridge>,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
+    };
+    match crate::nav_bookmarks::remove(&app, id) {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => (StatusCode::NOT_FOUND, e).into_response(),
     }
 }
