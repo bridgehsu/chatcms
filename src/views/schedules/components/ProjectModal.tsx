@@ -57,10 +57,10 @@ export const ProjectModal = ({ mode, project, onClose, onSaved }: Props) => {
     };
     try {
       if (mode === "edit" && project) {
-        await invoke("schedule_update", { id: project.id, ...payload });
+        await invoke("plugin:schedules|schedule_update", { id: project.id, ...payload });
         await onSaved();
       } else {
-        const created = await invoke<ScheduleProject>("schedule_add", payload);
+        const created = await invoke<ScheduleProject>("plugin:schedules|schedule_add", payload);
         await onSaved(created);
       }
     } catch (e) {

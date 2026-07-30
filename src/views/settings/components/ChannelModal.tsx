@@ -73,7 +73,7 @@ export const ChannelModal = ({
       return;
     }
     setLoading(true);
-    void invoke<ChannelDetail>("channel_get", { kind })
+    void invoke<ChannelDetail>("plugin:channels|channel_get", { kind })
       .then((d) => {
         setToken(d.token ?? "");
         setAllowedIds((d.allowed_ids ?? []).join(", "));
@@ -100,7 +100,7 @@ export const ChannelModal = ({
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      await invoke("channel_update", {
+      await invoke("plugin:channels|channel_update", {
         kind,
         token: token.trim(),
         allowedIds: kind === "telegram" ? ids : null,

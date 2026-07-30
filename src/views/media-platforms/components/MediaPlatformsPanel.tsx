@@ -65,7 +65,7 @@ export const MediaPlatformsPanel = () => {
 
   const refresh = useCallback(
     async (pageNum: number) => {
-      const result = await invoke<MediaPlatformPage>("media_platform_list_page", {
+      const result = await invoke<MediaPlatformPage>("plugin:media_platforms|media_platform_list_page", {
         query: query.trim() || null,
         kind: kindFilter === ALL ? null : kindFilter,
         page: pageNum,
@@ -122,7 +122,7 @@ export const MediaPlatformsPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("media_platform_remove", { id });
+      await invoke("plugin:media_platforms|media_platform_remove", { id });
       if (editing?.id === id) closeModal();
       await refresh(safePage);
     } catch (e) {
@@ -136,7 +136,7 @@ export const MediaPlatformsPanel = () => {
     setBusy(`toggle-${p.id}`);
     setError("");
     try {
-      await invoke("media_platform_set_enabled", {
+      await invoke("plugin:media_platforms|media_platform_set_enabled", {
         id: p.id,
         enabled: !p.enabled,
       });

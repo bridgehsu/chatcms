@@ -94,9 +94,9 @@ export const SkillModal = ({ mode, skill, onClose, onSaved }: Props) => {
     };
     try {
       if (mode === "edit" && skill) {
-        await invoke("skill_update", { id: skill.id, ...payload });
+        await invoke("plugin:skills|skill_update", { id: skill.id, ...payload });
       } else {
-        await invoke("skill_add", payload);
+        await invoke("plugin:skills|skill_add", payload);
       }
       await onSaved();
     } catch (e) {

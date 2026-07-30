@@ -80,9 +80,9 @@ export const KnowledgeModal = ({ mode, entry, onClose, onSaved }: Props) => {
     };
     try {
       if (mode === "edit" && entry) {
-        await invoke("knowledge_update", { id: entry.id, ...payload });
+        await invoke("plugin:knowledge|knowledge_update", { id: entry.id, ...payload });
       } else {
-        await invoke("knowledge_add", payload);
+        await invoke("plugin:knowledge|knowledge_add", payload);
       }
       await onSaved();
     } catch (e) {

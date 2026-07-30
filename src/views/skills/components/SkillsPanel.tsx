@@ -37,7 +37,7 @@ export const SkillsPanel = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const refresh = async () => {
-    const list = await invoke<Skill[]>("skill_list");
+    const list = await invoke<Skill[]>("plugin:skills|skill_list");
     setSkills(list);
   };
 
@@ -90,7 +90,7 @@ export const SkillsPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("skill_remove", { id });
+      await invoke("plugin:skills|skill_remove", { id });
       await refresh();
     } catch (err) {
       setError(String(err));
@@ -104,7 +104,7 @@ export const SkillsPanel = () => {
     setBusy(`toggle-${s.id}`);
     setError("");
     try {
-      await invoke("skill_update", {
+      await invoke("plugin:skills|skill_update", {
         id: s.id,
         name: s.name,
         description: s.description,
@@ -128,7 +128,7 @@ export const SkillsPanel = () => {
     setBusy(`copy-${id}`);
     setError("");
     try {
-      const md = await invoke<string>("skill_export_md", { id });
+      const md = await invoke<string>("plugin:skills|skill_export_md", { id });
       await navigator.clipboard.writeText(md);
       setCopiedId(id);
       window.setTimeout(() => setCopiedId(null), 1500);

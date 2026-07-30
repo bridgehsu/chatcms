@@ -28,7 +28,7 @@ export const SchedulesPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    const list = await invoke<ScheduleProject[]>("schedule_list");
+    const list = await invoke<ScheduleProject[]>("plugin:schedules|schedule_list");
     setProjects(list);
   }, []);
 
@@ -68,7 +68,7 @@ export const SchedulesPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("schedule_remove", { id });
+      await invoke("plugin:schedules|schedule_remove", { id });
       await refresh();
     } catch (err) {
       setError(String(err));

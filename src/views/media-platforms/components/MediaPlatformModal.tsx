@@ -75,7 +75,7 @@ export const MediaPlatformModal = ({
     setError("");
     setBusy(true);
     try {
-      await invoke("media_platform_upsert", {
+      await invoke("plugin:media_platforms|media_platform_upsert", {
         id: mode === "edit" && platform ? platform.id : null,
         code: form.code.trim(),
         name: form.name.trim(),

@@ -26,7 +26,7 @@ export const NavBookmarksPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const list = await invoke<NavBookmark[]>("nav_bookmark_list");
+    const list = await invoke<NavBookmark[]>("plugin:nav_bookmarks|nav_bookmark_list");
     setItems(list);
   };
 
@@ -65,7 +65,7 @@ export const NavBookmarksPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("nav_bookmark_remove", { id });
+      await invoke("plugin:nav_bookmarks|nav_bookmark_remove", { id });
       if (editing?.id === id) closeModal();
       await refresh();
     } catch (e) {

@@ -41,7 +41,7 @@ export const AccountsPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const list = await invoke<PlatformAccount[]>("account_list");
+    const list = await invoke<PlatformAccount[]>("plugin:accounts|account_list");
     setAccounts(list);
   };
 
@@ -94,7 +94,7 @@ export const AccountsPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("account_remove", { id });
+      await invoke("plugin:accounts|account_remove", { id });
       if (editing?.id === id) closeModal();
       await refresh();
     } catch (e) {
@@ -108,7 +108,7 @@ export const AccountsPanel = () => {
     setBusy(`toggle-${a.id}`);
     setError("");
     try {
-      await invoke("account_update", {
+      await invoke("plugin:accounts|account_update", {
         id: a.id,
         name: a.name,
         platform: a.platform,

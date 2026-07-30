@@ -27,7 +27,7 @@ export const ChannelPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const list = await invoke<ChannelInfo[]>("channel_list");
+    const list = await invoke<ChannelInfo[]>("plugin:channels|channel_list");
     setChannels(list);
   };
 
@@ -84,7 +84,7 @@ export const ChannelPanel = () => {
     setBusy(`toggle-${c.kind}`);
     try {
       if (c.enabled) {
-        const list = await invoke<ChannelInfo[]>("channel_disable", {
+        const list = await invoke<ChannelInfo[]>("plugin:channels|channel_disable", {
           kind: c.kind,
         });
         setChannels(list);
@@ -98,7 +98,7 @@ export const ChannelPanel = () => {
           openEdit(c);
           return;
         }
-        const list = await invoke<ChannelInfo[]>("channel_enable", {
+        const list = await invoke<ChannelInfo[]>("plugin:channels|channel_enable", {
           kind: c.kind,
         });
         setChannels(list);

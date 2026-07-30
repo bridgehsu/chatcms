@@ -20,7 +20,7 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
     const cfg = await invoke<{
       modes: PermissionMode[];
       active_mode_id: string;
-    }>("permission_get");
+    }>("plugin:permission|permission_get");
     const modes = [...(cfg.modes ?? [])].sort(
       (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name),
     );
@@ -28,7 +28,7 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
     if (!activeModeId || !modes.some((m) => m.id === activeModeId)) {
       activeModeId = modes[0]?.id ?? "";
       if (activeModeId) {
-        await invoke("permission_mode_set_active", { id: activeModeId }).catch(
+        await invoke("plugin:permission|permission_mode_set_active", { id: activeModeId }).catch(
           () => undefined,
         );
       }
@@ -38,7 +38,7 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
 
   setActive: async (id: string) => {
     if (!id || id === get().activeModeId) return;
-    await invoke("permission_mode_set_active", { id });
+    await invoke("plugin:permission|permission_mode_set_active", { id });
     set({ activeModeId: id });
   },
 }));

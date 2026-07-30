@@ -87,7 +87,7 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
   }, [mode, agent]);
 
   useEffect(() => {
-    void invoke<Skill[]>("skill_list")
+    void invoke<Skill[]>("plugin:skills|skill_list")
       .then(setSkillOptions)
       .catch(console.error);
   }, []);
@@ -128,9 +128,9 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
     };
     try {
       if (mode === "edit" && agent) {
-        await invoke("agent_update", { id: agent.id, ...payload });
+        await invoke("plugin:agents|agent_update", { id: agent.id, ...payload });
       } else {
-        await invoke("agent_add", payload);
+        await invoke("plugin:agents|agent_add", payload);
       }
       await onSaved();
     } catch (e) {
