@@ -22,3 +22,12 @@ pub fn nav_bookmark_upsert(
 pub fn nav_bookmark_remove(app: AppHandle, id: String) -> Result<(), String> {
     super::remove(&app, id)
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("nav_bookmarks")
+        .invoke_handler(tauri::generate_handler![
+            nav_bookmark_list,
+            nav_bookmark_upsert,
+            nav_bookmark_remove,
+        ])
+        .build()
+}

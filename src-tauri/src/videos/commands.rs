@@ -47,3 +47,14 @@ pub fn video_update(
 ) -> Result<GeneratedVideo, String> {
     super::update(&app, id, title, note).map_err(|e| e.to_string())
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("videos")
+        .invoke_handler(tauri::generate_handler![
+            video_generate,
+            video_list,
+            video_delete,
+            video_upload,
+            video_update,
+        ])
+        .build()
+}

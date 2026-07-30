@@ -127,3 +127,25 @@ pub fn collect_script_discard_draft(
 ) -> Result<PublishScriptView, String> {
     super::discard_collect_script_draft(&app, platform_id)
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("media_platforms")
+        .invoke_handler(tauri::generate_handler![
+            media_platform_list,
+            media_platform_list_page,
+            media_platform_get,
+            media_platform_upsert,
+            media_platform_set_enabled,
+            media_platform_remove,
+            publish_script_get,
+            publish_script_list,
+            publish_script_save_draft,
+            publish_script_publish,
+            publish_script_discard_draft,
+            collect_script_get,
+            collect_script_list,
+            collect_script_save_draft,
+            collect_script_publish,
+            collect_script_discard_draft,
+        ])
+        .build()
+}

@@ -96,3 +96,15 @@ pub fn session_pin(
     persist::save_sessions(&app, &sessions);
     Ok(())
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("agent")
+        .invoke_handler(tauri::generate_handler![
+            chat_send,
+            session_list,
+            session_get,
+            session_delete,
+            session_rename,
+            session_pin,
+        ])
+        .build()
+}

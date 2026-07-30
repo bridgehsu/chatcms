@@ -45,3 +45,15 @@ pub fn schedule_save_workflow(
 pub fn schedule_remove(app: AppHandle, id: String) -> Result<(), String> {
     super::remove(&app, id)
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("schedules")
+        .invoke_handler(tauri::generate_handler![
+            schedule_list,
+            schedule_get,
+            schedule_add,
+            schedule_update,
+            schedule_save_workflow,
+            schedule_remove,
+        ])
+        .build()
+}

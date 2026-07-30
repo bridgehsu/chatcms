@@ -149,3 +149,18 @@ pub async fn channel_telegram_stop(
     persist::save_channel_config(&app, &ch.config);
     Ok(())
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("channels")
+        .invoke_handler(tauri::generate_handler![
+            channel_list,
+            channel_get,
+            channel_update,
+            channel_enable,
+            channel_disable,
+            channel_telegram_get,
+            channel_telegram_set,
+            channel_telegram_start,
+            channel_telegram_stop,
+        ])
+        .build()
+}

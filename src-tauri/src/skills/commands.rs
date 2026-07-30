@@ -90,3 +90,14 @@ pub fn skill_export_md(app: AppHandle, id: String) -> Result<String, String> {
         .ok_or_else(|| "技能不存在".to_string())?;
     Ok(super::to_skill_md(&skill))
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("skills")
+        .invoke_handler(tauri::generate_handler![
+            skill_list,
+            skill_add,
+            skill_update,
+            skill_remove,
+            skill_export_md,
+        ])
+        .build()
+}

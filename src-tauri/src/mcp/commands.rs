@@ -112,3 +112,16 @@ pub async fn mcp_tools(
 ) -> Result<Vec<McpToolDef>, String> {
     Ok(state.mcp.lock().await.tools_for(&name))
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("mcp")
+        .invoke_handler(tauri::generate_handler![
+            mcp_list,
+            mcp_add,
+            mcp_update,
+            mcp_remove,
+            mcp_reconnect,
+            mcp_disconnect,
+            mcp_tools,
+        ])
+        .build()
+}

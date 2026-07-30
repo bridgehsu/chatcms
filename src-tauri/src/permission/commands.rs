@@ -147,3 +147,21 @@ pub fn permission_clear_session_grants(state: State<'_, AgentState>, session_id:
         .unwrap()
         .clear_session(&session_id);
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("permission")
+        .invoke_handler(tauri::generate_handler![
+            permission_respond,
+            permission_get,
+            permission_set,
+            permission_mode_list,
+            permission_mode_add,
+            permission_mode_update,
+            permission_mode_remove,
+            permission_mode_reorder,
+            permission_mode_set_active,
+            permission_domains,
+            permission_audit_list,
+            permission_clear_session_grants,
+        ])
+        .build()
+}

@@ -174,3 +174,16 @@ pub fn provider_activate(
         .find(|p| p.id == id)
         .ok_or_else(|| "激活失败".into())
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("config")
+        .invoke_handler(tauri::generate_handler![
+            config_get,
+            config_set,
+            provider_list,
+            provider_add,
+            provider_update,
+            provider_remove,
+            provider_activate,
+        ])
+        .build()
+}

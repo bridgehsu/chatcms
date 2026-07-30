@@ -164,3 +164,17 @@ pub fn knowledge_export_public(
     let entries = state.knowledge.lock().unwrap().clone();
     super::export_public_site(&profile, &entries, output_dir)
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("knowledge")
+        .invoke_handler(tauri::generate_handler![
+            knowledge_list,
+            knowledge_add,
+            knowledge_update,
+            knowledge_remove,
+            knowledge_site_profile_get,
+            knowledge_site_profile_set,
+            knowledge_public_feed,
+            knowledge_export_public,
+        ])
+        .build()
+}

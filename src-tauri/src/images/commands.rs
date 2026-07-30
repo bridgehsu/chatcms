@@ -51,3 +51,15 @@ pub fn image_update(
 pub fn image_data_url(path: String) -> Result<String, String> {
     super::read_data_url(path).map_err(|e| e.to_string())
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("images")
+        .invoke_handler(tauri::generate_handler![
+            image_generate,
+            image_list,
+            image_delete,
+            image_upload,
+            image_update,
+            image_data_url,
+        ])
+        .build()
+}

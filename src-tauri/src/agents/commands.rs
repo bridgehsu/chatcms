@@ -98,3 +98,14 @@ pub fn agent_remove(
     sync_state(&app, &state);
     Ok(())
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("agents")
+        .invoke_handler(tauri::generate_handler![
+            agent_list,
+            agent_add,
+            agent_update,
+            agent_activate,
+            agent_remove,
+        ])
+        .build()
+}

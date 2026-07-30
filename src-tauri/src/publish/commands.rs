@@ -14,3 +14,11 @@ pub async fn publish_to_browser(
 pub fn publish_media_base() -> String {
     PublishBridge::base_url()
 }
+pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::<tauri::Wry>::new("publish")
+        .invoke_handler(tauri::generate_handler![
+            publish_to_browser,
+            publish_media_base,
+        ])
+        .build()
+}
