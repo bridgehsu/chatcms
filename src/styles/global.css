@@ -3815,12 +3815,39 @@ body,
 
 .map-deadline-bar {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 12px;
+}
+.map-deadline-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.map-deadline-holidays {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to left, transparent 0%, black 8%);
+  -webkit-mask-image: linear-gradient(to left, transparent 0%, black 8%);
+}
+.map-deadline-track {
+  display: flex;
+  gap: 6px;
+  width: max-content;
+  user-select: none;
+}
+.map-deadline-chip em {
+  font-style: normal;
+  margin-left: 5px;
+  opacity: 0.55;
+  font-size: 11px;
 }
 .map-deadline-chip {
   display: inline-flex;
@@ -3837,6 +3864,23 @@ body,
   color: var(--text);
   background: color-mix(in srgb, var(--accent) 12%, var(--bg));
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+.map-deadline-chip.is-nearest {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.map-deadline-chip.is-farthest {
+  opacity: 0.45;
+}
+.map-deadline-loop-sep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .map-metric-row {

@@ -170,16 +170,24 @@ export const buildDeadlines = (now = new Date()): MapDeadline[] => {
     };
   };
 
+  const holidays = [
+    holiday(1, 1, "元旦"),
+    holiday(2, 14, "情人节"),
+    holiday(3, 8, "妇女节"),
+    holiday(4, 5, "清明"),
+    holiday(5, 1, "劳动节"),
+    holiday(6, 1, "儿童节"),
+    holiday(9, 10, "教师节"),
+    holiday(10, 1, "国庆"),
+    holiday(12, 25, "圣诞"),
+  ].sort((a, b) => a.days - b.days);
+
   return [
     {
       id: "year",
       label: `${year} 年剩 ${weeksLeft} 周 · 距年底 ${daysLeft} 天`,
       days: daysLeft,
     },
-    holiday(10, 1, "国庆"),
-    holiday(12, 25, "圣诞"),
-    holiday(1, 1, "元旦"),
-    holiday(2, 14, "春节窗口"),
-    holiday(5, 1, "劳动节"),
+    ...holidays,
   ];
 };
