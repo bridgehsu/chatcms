@@ -7,6 +7,9 @@ type FormState = {
   description: string;
   content: string;
   tags: string;
+  visibility: "private" | "public";
+  kind: "note" | "doc" | "faq";
+  slug: string;
 };
 
 const emptyForm = (): FormState => ({
@@ -14,6 +17,9 @@ const emptyForm = (): FormState => ({
   description: "",
   content: "",
   tags: "",
+  visibility: "private",
+  kind: "note",
+  slug: "",
 });
 
 const fromEntry = (e: KnowledgeEntry): FormState => ({
@@ -21,6 +27,9 @@ const fromEntry = (e: KnowledgeEntry): FormState => ({
   description: e.description,
   content: e.content,
   tags: e.tags.join(", "),
+  visibility: e.visibility === "public" ? "public" : "private",
+  kind: e.kind === "doc" || e.kind === "faq" ? e.kind : "note",
+  slug: e.slug ?? "",
 });
 
 const parseTags = (raw: string) =>
@@ -60,22 +69,20 @@ export const KnowledgeModal = ({ mode, entry, onClose, onSaved }: Props) => {
     setBusy(true);
     setError("");
     const tags = parseTags(form.tags);
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      content: form.content.trim(),
+      tags,
+      visibility: form.visibility,
+      kind: form.kind,
+      slug: form.slug.trim(),
+    };
     try {
       if (mode === "edit" && entry) {
-        await invoke("knowledge_update", {
-          id: entry.id,
-          title: form.title.trim(),
-          description: form.description.trim(),
-          content: form.content.trim(),
-          tags,
-        });
+        await invoke("knowledge_update", { id: entry.id, ...payload });
       } else {
-        await invoke("knowledge_add", {
-          title: form.title.trim(),
-          description: form.description.trim(),
-          content: form.content.trim(),
-          tags,
-        });
+        await invoke("knowledge_add", payload);
       }
       await onSaved();
     } catch (e) {
@@ -96,7 +103,7 @@ export const KnowledgeModal = ({ mode, entry, onClose, onSaved }: Props) => {
       >
         <div className="model-modal__header">
           <h2 id="knowledge-modal-title" className="model-modal__title">
-            {mode === "edit" ? "编辑记忆" : "新建记忆"}
+            {mode === "edit" ? "编辑知识" : "新建知识"}
           </h2>
           <button type="button" className="model-modal__close" onClick={onClose}>
             ×
@@ -105,7 +112,7 @@ export const KnowledgeModal = ({ mode, entry, onClose, onSaved }: Props) => {
 
         <div className="model-modal__body">
           <p className="skill-modal__hint">
-            相关条目会在对话时自动注入系统提示词
+            默认私有，仅本机 Agent 检索；勾选「公开」后可导出到 chatcms.org
           </p>
 
           <div className="mcp-form-row">
@@ -117,7 +124,7 @@ export const KnowledgeModal = ({ mode, entry, onClose, onSaved }: Props) => {
             />
           </div>
           <div className="mcp-form-row">
-            <label>描述（用于匹配）</label>
+            <label>描述（用于匹配 / 公开摘要）</label>
             <input
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -142,6 +149,47 @@ export const KnowledgeModal = ({ mode, entry, onClose, onSaved }: Props) => {
               placeholder="项目, 上下文, 规则"
             />
           </div>
+          <div className="mcp-form-row">
+            <label>类型</label>
+            <select
+              value={form.kind}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  kind: e.target.value as FormState["kind"],
+                })
+              }
+            >
+              <option value="note">笔记</option>
+              <option value="doc">文档</option>
+              <option value="faq">FAQ</option>
+            </select>
+          </div>
+          <div className="mcp-form-row">
+            <label>可见性</label>
+            <select
+              value={form.visibility}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  visibility: e.target.value as FormState["visibility"],
+                })
+              }
+            >
+              <option value="private">私有（仅本机）</option>
+              <option value="public">公开（可发布到 chatcms.org）</option>
+            </select>
+          </div>
+          {form.visibility === "public" ? (
+            <div className="mcp-form-row">
+              <label>公开路径 slug（可选）</label>
+              <input
+                value={form.slug}
+                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                placeholder="留空则按标题生成，如 my-notes"
+              />
+            </div>
+          ) : null}
 
           {error ? <div className="mcp-form-error">{error}</div> : null}
         </div>

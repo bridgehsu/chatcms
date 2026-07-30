@@ -165,8 +165,8 @@ export const NAV_ENTRIES: NavEntry[] = [
       },
       {
         path: "/settings/knowledge",
-        label: "记忆",
-        description: "维护知识库条目，供 Agent 检索并注入系统提示",
+        label: "个人知识库",
+        description: "本机知识条目；可勾选公开并导出到 chatcms.org",
         Icon: IconMemory,
       },
       {

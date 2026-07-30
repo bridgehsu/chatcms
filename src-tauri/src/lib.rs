@@ -25,6 +25,52 @@ use tauri::Manager;
 
 // ── App bootstrap ─────────────────────────────────────────────────────────────
 
+fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let handle = app.handle().clone();
+    let state = handle.state::<AgentState>();
+
+    // Publish bridge
+    handle.state::<PublishBridge>().bind_app(handle.clone());
+    let bridge = (*app.state::<PublishBridge>()).clone();
+    tauri::async_runtime::spawn(async move {
+        let _ = bridge.ensure_running().await;
+    });
+
+    // Sync state from disk
+    if let Some(mut config) = persist::load_config(&handle) {
+        config.ensure_profiles();
+        persist::save_config(&handle, &config);
+        *state.config.lock().unwrap() = config;
+    }
+    *state.sessions.lock().unwrap() = persist::load_sessions(&handle);
+    *state.knowledge.lock().unwrap() = persist::load_knowledge(&handle);
+    *state.skills.lock().unwrap() = skills::ensure_seeded(&handle);
+    *state.agents.lock().unwrap() = agents::ensure_seeded(&handle);
+
+    // MCP — connect all enabled servers
+    let mcp_configs = persist::load_mcp_configs(&handle);
+    if !mcp_configs.is_empty() {
+        let h = handle.clone();
+        tauri::async_runtime::spawn(async move {
+            let s = h.state::<AgentState>();
+            let mut mcp = s.mcp.lock().await;
+            mcp.configs = mcp_configs;
+            mcp.connect_all().await;
+        });
+    }
+
+    // Channels — restore config
+    let channel_cfg = persist::load_channel_config(&handle);
+    let h = handle.clone();
+    tauri::async_runtime::spawn(async move {
+        let s = h.state::<AgentState>();
+        let mut ch = s.channel.lock().await;
+        ch.config = channel_cfg;
+    });
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -32,48 +78,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(AgentState::new())
         .manage(PublishBridge::new())
-        .setup(|app| {
-            let handle = app.handle().clone();
-            let state = handle.state::<AgentState>();
-            handle.state::<PublishBridge>().bind_app(handle.clone());
-            let bridge = (*app.state::<PublishBridge>()).clone();
-            tauri::async_runtime::spawn(async move {
-                let _ = bridge.ensure_running().await;
-            });
-
-            if let Some(mut config) = persist::load_config(&handle) {
-                config.ensure_profiles();
-                persist::save_config(&handle, &config);
-                *state.config.lock().unwrap() = config;
-            }
-            *state.sessions.lock().unwrap() = persist::load_sessions(&handle);
-            *state.knowledge.lock().unwrap() = persist::load_knowledge(&handle);
-            *state.skills.lock().unwrap() = skills::ensure_seeded(&handle);
-            *state.agents.lock().unwrap() = agents::ensure_seeded(&handle);
-
-            // MCP
-            let mcp_configs = persist::load_mcp_configs(&handle);
-            if !mcp_configs.is_empty() {
-                let h2 = handle.clone();
-                tauri::async_runtime::spawn(async move {
-                    let s = h2.state::<AgentState>();
-                    let mut mcp = s.mcp.lock().await;
-                    mcp.configs = mcp_configs;
-                    mcp.connect_all().await;
-                });
-            }
-
-            // Channels
-            let channel_cfg = persist::load_channel_config(&handle);
-            let h3 = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                let s = h3.state::<AgentState>();
-                let mut ch = s.channel.lock().await;
-                ch.config = channel_cfg;
-            });
-
-            Ok(())
-        })
+        .setup(setup)
         .invoke_handler(tauri::generate_handler![
             agent::commands::chat_send,
             agent::commands::session_list,

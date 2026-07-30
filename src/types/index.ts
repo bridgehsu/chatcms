@@ -159,6 +159,25 @@ export interface KnowledgeEntry {
   content: string;
   tags: string[];
   created_at: number;
+  /** private | public */
+  visibility?: string;
+  /** note | doc | faq */
+  kind?: string;
+  slug?: string;
+  updated_at?: number;
+}
+
+export interface KnowledgeSiteProfile {
+  handle: string;
+  display_name: string;
+  bio: string;
+}
+
+export interface KnowledgeExportResult {
+  handle: string;
+  output_dir: string;
+  count: number;
+  feed_path: string;
 }
 
 // ── Channels ──────────────────────────────────────────────────────────────────

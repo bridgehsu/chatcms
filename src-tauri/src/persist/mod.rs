@@ -9,7 +9,7 @@ use crate::agents::AgentProfile;
 use crate::channels::ChannelConfig;
 use crate::config::AppConfig;
 use crate::images::GeneratedImage;
-use crate::knowledge::KnowledgeEntry;
+use crate::knowledge::{KnowledgeEntry, KnowledgeSiteProfile};
 use crate::mcp::McpServerConfig;
 use crate::media_platforms::{MediaPlatform, PublishScript};
 use crate::memory::Session;
@@ -83,6 +83,23 @@ pub fn load_knowledge(app: &AppHandle) -> Vec<KnowledgeEntry> {
     let Some(store) = open(app) else { return vec![] };
     store
         .get("knowledge")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
+pub fn save_knowledge_site_profile(app: &AppHandle, profile: &KnowledgeSiteProfile) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(profile).unwrap_or_default();
+    store.set("knowledge_site_profile", val);
+    let _ = store.save();
+}
+
+pub fn load_knowledge_site_profile(app: &AppHandle) -> KnowledgeSiteProfile {
+    let Some(store) = open(app) else {
+        return KnowledgeSiteProfile::default();
+    };
+    store
+        .get("knowledge_site_profile")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default()
 }
