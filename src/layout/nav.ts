@@ -117,6 +117,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     dividerBefore: true,
   },
   {
+    kind: "leaf",
+    path: "/settings/knowledge",
+    label: "知识库",
+    description: "本机知识条目；可勾选公开并导出到 chatcms.org",
+    Icon: IconMemory,
+  },
+  {
     kind: "group",
     id: "workspace",
     label: "智能配置",
@@ -162,12 +169,6 @@ export const NAV_ENTRIES: NavEntry[] = [
         label: "权限",
         description: "自定义权限模式，控制工具调用的授权策略",
         Icon: IconLock,
-      },
-      {
-        path: "/settings/knowledge",
-        label: "个人知识库",
-        description: "本机知识条目；可勾选公开并导出到 chatcms.org",
-        Icon: IconMemory,
       },
       {
         path: "/settings/channels",
