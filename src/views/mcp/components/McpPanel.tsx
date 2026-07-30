@@ -30,7 +30,7 @@ export const McpPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const list = await invoke<McpServerInfo[]>("plugin:mcp|mcp_list");
+    const list = await invoke<McpServerInfo[]>("mcp_list");
     setServers(list);
   };
 
@@ -84,7 +84,7 @@ export const McpPanel = () => {
     setBusy(`remove-${name}`);
     setError("");
     try {
-      await invoke("plugin:mcp|mcp_remove", { name });
+      await invoke("mcp_remove", { name });
       await refresh();
     } catch (err) {
       setError(String(err));
@@ -98,7 +98,7 @@ export const McpPanel = () => {
     setBusy(`reconnect-${name}`);
     setError("");
     try {
-      await invoke("plugin:mcp|mcp_reconnect", { name });
+      await invoke("mcp_reconnect", { name });
       await refresh();
     } catch (err) {
       setError(String(err));
@@ -112,7 +112,7 @@ export const McpPanel = () => {
     setBusy(`disconnect-${name}`);
     setError("");
     try {
-      await invoke("plugin:mcp|mcp_disconnect", { name });
+      await invoke("mcp_disconnect", { name });
       await refresh();
     } catch (err) {
       setError(String(err));

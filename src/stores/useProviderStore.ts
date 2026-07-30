@@ -38,7 +38,7 @@ const applyVersion = async (
 ) => {
   const family = getFamily(familyId);
   const version = getVersion(familyId, versionId);
-  await invoke("plugin:config|config_set", {
+  await invoke("config_set", {
     apiKey,
     model: version.model,
     provider: family.kind,
@@ -65,7 +65,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   presetId: "claude",
 
   load: async () => {
-    const cfg = await invoke<AppConfig>("plugin:config|config_get");
+    const cfg = await invoke<AppConfig>("config_get");
     const matched = matchFamilyVersion(
       cfg.provider.kind,
       cfg.provider.model,
@@ -101,7 +101,7 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
   },
 
   saveFull: async ({ apiKey, model, provider, baseUrl }) => {
-    await invoke("plugin:config|config_set", {
+    await invoke("config_set", {
       apiKey,
       model,
       provider,

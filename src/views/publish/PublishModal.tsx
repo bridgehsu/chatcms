@@ -135,7 +135,7 @@ export const PublishModal = ({ source, onClose }: Props) => {
     }
     setBusy(true);
     try {
-      const url = await invoke<string>("plugin:publish|publish_to_browser", {
+      const url = await invoke<string>("publish_to_browser", {
         syncData: buildSyncData(),
       });
       setOkMsg(`已打开浏览器桥接页：${url}`);

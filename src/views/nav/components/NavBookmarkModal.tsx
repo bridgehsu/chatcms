@@ -56,7 +56,7 @@ export const NavBookmarkModal = ({
     setError("");
     setBusy(true);
     try {
-      await invoke("plugin:nav_bookmarks|nav_bookmark_upsert", {
+      await invoke("nav_bookmark_upsert", {
         id: mode === "edit" && bookmark ? bookmark.id : null,
         title: form.title.trim(),
         url: form.url.trim(),

@@ -48,7 +48,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
     if (done) {
       const sid = session_id;
-      invoke<Session>("plugin:agent|session_get", { sessionId: sid }).then((session) => {
+      invoke<Session>("session_get", { sessionId: sid }).then((session) => {
         if (session) {
           set({
             activeSession: session,
@@ -170,12 +170,12 @@ export const useChatStore = create<ChatState>((set, get) => {
     clearError: () => set({ error: null }),
 
     loadSessions: async () => {
-      const sessions = await invoke<SessionSummary[]>("plugin:agent|session_list");
+      const sessions = await invoke<SessionSummary[]>("session_list");
       set({ sessions });
     },
 
     selectSession: async (id: string) => {
-      const session = await invoke<Session | null>("plugin:agent|session_get", { sessionId: id });
+      const session = await invoke<Session | null>("session_get", { sessionId: id });
       set({
         activeSessionId: id,
         activeSession: session,
@@ -212,7 +212,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       });
 
       try {
-        const sessionId = await invoke<string>("plugin:agent|chat_send", {
+        const sessionId = await invoke<string>("chat_send", {
           sessionId: activeSessionId,
           content,
         });
@@ -226,7 +226,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         }));
 
         // 若流式 done 已处理过，这里再拉一次保证最终一致；失败时也要解除转圈
-        const session = await invoke<Session | null>("plugin:agent|session_get", { sessionId });
+        const session = await invoke<Session | null>("session_get", { sessionId });
         if (session) {
           set({
             activeSession: session,
@@ -258,7 +258,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     renameSession: async (id: string, title: string) => {
       const trimmed = title.trim();
       if (!trimmed) return;
-      await invoke("plugin:agent|session_rename", { sessionId: id, title: trimmed });
+      await invoke("session_rename", { sessionId: id, title: trimmed });
       set((s) => ({
         sessions: s.sessions.map((item) =>
           item.id === id ? { ...item, title: trimmed } : item
@@ -272,10 +272,10 @@ export const useChatStore = create<ChatState>((set, get) => {
     },
 
     deleteSession: async (id: string) => {
-      await invoke("plugin:permission|permission_clear_session_grants", { sessionId: id }).catch(
+      await invoke("permission_clear_session_grants", { sessionId: id }).catch(
         () => undefined,
       );
-      await invoke("plugin:agent|session_delete", { sessionId: id });
+      await invoke("session_delete", { sessionId: id });
       const { activeSessionId } = get();
       set((s) => ({
         sessions: s.sessions.filter((item) => item.id !== id),
@@ -287,7 +287,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     },
 
     pinSession: async (id: string, pinned: boolean) => {
-      await invoke("plugin:agent|session_pin", { sessionId: id, pinned });
+      await invoke("session_pin", { sessionId: id, pinned });
       set((s) => ({
         sessions: s.sessions.map((item) =>
           item.id === id ? { ...item, pinned } : item
@@ -302,7 +302,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
     respondPermission: async (requestId, allowed, remember = "once") => {
       set({ pendingPermission: null });
-      await invoke("plugin:permission|permission_respond", { requestId, allowed, remember });
+      await invoke("permission_respond", { requestId, allowed, remember });
     },
   };
 });

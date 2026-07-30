@@ -182,7 +182,7 @@ const WorkflowCanvasInner = ({
     setError("");
     try {
       const workflow = fromFlow(nodes, edges);
-      const updated = await invoke<ScheduleProject>("plugin:schedules|schedule_save_workflow", {
+      const updated = await invoke<ScheduleProject>("schedule_save_workflow", {
         id: project.id,
         workflow,
       });

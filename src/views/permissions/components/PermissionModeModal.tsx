@@ -77,14 +77,14 @@ export const PermissionModeModal = ({
     setError("");
     try {
       if (mode === "edit" && editing) {
-        await invoke("plugin:permission|permission_mode_update", {
+        await invoke("permission_mode_update", {
           id: editing.id,
           name: name.trim(),
           description: description.trim(),
           domains,
         });
       } else {
-        await invoke("plugin:permission|permission_mode_add", {
+        await invoke("permission_mode_add", {
           name: name.trim(),
           description: description.trim(),
           domains,

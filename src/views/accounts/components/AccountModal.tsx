@@ -81,9 +81,9 @@ export const AccountModal = ({ mode, account, onClose, onSaved }: Props) => {
     };
     try {
       if (mode === "edit" && account) {
-        await invoke("plugin:accounts|account_update", { id: account.id, ...payload });
+        await invoke("account_update", { id: account.id, ...payload });
       } else {
-        await invoke("plugin:accounts|account_add", payload);
+        await invoke("account_add", payload);
       }
       await onSaved();
     } catch (e) {

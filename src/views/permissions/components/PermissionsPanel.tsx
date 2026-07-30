@@ -42,8 +42,8 @@ export const PermissionsPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const list = await invoke<PermissionMode[]>("plugin:permission|permission_mode_list");
-    const cfg = await invoke<{ active_mode_id: string }>("plugin:permission|permission_get");
+    const list = await invoke<PermissionMode[]>("permission_mode_list");
+    const cfg = await invoke<{ active_mode_id: string }>("permission_get");
     setModes(list);
     setActiveId(cfg.active_mode_id || list[0]?.id || "");
     await reloadStore();
@@ -80,7 +80,7 @@ export const PermissionsPanel = () => {
     setBusy(`move-${id}`);
     setError("");
     try {
-      const list = await invoke<PermissionMode[]>("plugin:permission|permission_mode_reorder", {
+      const list = await invoke<PermissionMode[]>("permission_mode_reorder", {
         orderedIds: ordered,
       });
       setModes(list);
@@ -98,7 +98,7 @@ export const PermissionsPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("plugin:permission|permission_mode_remove", { id });
+      await invoke("permission_mode_remove", { id });
       await refresh();
     } catch (err) {
       setError(String(err));
@@ -111,7 +111,7 @@ export const PermissionsPanel = () => {
     e.stopPropagation();
     setBusy(`active-${id}`);
     try {
-      await invoke("plugin:permission|permission_mode_set_active", { id });
+      await invoke("permission_mode_set_active", { id });
       setActiveId(id);
       await reloadStore();
     } catch (err) {

@@ -32,7 +32,7 @@ export const AgentsPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const list = await invoke<AgentProfile[]>("plugin:agents|agent_list");
+    const list = await invoke<AgentProfile[]>("agent_list");
     setAgents(list);
   };
 
@@ -74,7 +74,7 @@ export const AgentsPanel = () => {
     setBusy(`activate-${id}`);
     setError("");
     try {
-      await invoke("plugin:agents|agent_activate", { id });
+      await invoke("agent_activate", { id });
       await refresh();
     } catch (err) {
       setError(String(err));
@@ -88,7 +88,7 @@ export const AgentsPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("plugin:agents|agent_remove", { id });
+      await invoke("agent_remove", { id });
       await refresh();
     } catch (err) {
       setError(String(err));

@@ -14,7 +14,7 @@ export const McpToolsModal = ({ serverName, onClose }: Props) => {
 
   useEffect(() => {
     setLoading(true);
-    void invoke<McpToolDef[]>("plugin:mcp|mcp_tools", { name: serverName })
+    void invoke<McpToolDef[]>("mcp_tools", { name: serverName })
       .then(setTools)
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));

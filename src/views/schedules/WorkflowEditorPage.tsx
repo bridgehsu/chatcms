@@ -13,7 +13,7 @@ export const WorkflowEditorPage = () => {
   useEffect(() => {
     if (!projectId) return;
     setError("");
-    void invoke<ScheduleProject>("plugin:schedules|schedule_get", { id: projectId })
+    void invoke<ScheduleProject>("schedule_get", { id: projectId })
       .then(setProject)
       .catch((e) => setError(String(e)));
   }, [projectId]);

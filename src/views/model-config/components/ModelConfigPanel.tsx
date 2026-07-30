@@ -33,7 +33,7 @@ export const ModelConfigPanel = () => {
   const [error, setError] = useState("");
 
   const refresh = async () => {
-    const list = await invoke<ProviderProfile[]>("plugin:config|provider_list");
+    const list = await invoke<ProviderProfile[]>("provider_list");
     setProfiles(list);
   };
 
@@ -93,7 +93,7 @@ export const ModelConfigPanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("plugin:config|provider_remove", { id });
+      await invoke("provider_remove", { id });
       if (editing?.id === id) closeModal();
       await refresh();
       await loadActive();

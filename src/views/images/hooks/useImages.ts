@@ -21,13 +21,13 @@ export const useImages = () => {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    const list = await invoke<GeneratedImage[]>("plugin:images|image_list");
+    const list = await invoke<GeneratedImage[]>("image_list");
     setImages(list);
     const next: Record<string, string> = {};
     await Promise.all(
       list.map(async (img) => {
         try {
-          next[img.id] = await invoke<string>("plugin:images|image_data_url", { path: img.path });
+          next[img.id] = await invoke<string>("image_data_url", { path: img.path });
         } catch {
           /* skip broken */
         }
@@ -43,7 +43,7 @@ export const useImages = () => {
   const attachPreview = useCallback(async (created: GeneratedImage) => {
     let dataUrl = "";
     try {
-      dataUrl = await invoke<string>("plugin:images|image_data_url", { path: created.path });
+      dataUrl = await invoke<string>("image_data_url", { path: created.path });
     } catch {
       /* ignore */
     }
@@ -58,7 +58,7 @@ export const useImages = () => {
       setBusy(true);
       setError("");
       try {
-        const created = await invoke<GeneratedImage>("plugin:images|image_generate", {
+        const created = await invoke<GeneratedImage>("image_generate", {
           prompt,
           model,
           size,
@@ -88,7 +88,7 @@ export const useImages = () => {
       try {
         for (const file of list) {
           const dataBase64 = await fileToBase64(file);
-          const item = await invoke<GeneratedImage>("plugin:images|image_upload", {
+          const item = await invoke<GeneratedImage>("image_upload", {
             dataBase64,
             filename: file.name,
             contentType: file.type || null,
@@ -108,7 +108,7 @@ export const useImages = () => {
   );
 
   const updateMeta = useCallback(async (id: string, title: string, note: string) => {
-    const updated = await invoke<GeneratedImage>("plugin:images|image_update", {
+    const updated = await invoke<GeneratedImage>("image_update", {
       id,
       title,
       note,
@@ -118,7 +118,7 @@ export const useImages = () => {
   }, []);
 
   const remove = useCallback(async (id: string) => {
-    await invoke("plugin:images|image_delete", { id });
+    await invoke("image_delete", { id });
     setImages((prev) => prev.filter((i) => i.id !== id));
     setPreviews((prev) => {
       const next = { ...prev };
@@ -130,7 +130,7 @@ export const useImages = () => {
   const removeMany = useCallback(
     async (ids: string[]) => {
       for (const id of ids) {
-        await invoke("plugin:images|image_delete", { id });
+        await invoke("image_delete", { id });
       }
       const drop = new Set(ids);
       setImages((prev) => prev.filter((i) => !drop.has(i.id)));

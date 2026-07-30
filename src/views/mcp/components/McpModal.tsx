@@ -117,9 +117,9 @@ export const McpModal = ({ mode, server, onClose, onSaved }: Props) => {
     };
     try {
       if (mode === "edit" && server) {
-        await invoke("plugin:mcp|mcp_update", { ...payload, name: server.name });
+        await invoke("mcp_update", { ...payload, name: server.name });
       } else {
-        await invoke("plugin:mcp|mcp_add", payload);
+        await invoke("mcp_add", payload);
       }
       await onSaved();
     } catch (e) {

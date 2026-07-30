@@ -112,9 +112,9 @@ export const ModelConfigModal = ({ mode, profile, onClose, onSaved }: Props) => 
     };
     try {
       if (mode === "edit" && profile) {
-        await invoke("plugin:config|provider_update", { id: profile.id, ...payload });
+        await invoke("provider_update", { id: profile.id, ...payload });
       } else {
-        await invoke("plugin:config|provider_add", payload);
+        await invoke("provider_add", payload);
       }
       await onSaved();
     } catch (e) {

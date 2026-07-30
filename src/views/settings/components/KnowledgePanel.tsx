@@ -45,8 +45,8 @@ export const KnowledgePanel = () => {
 
   const refresh = async () => {
     const [list, site] = await Promise.all([
-      invoke<KnowledgeEntry[]>("plugin:knowledge|knowledge_list"),
-      invoke<KnowledgeSiteProfile>("plugin:knowledge|knowledge_site_profile_get"),
+      invoke<KnowledgeEntry[]>("knowledge_list"),
+      invoke<KnowledgeSiteProfile>("knowledge_site_profile_get"),
     ]);
     setEntries(list);
     setProfile(site);
@@ -98,7 +98,7 @@ export const KnowledgePanel = () => {
     setBusy(`remove-${id}`);
     setError("");
     try {
-      await invoke("plugin:knowledge|knowledge_remove", { id });
+      await invoke("knowledge_remove", { id });
       await refresh();
     } catch (err) {
       setError(String(err));

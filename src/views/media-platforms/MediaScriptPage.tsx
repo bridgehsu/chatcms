@@ -13,19 +13,19 @@ type ScriptKind = "publish" | "collect";
 
 const CMDS = {
   publish: {
-    get: "plugin:media_platforms|publish_script_get",
-    save: "plugin:media_platforms|publish_script_save_draft",
-    publish: "plugin:media_platforms|publish_script_publish",
-    discard: "plugin:media_platforms|publish_script_discard_draft",
+    get: "publish_script_get",
+    save: "publish_script_save_draft",
+    publish: "publish_script_publish",
+    discard: "publish_script_discard_draft",
     title: "填表脚本",
     placeholder: "// 发布填表 JS；仅「发布」后扩展可通过桥拉取",
     okPublish: (v: number) => `已发布为 v${v}（扩展桥 GET /publish/script）`,
   },
   collect: {
-    get: "plugin:media_platforms|collect_script_get",
-    save: "plugin:media_platforms|collect_script_save_draft",
-    publish: "plugin:media_platforms|collect_script_publish",
-    discard: "plugin:media_platforms|collect_script_discard_draft",
+    get: "collect_script_get",
+    save: "collect_script_save_draft",
+    publish: "collect_script_publish",
+    discard: "collect_script_discard_draft",
     title: "采集脚本",
     placeholder: "// 平台采集 JS；仅「发布」后扩展可通过桥拉取",
     okPublish: (v: number) => `已发布为 v${v}（扩展桥 GET /collect/script）`,
@@ -55,7 +55,7 @@ export const MediaScriptPage = ({ scriptKind: kindProp }: Props) => {
   const [ok, setOk] = useState("");
 
   const load = async () => {
-    const p = await invoke<MediaPlatform>("plugin:media_platforms|media_platform_get", {
+    const p = await invoke<MediaPlatform>("media_platform_get", {
       id: platformId,
     });
     setPlatform(p);

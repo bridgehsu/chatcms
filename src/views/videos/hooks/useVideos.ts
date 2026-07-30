@@ -20,7 +20,7 @@ export const useVideos = () => {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
-    const list = await invoke<GeneratedVideo[]>("plugin:videos|video_list");
+    const list = await invoke<GeneratedVideo[]>("video_list");
     setVideos(list);
   }, []);
 
@@ -41,7 +41,7 @@ export const useVideos = () => {
       setBusy(true);
       setError("");
       try {
-        const created = await invoke<GeneratedVideo>("plugin:videos|video_generate", {
+        const created = await invoke<GeneratedVideo>("video_generate", {
           prompt,
           model,
           size,
@@ -71,7 +71,7 @@ export const useVideos = () => {
     try {
       for (const file of list) {
         const dataBase64 = await fileToBase64(file);
-        const item = await invoke<GeneratedVideo>("plugin:videos|video_upload", {
+        const item = await invoke<GeneratedVideo>("video_upload", {
           dataBase64,
           filename: file.name,
           contentType: file.type || null,
@@ -89,7 +89,7 @@ export const useVideos = () => {
   }, []);
 
   const updateMeta = useCallback(async (id: string, title: string, note: string) => {
-    const updated = await invoke<GeneratedVideo>("plugin:videos|video_update", {
+    const updated = await invoke<GeneratedVideo>("video_update", {
       id,
       title,
       note,
@@ -99,13 +99,13 @@ export const useVideos = () => {
   }, []);
 
   const remove = useCallback(async (id: string) => {
-    await invoke("plugin:videos|video_delete", { id });
+    await invoke("video_delete", { id });
     setVideos((prev) => prev.filter((v) => v.id !== id));
   }, []);
 
   const removeMany = useCallback(async (ids: string[]) => {
     for (const id of ids) {
-      await invoke("plugin:videos|video_delete", { id });
+      await invoke("video_delete", { id });
     }
     const drop = new Set(ids);
     setVideos((prev) => prev.filter((v) => !drop.has(v.id)));
