@@ -25,6 +25,7 @@ body,
 
 /* ── Sidebar（图标轨 / 可展开） ───────────────────────────────────────────── */
 .sidebar {
+  position: relative;
   width: 56px;
   min-width: 56px;
   height: 100%;
@@ -113,6 +114,93 @@ body,
 .sidebar-toggle:hover {
   color: var(--text);
   background: var(--bg-3);
+}
+
+/* nav item 编辑操作 */
+.nav-item__edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.nav-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 150ms, color 150ms, background 150ms;
+}
+.nav-item--editable:hover .nav-edit-btn,
+.sidebar.is-editing .nav-edit-btn {
+  opacity: 1;
+}
+.nav-edit-btn:hover {
+  color: var(--text);
+  background: var(--bg-3);
+}
+.nav-edit-btn--danger:hover {
+  color: #f87171;
+  background: color-mix(in srgb, #f87171 14%, transparent);
+}
+
+/* 业务地图右下角新增导航分类浮层按钮 */
+.map-nav-add-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  transition: color 150ms, background 150ms, border-color 150ms, box-shadow 150ms;
+  opacity: 0.6;
+  z-index: 10;
+}
+.map-nav-add-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
+  box-shadow: 0 4px 16px rgba(0,0,0,.16);
+}
+.nav-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background 150ms;
+}
+.nav-add-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.nav-add-btn svg {
+  flex-shrink: 0;
 }
 
 .nav-list {
@@ -285,6 +373,75 @@ body,
   max-width: 720px;
   margin: 0 auto;
   padding: 8px 4px 24px;
+}
+
+/* 侧栏底部 */
+.sidebar-bottom {
+  padding: 6px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.sidebar.is-expanded .sidebar-bottom {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+}
+.sidebar-bottom__utils {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.sidebar.is-expanded .sidebar-bottom__utils {
+  flex-direction: row;
+}
+.sidebar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 150ms, background 150ms;
+  flex-shrink: 0;
+}
+.sidebar-icon-btn:hover {
+  color: var(--text);
+  background: var(--bg-3);
+}
+.sidebar-icon-btn--logout:hover {
+  color: #f87171;
+  background: color-mix(in srgb, #f87171 12%, transparent);
+}
+
+/* 侧栏内主题菜单：始终只显示图标无边框 */
+.sidebar-bottom .theme-menu__trigger {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.sidebar-bottom .theme-menu__trigger:hover {
+  background: var(--bg-3);
+  border: none;
+  box-shadow: none;
+}
+.sidebar-bottom .theme-menu__trigger-label,
+.sidebar-bottom .theme-menu__chevron {
+  display: none;
 }
 
 /* 顶栏外观菜单：跟随系统 / 白天 / 黑夜 */
@@ -861,7 +1018,27 @@ body,
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 8px;
   margin-left: auto;
+}
+.topbar-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-2);
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background 150ms;
+}
+.topbar-action-btn:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-2));
 }
 
 .topbar-title {

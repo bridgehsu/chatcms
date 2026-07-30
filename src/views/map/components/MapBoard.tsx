@@ -82,6 +82,8 @@ export const MapBoard = () => {
   return (
     <div className="map-board">
       <div className="map-board__upper">
+        <MapDeadlineBar items={deadlines} />
+
         <div className="map-top">
           <section className="map-card map-favorites" ref={favoritesRef}>
             <header className="map-section__header">
@@ -123,8 +125,6 @@ export const MapBoard = () => {
             <MapWorldClock />
           </aside>
         </div>
-
-        <MapDeadlineBar items={deadlines} />
       </div>
 
       <MapMetricRow metrics={metrics} />
@@ -148,6 +148,7 @@ export const MapBoard = () => {
           if (modalTarget) addLink(modalTarget, link);
         }}
       />
+
     </div>
   );
 };

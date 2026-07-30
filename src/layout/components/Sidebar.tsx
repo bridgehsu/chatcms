@@ -1,12 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { IconChevron, IconSidebar } from "@/components/icons";
+import {
+  IconChevron,
+  IconGithub,
+  IconGlobe,
+  IconLogout,
+  IconNav,
+  IconPencil,
+  IconSidebar,
+  IconTrash,
+} from "@/components/icons";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   groupContainsPath,
   NAV_ENTRIES,
   type NavGroup,
   type NavLeaf,
 } from "@/layout/nav";
+import { useCustomNav, type CustomNavEntry } from "../hooks/useCustomNav";
+import { NavCustomModal } from "./NavCustomModal";
 
 const SIDEBAR_KEY = "chatcms.sidebar.expanded.v2";
 const GROUPS_KEY = "chatcms.sidebar.groups.v1";
@@ -29,6 +41,8 @@ const LeafLink = ({
   dividerBefore,
   sidebarExpanded,
   nested,
+  onEdit,
+  onRemove,
 }: {
   path: string;
   label: string;
@@ -36,17 +50,19 @@ const LeafLink = ({
   dividerBefore?: boolean;
   sidebarExpanded: boolean;
   nested?: boolean;
+  onEdit?: () => void;
+  onRemove?: () => void;
 }) => (
   <div className={`nav-slot${nested ? " nav-slot--nested" : ""}`}>
     {dividerBefore ? <div className="nav-divider" role="separator" /> : null}
     <NavLink
       to={path}
       className={({ isActive }) =>
-        `nav-item${nested ? " nav-item--nested" : ""}${isActive ? " active" : ""}`
+        `nav-item${nested ? " nav-item--nested" : ""}${isActive ? " active" : ""}${onEdit || onRemove ? " nav-item--custom" : ""}`
       }
       aria-label={label}
       title={sidebarExpanded ? undefined : label}
-      end={path !== "/schedules"}
+      end
     >
       <span className="nav-icon">
         <Icon />
@@ -55,6 +71,33 @@ const LeafLink = ({
       {!sidebarExpanded ? (
         <span className="nav-tooltip" role="tooltip">
           {label}
+        </span>
+      ) : null}
+      {sidebarExpanded && (onEdit || onRemove) ? (
+        <span
+          className="nav-item__edit-actions"
+          onClick={(e) => e.preventDefault()}
+        >
+          {onEdit ? (
+            <button
+              type="button"
+              className="nav-edit-btn"
+              aria-label="编辑"
+              onClick={(e) => { e.preventDefault(); onEdit(); }}
+            >
+              <IconPencil />
+            </button>
+          ) : null}
+          {onRemove ? (
+            <button
+              type="button"
+              className="nav-edit-btn nav-edit-btn--danger"
+              aria-label="删除"
+              onClick={(e) => { e.preventDefault(); onRemove(); }}
+            >
+              <IconTrash />
+            </button>
+          ) : null}
         </span>
       ) : null}
     </NavLink>
@@ -92,9 +135,7 @@ const GroupBlock = ({
   };
 
   return (
-    <div
-      className={`nav-group${active ? " is-active" : ""}${open ? " is-open" : ""}`}
-    >
+    <div className={`nav-group${active ? " is-active" : ""}${open ? " is-open" : ""}`}>
       {group.dividerBefore ? (
         <div className="nav-divider" role="separator" />
       ) : null}
@@ -150,24 +191,22 @@ export const Sidebar = () => {
     }
   });
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>(readGroupOpen);
+  const [modal, setModal] = useState<"add" | CustomNavEntry | null>(null);
+
+  const { entries: customEntries, add, update, remove } = useCustomNav();
 
   useEffect(() => {
     try {
       localStorage.setItem(SIDEBAR_KEY, expanded ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, [expanded]);
 
   useEffect(() => {
     try {
       localStorage.setItem(GROUPS_KEY, JSON.stringify(groupOpen));
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, [groupOpen]);
 
-  // 路由命中时自动展开对应分组
   useEffect(() => {
     setGroupOpen((prev) => {
       let next = prev;
@@ -188,51 +227,116 @@ export const Sidebar = () => {
   const entries = useMemo(() => NAV_ENTRIES, []);
 
   return (
-    <aside className={`sidebar${expanded ? " is-expanded" : ""}`}>
-      <div className="sidebar-header">
-        <button
-          type="button"
-          className="sidebar-brand"
-          title="ChatCMS"
-          aria-label="ChatCMS"
-          onClick={() => setExpanded((v) => !v)}
-        >
-          C
-        </button>
-        {expanded ? <span className="sidebar-brand-text">ChatCMS</span> : null}
-        <button
-          type="button"
-          className="sidebar-toggle"
-          aria-label={expanded ? "收起导航" : "展开导航"}
-          aria-expanded={expanded}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          <IconSidebar />
-        </button>
-      </div>
+    <>
+      <aside className={`sidebar${expanded ? " is-expanded" : ""}`}>
+        <div className="sidebar-header">
+          <button
+            type="button"
+            className="sidebar-brand"
+            title="ChatCMS"
+            aria-label="ChatCMS"
+            onClick={() => setExpanded((v) => !v)}
+          >
+            C
+          </button>
+          {expanded ? <span className="sidebar-brand-text">ChatCMS</span> : null}
+          <button
+            type="button"
+            className="sidebar-toggle"
+            aria-label={expanded ? "收起导航" : "展开导航"}
+            aria-expanded={expanded}
+            onClick={() => setExpanded((v) => !v)}
+          >
+            <IconSidebar />
+          </button>
+        </div>
 
-      <nav className="nav-list" aria-label="主导航">
-        {entries.map((entry) =>
-          entry.kind === "leaf" ? (
+        <nav className="nav-list" aria-label="主导航">
+          {entries.map((entry) =>
+            entry.kind === "leaf" ? (
+              <LeafLink
+                key={entry.path}
+                path={entry.path}
+                label={entry.label}
+                Icon={entry.Icon}
+                dividerBefore={entry.dividerBefore}
+                sidebarExpanded={expanded}
+              />
+            ) : (
+              <GroupBlock
+                key={entry.id}
+                group={entry}
+                sidebarExpanded={expanded}
+                open={!!groupOpen[entry.id]}
+                onToggle={() => toggleGroup(entry.id)}
+              />
+            ),
+          )}
+
+          {customEntries.length > 0 ? (
+            <div className="nav-divider" role="separator" />
+          ) : null}
+          {customEntries.map((entry) => (
             <LeafLink
-              key={entry.path}
+              key={entry.id}
               path={entry.path}
               label={entry.label}
-              Icon={entry.Icon}
-              dividerBefore={entry.dividerBefore}
+              Icon={IconNav}
               sidebarExpanded={expanded}
+              onEdit={() => setModal(entry)}
+              onRemove={() => remove(entry.id)}
             />
-          ) : (
-            <GroupBlock
-              key={entry.id}
-              group={entry}
-              sidebarExpanded={expanded}
-              open={!!groupOpen[entry.id]}
-              onToggle={() => toggleGroup(entry.id)}
-            />
-          ),
-        )}
-      </nav>
-    </aside>
+          ))}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <button
+            type="button"
+            className="sidebar-icon-btn sidebar-icon-btn--logout"
+            aria-label="退出"
+            title="退出"
+          >
+            <IconLogout />
+          </button>
+          <div className="sidebar-bottom__utils">
+            <ThemeToggle />
+            <a
+              href="https://github.com/chatcms"
+              target="_blank"
+              rel="noreferrer"
+              className="sidebar-icon-btn"
+              aria-label="GitHub"
+              title="GitHub"
+            >
+              <IconGithub />
+            </a>
+            <a
+              href="https://chatcms.org"
+              target="_blank"
+              rel="noreferrer"
+              className="sidebar-icon-btn"
+              aria-label="官网"
+              title="官网"
+            >
+              <IconGlobe />
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      {modal !== null ? (
+        <NavCustomModal
+          entry={modal === "add" ? null : modal}
+          onClose={() => setModal(null)}
+          onSave={(label, path, sortOrder) => {
+            if (modal === "add") {
+              add(label, path, sortOrder);
+            } else {
+              update(modal.id, label, path, sortOrder);
+            }
+          }}
+        />
+      ) : null}
+    </>
   );
 };

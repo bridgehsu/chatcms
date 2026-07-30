@@ -30,3 +30,6 @@ export { IconMore } from "./IconMore";
 export { IconPin } from "./IconPin";
 export { IconCopy } from "./IconCopy";
 export { IconCheck } from "./IconCheck";
+export { IconGithub } from "./IconGithub";
+export { IconGlobe } from "./IconGlobe";
+export { IconLogout } from "./IconLogout";
