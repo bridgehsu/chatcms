@@ -307,6 +307,7 @@ async fn create_nav_bookmark(
         body.url,
         body.note,
         body.sort_order,
+        None,
     ) {
         Ok(item) => (StatusCode::CREATED, Json(item)).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
@@ -328,6 +329,7 @@ async fn update_nav_bookmark(
         body.url,
         body.note,
         body.sort_order,
+        None,
     ) {
         Ok(item) => Json(item).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),

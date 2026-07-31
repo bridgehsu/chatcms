@@ -1,27 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { invoke } from "@/hooks/useTauri";
 import { createSeedState } from "../data/seed";
 import type { BusinessMapState, MapLink, MapSection } from "../types";
-
-const STORAGE_KEY = "chatcms.business-map.v1";
-
-const load = (): BusinessMapState => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createSeedState();
-    const parsed = JSON.parse(raw) as BusinessMapState;
-    if (!parsed?.sections || !Array.isArray(parsed.sections)) return createSeedState();
-    return {
-      ...createSeedState(),
-      ...parsed,
-      favorites: parsed.favorites ?? [],
-      sections: parsed.sections,
-      note: parsed.note ?? "",
-      metrics: parsed.metrics?.length ? parsed.metrics : createSeedState().metrics,
-    };
-  } catch {
-    return createSeedState();
-  }
-};
 
 const newId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
@@ -29,15 +9,22 @@ const newId = () =>
     : `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export const useBusinessMap = () => {
-  const [state, setState] = useState<BusinessMapState>(() => load());
+  const [state, setState] = useState<BusinessMapState>(() => createSeedState());
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* ignore */
-    }
-  }, [state]);
+    invoke<BusinessMapState>("map_state_get").then((data) => {
+      if (data && data.sections?.length) {
+        setState({ ...createSeedState(), ...data });
+      }
+      setLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    invoke("map_state_save", { state }).catch(() => undefined);
+  }, [state, loaded]);
 
   const setNote = useCallback((note: string) => {
     setState((s) => ({ ...s, note }));

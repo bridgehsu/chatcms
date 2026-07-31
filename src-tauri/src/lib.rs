@@ -1,6 +1,7 @@
 mod agent;
 mod accounts;
 mod agents;
+mod business_map;
 mod channels;
 mod chat_bridge;
 mod config;
@@ -173,6 +174,12 @@ pub fn run() {
             nav_bookmarks::commands::nav_bookmark_list,
             nav_bookmarks::commands::nav_bookmark_upsert,
             nav_bookmarks::commands::nav_bookmark_remove,
+            nav_bookmarks::commands::nav_custom_list,
+            nav_bookmarks::commands::nav_custom_upsert,
+            nav_bookmarks::commands::nav_custom_remove,
+            // business map
+            business_map::commands::map_state_get,
+            business_map::commands::map_state_save,
             // schedules
             schedules::commands::schedule_list,
             schedules::commands::schedule_get,

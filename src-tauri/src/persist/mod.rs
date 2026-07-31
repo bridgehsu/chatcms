@@ -310,6 +310,23 @@ pub fn load_agent_profiles(app: &AppHandle) -> Vec<AgentProfile> {
         .unwrap_or_default()
 }
 
+pub fn save_business_map(app: &AppHandle, state: &crate::business_map::BusinessMapState) {
+    let Some(store) = open(app) else { return };
+    let val = serde_json::to_value(state).unwrap_or_default();
+    store.set("business_map", val);
+    let _ = store.save();
+}
+
+pub fn load_business_map(app: &AppHandle) -> crate::business_map::BusinessMapState {
+    let Some(store) = open(app) else {
+        return Default::default();
+    };
+    store
+        .get("business_map")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
+}
+
 /// 浏览器扩展 page_key → session_id 绑定。
 pub fn save_page_bindings(app: &AppHandle, bindings: &HashMap<String, String>) {
     let Some(store) = open(app) else { return };

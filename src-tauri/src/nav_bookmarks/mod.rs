@@ -16,6 +16,8 @@ pub struct NavBookmark {
     #[serde(default)]
     pub sort_order: i32,
     pub updated_at: i64,
+    #[serde(default)]
+    pub section: Option<String>, // Some("custom") 表示自定义侧栏分类
 }
 
 fn now_ms() -> i64 {
@@ -67,6 +69,7 @@ pub fn upsert(
     url: String,
     note: String,
     sort_order: Option<i32>,
+    section: Option<String>,
 ) -> Result<NavBookmark, String> {
     let title = title.trim().to_string();
     if title.is_empty() {
@@ -87,6 +90,9 @@ pub fn upsert(
         if let Some(ord) = sort_order {
             item.sort_order = ord;
         }
+        if section.is_some() {
+            item.section = section;
+        }
         item.updated_at = ts;
         let updated = item.clone();
         crate::persist::save_nav_bookmarks(app, &list);
@@ -106,11 +112,23 @@ pub fn upsert(
             note,
             sort_order: ord,
             updated_at: ts,
+            section,
         };
         list.push(bookmark.clone());
         crate::persist::save_nav_bookmarks(app, &list);
         Ok(bookmark)
     }
+}
+
+pub fn list_by_section(app: &AppHandle, section: Option<String>) -> Vec<NavBookmark> {
+    let mut list = crate::persist::load_nav_bookmarks(app);
+    list.retain(|b| b.section == section);
+    list.sort_by(|a, b| {
+        a.sort_order
+            .cmp(&b.sort_order)
+            .then_with(|| b.updated_at.cmp(&a.updated_at))
+    });
+    list
 }
 
 pub fn remove(app: &AppHandle, id: String) -> Result<(), String> {
