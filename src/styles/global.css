@@ -4056,7 +4056,7 @@ body,
 }
 .map-clock__row {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: 32px 1fr auto auto;
   align-items: center;
   gap: 8px;
   padding: 7px 8px;
@@ -4095,21 +4095,11 @@ body,
   font-variant-numeric: tabular-nums;
   margin-left: auto;
 }
-.map-clock__diff {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 4px;
-  border-radius: 4px;
-  margin-left: 4px;
-  vertical-align: middle;
-}
-.map-clock__diff.is-next {
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
-}
-.map-clock__diff.is-prev {
-  background: color-mix(in srgb, #f59e0b 15%, transparent);
-  color: #d97706;
+.map-clock__monthday {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  margin-right: auto;
 }
 
 .map-deadline-bar {
