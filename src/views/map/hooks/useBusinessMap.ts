@@ -14,10 +14,14 @@ export const useBusinessMap = () => {
 
   useEffect(() => {
     invoke<BusinessMapState>("map_state_get").then((data) => {
-      if (data && data.sections?.length) {
-        setState(data);
-      } else if (data) {
-        setState({ ...createSeedState(), ...data });
+      if (data) {
+        const seed = createSeedState();
+        setState({
+          ...seed,
+          note: data.note ?? seed.note,
+          favorites: data.favorites?.length ? data.favorites : seed.favorites,
+          sections: data.sections?.length ? data.sections : seed.sections,
+        });
       }
       setLoaded(true);
     });
