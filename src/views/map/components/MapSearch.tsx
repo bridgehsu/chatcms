@@ -26,11 +26,10 @@ type Props = {
 };
 
 export const MapSearch = ({ favorites, sections }: Props) => {
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [engineId, setEngineId] = useState("local");
   const inputRef = useRef<HTMLInputElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
 
   const engine = ENGINES.find((e) => e.id === engineId) ?? ENGINES[0];
   const isLocal = engine.id === "local";
@@ -46,16 +45,18 @@ export const MapSearch = ({ favorites, sections }: Props) => {
       ...sections.flatMap((sec) =>
         sec.links.filter(match).map((link) => ({ link, sectionTitle: sec.title }))
       ),
-    ].slice(0, 12);
+    ].slice(0, 10);
   })();
+
+  const close = () => {
+    setOpen(false);
+    setQuery("");
+  };
 
   const openLink = (url?: string) => {
     if (!url) return;
-    if (url.startsWith("#")) {
-      window.location.hash = url.slice(1);
-      return;
-    }
     openUrl(url);
+    close();
   };
 
   const submit = () => {
@@ -63,105 +64,126 @@ export const MapSearch = ({ favorites, sections }: Props) => {
     if (!q) return;
     if (!isLocal) {
       openUrl(engine.buildUrl(q));
-      setQuery("");
-      setDropdownOpen(false);
+      close();
     }
   };
 
-  // 点击外部关闭
+  // 自动聚焦
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [open]);
 
-  // Cmd/Ctrl+K 聚焦
+  // ⌘K 全局唤起
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        inputRef.current?.focus();
-        setDropdownOpen(true);
+        setOpen((v) => !v);
       }
-      if (e.key === "Escape") {
-        setQuery("");
-        setDropdownOpen(false);
-        inputRef.current?.blur();
-      }
+      if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
   return (
-    <div className="map-search" ref={wrapRef}>
-      <div className="map-search__input-wrap">
-        <select
-          className="map-search__engine"
-          value={engineId}
-          onChange={(e) => setEngineId(e.target.value)}
-          aria-label="搜索引擎"
-        >
-          {ENGINES.map((e) => (
-            <option key={e.id} value={e.id}>{e.label}</option>
-          ))}
-        </select>
-        <div className="map-search__divider" />
-        <svg className="map-search__icon" viewBox="0 0 16 16" fill="none">
+    <>
+      {/* 触发按钮 */}
+      <button
+        type="button"
+        className="map-search-trigger"
+        onClick={() => setOpen(true)}
+        aria-label="搜索"
+      >
+        <svg viewBox="0 0 16 16" fill="none" className="map-search-trigger__icon">
           <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5" />
           <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <input
-          ref={inputRef}
-          className="map-search__input"
-          placeholder={isLocal ? "搜索入口… ⌘K" : `用 ${engine.label} 搜索… ⌘K`}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setDropdownOpen(true);
-          }}
-          onFocus={() => setDropdownOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") submit();
-          }}
-        />
-        {query && (
-          <button
-            type="button"
-            className="map-search__clear"
-            onClick={() => { setQuery(""); inputRef.current?.focus(); }}
-          >
-            ×
-          </button>
-        )}
-      </div>
+        <span>搜索</span>
+        <kbd>⌘K</kbd>
+      </button>
 
-      {dropdownOpen && isLocal && query.trim() && (
-        <div className="map-search__dropdown">
-          {results.length === 0 ? (
-            <div className="map-search__empty">没有找到相关入口</div>
-          ) : (
-            results.map((item) => (
-              <div
-                key={item.link.id}
-                className="map-search__item"
-                onClick={() => {
-                  openLink(item.link.url);
-                  setQuery("");
-                  setDropdownOpen(false);
-                }}
-              >
-                <span className="map-search__item-title">{item.link.title}</span>
-                <span className="map-search__item-section">{item.sectionTitle}</span>
+      {/* 搜索浮层 */}
+      {open && (
+        <div className="map-search-modal" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
+          <div className="map-search-modal__panel">
+            {/* 引擎 Tab */}
+            <div className="map-search-modal__engines">
+              {ENGINES.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  className={`map-search-modal__engine-tab${e.id === engineId ? " is-active" : ""}`}
+                  onClick={() => { setEngineId(e.id); inputRef.current?.focus(); }}
+                >
+                  {e.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 搜索输入框 */}
+            <div className="map-search-modal__input-wrap">
+              <svg className="map-search-modal__icon" viewBox="0 0 20 20" fill="none">
+                <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M13 13L17.5 17.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              <input
+                ref={inputRef}
+                className="map-search-modal__input"
+                placeholder={isLocal ? "搜索入口、工具…" : `用 ${engine.label} 搜索…`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+              />
+              {query && (
+                <button
+                  type="button"
+                  className="map-search-modal__clear"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* 本站搜索结果 */}
+            {isLocal && query.trim() && (
+              <div className="map-search-modal__results">
+                {results.length === 0 ? (
+                  <div className="map-search-modal__empty">没有找到相关入口</div>
+                ) : (
+                  results.map((item) => (
+                    <div
+                      key={item.link.id}
+                      className="map-search-modal__item"
+                      onClick={() => openLink(item.link.url)}
+                    >
+                      <span className="map-search-modal__item-title">{item.link.title}</span>
+                      <span className="map-search-modal__item-section">{item.sectionTitle}</span>
+                    </div>
+                  ))
+                )}
               </div>
-            ))
-          )}
+            )}
+
+            {/* 外部引擎提示 */}
+            {!isLocal && query.trim() && (
+              <div className="map-search-modal__hint">
+                按 Enter 用 {engine.label} 搜索「{query.trim()}」
+              </div>
+            )}
+
+            <div className="map-search-modal__footer">
+              <span><kbd>↑↓</kbd> 导航</span>
+              <span><kbd>Enter</kbd> 确认</span>
+              <span><kbd>Esc</kbd> 关闭</span>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
