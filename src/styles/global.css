@@ -3897,6 +3897,15 @@ body,
   flex-shrink: 0;
   color: #fff;
 }
+.map-link-card__favicon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: var(--bg-2, #f1f5f9);
+  padding: 4px;
+}
 .map-mark--red { background: linear-gradient(145deg, #ff7a7a, #e84545); }
 .map-mark--teal { background: linear-gradient(145deg, #2dd4bf, #0f766e); }
 .map-mark--amber { background: linear-gradient(145deg, #fbbf24, #d97706); }
