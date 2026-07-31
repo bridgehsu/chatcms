@@ -48,6 +48,25 @@ export const useBusinessMap = () => {
     }));
   }, []);
 
+  const addSection = useCallback((title: string, icon: string) => {
+    const section: MapSection = {
+      id: newId(),
+      title,
+      icon,
+      locked: false,
+      collapsed: false,
+      links: [],
+    };
+    setState((s) => ({ ...s, sections: [...s.sections, section] }));
+  }, []);
+
+  const removeSection = useCallback((sectionId: string) => {
+    setState((s) => ({
+      ...s,
+      sections: s.sections.filter((sec) => sec.id !== sectionId),
+    }));
+  }, []);
+
   const addLink = useCallback((sectionId: string | "favorites", link: Omit<MapLink, "id">) => {
     const next: MapLink = { ...link, id: newId() };
     setState((s) => {
@@ -92,6 +111,8 @@ export const useBusinessMap = () => {
     setNote,
     toggleSection,
     toggleLock,
+    addSection,
+    removeSection,
     addLink,
     removeLink,
     reset,

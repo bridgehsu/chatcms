@@ -9,6 +9,7 @@ import { MapLinkModal } from "./MapLinkModal";
 import { MapMetricRow } from "./MapMetricRow";
 import { MapQuickNote } from "./MapQuickNote";
 import { MapSectionCard } from "./MapSection";
+import { MapSectionModal } from "./MapSectionModal";
 import { MapWorldClock } from "./MapWorldClock";
 
 export const MapBoard = () => {
@@ -20,14 +21,22 @@ export const MapBoard = () => {
     setNote,
     toggleSection,
     toggleLock,
+    addSection,
     addLink,
     removeLink,
   } = useBusinessMap();
 
   const [modalTarget, setModalTarget] = useState<string | "favorites" | null>(null);
+  const [sectionModal, setSectionModal] = useState(false);
   const deadlines = useMemo(() => buildDeadlines(), []);
   const sideRef = useRef<HTMLElement>(null);
   const favoritesRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handler = () => setSectionModal(true);
+    window.addEventListener("map:open-add-section", handler);
+    return () => window.removeEventListener("map:open-add-section", handler);
+  }, []);
 
   /** 常用工具最小高度 = 快速记录 + 世界时钟 + 中间间距 */
   useEffect(() => {
@@ -149,6 +158,11 @@ export const MapBoard = () => {
         }}
       />
 
+      <MapSectionModal
+        open={sectionModal}
+        onClose={() => setSectionModal(false)}
+        onSubmit={(title, icon) => addSection(title, icon)}
+      />
     </div>
   );
 };

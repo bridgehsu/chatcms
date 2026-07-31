@@ -62,6 +62,26 @@ pub fn list(app: &AppHandle) -> Vec<NavBookmark> {
     list
 }
 
+pub fn upsert_raw(
+    app: &AppHandle,
+    id: Option<String>,
+    title: String,
+    url: String,
+    note: String,
+    sort_order: Option<i32>,
+    section: Option<String>,
+) -> Result<NavBookmark, String> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("名称不能为空".into());
+    }
+    let url = url.trim().to_string();
+    if url.is_empty() {
+        return Err("路径不能为空".into());
+    }
+    upsert_inner(app, id, title, url, note, sort_order, section)
+}
+
 pub fn upsert(
     app: &AppHandle,
     id: Option<String>,
@@ -76,6 +96,18 @@ pub fn upsert(
         return Err("名称不能为空".into());
     }
     let url = normalize_url(&url)?;
+    upsert_inner(app, id, title, url, note, sort_order, section)
+}
+
+fn upsert_inner(
+    app: &AppHandle,
+    id: Option<String>,
+    title: String,
+    url: String,
+    note: String,
+    sort_order: Option<i32>,
+    section: Option<String>,
+) -> Result<NavBookmark, String> {
     let note = note.trim().to_string();
     let mut list = crate::persist::load_nav_bookmarks(app);
     let ts = now_ms();

@@ -36,7 +36,7 @@ pub fn nav_custom_upsert(
     path: String,
     sort_order: Option<i32>,
 ) -> Result<NavBookmark, String> {
-    super::upsert(&app, id, label, path, String::new(), sort_order, Some("custom".into()))
+    super::upsert_raw(&app, id, label, path, String::new(), sort_order, Some("custom".into()))
 }
 
 #[tauri::command]
