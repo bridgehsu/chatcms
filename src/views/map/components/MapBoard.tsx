@@ -7,6 +7,7 @@ import { MapDeadlineBar } from "./MapDeadlineBar";
 import { MapLinkCard } from "./MapLinkCard";
 import { MapLinkModal } from "./MapLinkModal";
 import { MapQuickNote } from "./MapQuickNote";
+import { MapSearch } from "./MapSearch";
 import { MapSectionCard } from "./MapSection";
 import { MapSectionModal } from "./MapSectionModal";
 import { MapWorldClock } from "./MapWorldClock";
@@ -95,6 +96,8 @@ export const MapBoard = () => {
 
   return (
     <div className="map-board">
+      <MapSearch favorites={favorites} sections={sections} />
+
       <div className="map-board__upper">
         <MapDeadlineBar items={deadlines} />
 
