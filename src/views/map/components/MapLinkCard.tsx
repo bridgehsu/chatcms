@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { IconPencil, IconTrash } from "@/components/icons";
 import type { MapLink } from "../types";
 
@@ -53,7 +54,7 @@ export const MapLinkCard = ({ link, unlocked, onEdit, onRemove }: Props) => {
       window.location.hash = link.url.slice(1);
       return;
     }
-    window.open(link.url, "_blank", "noopener,noreferrer");
+    openUrl(link.url);
   };
 
   return (
