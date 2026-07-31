@@ -22,6 +22,7 @@ export const MapBoard = () => {
     toggleSection,
     toggleLock,
     addSection,
+    removeSection,
     addLink,
     removeLink,
   } = useBusinessMap();
@@ -146,6 +147,7 @@ export const MapBoard = () => {
           onToggleLock={() => toggleLock(section.id)}
           onAdd={() => setModalTarget(section.id)}
           onRemoveLink={(linkId) => removeLink(section.id, linkId)}
+          onRemove={() => removeSection(section.id)}
         />
       ))}
 

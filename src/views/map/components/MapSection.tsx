@@ -1,6 +1,8 @@
-import { IconChevron, IconLock, IconPlus } from "@/components/icons";
+import { IconChevron, IconLock, IconPlus, IconTrash } from "@/components/icons";
 import type { MapLink, MapSection as MapSectionData } from "../types";
 import { MapLinkCard } from "./MapLinkCard";
+
+const SEED_IDS = new Set(["content", "accounts", "automation"]);
 
 type Props = {
   section: MapSectionData;
@@ -8,6 +10,7 @@ type Props = {
   onToggleLock: () => void;
   onAdd: () => void;
   onRemoveLink: (linkId: string) => void;
+  onRemove?: () => void;
 };
 
 export const MapSectionCard = ({
@@ -16,6 +19,7 @@ export const MapSectionCard = ({
   onToggleLock,
   onAdd,
   onRemoveLink,
+  onRemove,
 }: Props) => (
   <section className={`map-section${section.collapsed ? " is-collapsed" : ""}`}>
     <header className="map-section__header">
@@ -24,6 +28,17 @@ export const MapSectionCard = ({
         <span className="map-section__count">{section.links.length}</span>
       </div>
       <div className="map-section__actions">
+        {!SEED_IDS.has(section.id) && onRemove ? (
+          <button
+            type="button"
+            className="map-icon-btn map-icon-btn--danger"
+            aria-label="删除分区"
+            title="删除分区"
+            onClick={onRemove}
+          >
+            <IconTrash />
+          </button>
+        ) : null}
         <button
           type="button"
           className={`map-icon-btn${section.locked ? " is-on" : ""}`}
