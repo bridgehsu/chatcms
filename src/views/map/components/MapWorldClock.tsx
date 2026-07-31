@@ -16,12 +16,17 @@ const ZONES: Zone[] = [
   { id: "jp", label: "日本", abbr: "TK", timeZone: "Asia/Tokyo" },
 ];
 
-const formatDateTime = (timeZone: string, now: Date) =>
+const formatDate = (now: Date) =>
   new Intl.DateTimeFormat("zh-CN", {
-    timeZone,
+    timeZone: "Asia/Shanghai",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+  }).format(now);
+
+const formatTime = (timeZone: string, now: Date) =>
+  new Intl.DateTimeFormat("zh-CN", {
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -40,13 +45,14 @@ export const MapWorldClock = () => {
     <section className="map-card map-clock">
       <header className="map-section__header">
         <h2 className="map-section__title">世界时钟</h2>
+        <span className="map-clock__date">{formatDate(now)}</span>
       </header>
       <div className="map-clock__list">
         {ZONES.map((z) => (
           <div key={z.id} className="map-clock__row">
             <span className="map-clock__abbr">{z.abbr}</span>
             <span className="map-clock__label">{z.label}</span>
-            <span className="map-clock__time">{formatDateTime(z.timeZone, now)}</span>
+            <span className="map-clock__time">{formatTime(z.timeZone, now)}</span>
           </div>
         ))}
       </div>

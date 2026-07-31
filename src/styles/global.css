@@ -4089,6 +4089,12 @@ body,
   font-variant-numeric: tabular-nums;
   color: var(--text-dim);
 }
+.map-clock__date {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
 
 .map-deadline-bar {
   display: flex;
