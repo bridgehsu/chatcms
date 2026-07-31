@@ -28,12 +28,12 @@ export const Topbar = () => {
           <button
             type="button"
             className="topbar-action-btn"
-            aria-label="新增分区"
-            title="新增分区"
+            aria-label="新增导航分类"
+            title="新增导航分类"
             onClick={openAddSection}
           >
             <IconPlus />
-            <span>新增分区</span>
+            <span>新增导航分类</span>
           </button>
         ) : null}
       </div>

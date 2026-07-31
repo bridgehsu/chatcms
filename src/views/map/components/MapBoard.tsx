@@ -163,7 +163,7 @@ export const MapBoard = () => {
       <MapSectionModal
         open={sectionModal}
         onClose={() => setSectionModal(false)}
-        onSubmit={(title, icon) => addSection(title, icon)}
+        onSubmit={(title, url, sortOrder) => addSection(title, url, sortOrder)}
       />
     </div>
   );

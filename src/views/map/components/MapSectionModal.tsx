@@ -3,18 +3,20 @@ import { useEffect, useState } from "react";
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (title: string, icon: string) => void;
+  onSubmit: (title: string, url: string, sortOrder: number) => void;
 };
 
 export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
   const [title, setTitle] = useState("");
-  const [icon, setIcon] = useState("");
+  const [url, setUrl] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setTitle("");
-    setIcon("");
+    setUrl("");
+    setSortOrder("");
     setError("");
   }, [open]);
 
@@ -32,10 +34,10 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
   const save = () => {
     const t = title.trim();
     if (!t) {
-      setError("请填写分区名称");
+      setError("请填写导航名称");
       return;
     }
-    onSubmit(t, icon.trim() || "📁");
+    onSubmit(t, url.trim(), sortOrder ? Number(sortOrder) : 999);
     onClose();
   };
 
@@ -50,7 +52,7 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
       >
         <div className="model-modal__header">
           <h2 id="map-section-modal-title" className="model-modal__title">
-            新增分区
+            新增导航分类
           </h2>
           <button type="button" className="model-modal__close" onClick={onClose}>
             ×
@@ -58,7 +60,7 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
         </div>
         <div className="model-modal__body">
           <div className="mcp-form-row">
-            <label>分区名称</label>
+            <label>导航名称</label>
             <input
               autoFocus
               value={title}
@@ -68,12 +70,21 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
             />
           </div>
           <div className="mcp-form-row">
-            <label>图标（emoji）</label>
+            <label>关联链接（用于图标）</label>
             <input
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              placeholder="默认 📁"
-              maxLength={4}
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com"
+            />
+          </div>
+          <div className="mcp-form-row">
+            <label>排序</label>
+            <input
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              placeholder="数字越小越靠前"
+              min={0}
             />
           </div>
           {error && <div className="mcp-form-error">{error}</div>}

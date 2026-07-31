@@ -13,6 +13,8 @@ export type MapSection = {
   id: string;
   title: string;
   icon: string;
+  url?: string;
+  sort_order?: number;
   locked: boolean;
   collapsed: boolean;
   links: MapLink[];

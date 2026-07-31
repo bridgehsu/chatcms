@@ -13,6 +13,30 @@ type Props = {
   onRemove?: () => void;
 };
 
+const SectionIcon = ({ section }: { section: MapSectionData }) => {
+  if (section.url) {
+    try {
+      const origin = new URL(section.url).origin;
+      return (
+        <img
+          src={`${origin}/favicon.ico`}
+          alt=""
+          className="map-section__favicon"
+          width={16}
+          height={16}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      );
+    } catch {
+      /* invalid url, fall through */
+    }
+  }
+  if (section.icon) return <span className="map-section__icon">{section.icon}</span>;
+  return null;
+};
+
 export const MapSectionCard = ({
   section,
   onToggle,
@@ -24,6 +48,7 @@ export const MapSectionCard = ({
   <section className={`map-section${section.collapsed ? " is-collapsed" : ""}`}>
     <header className="map-section__header">
       <div className="map-section__title-wrap">
+        <SectionIcon section={section} />
         <h2 className="map-section__title">{section.title}</h2>
         <span className="map-section__count">{section.links.length}</span>
       </div>

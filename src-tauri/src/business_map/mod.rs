@@ -21,6 +21,10 @@ pub struct MapSection {
     pub title: String,
     pub icon: String,
     #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub sort_order: i32,
+    #[serde(default)]
     pub locked: bool,
     #[serde(default)]
     pub collapsed: bool,

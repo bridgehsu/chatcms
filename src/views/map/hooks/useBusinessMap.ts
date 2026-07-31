@@ -48,16 +48,23 @@ export const useBusinessMap = () => {
     }));
   }, []);
 
-  const addSection = useCallback((title: string, icon: string) => {
+  const addSection = useCallback((title: string, url: string, sortOrder: number) => {
     const section: MapSection = {
       id: newId(),
       title,
-      icon,
+      icon: "",
+      url: url || undefined,
+      sort_order: sortOrder,
       locked: false,
       collapsed: false,
       links: [],
     };
-    setState((s) => ({ ...s, sections: [...s.sections, section] }));
+    setState((s) => ({
+      ...s,
+      sections: [...s.sections, section].sort(
+        (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999),
+      ),
+    }));
   }, []);
 
   const removeSection = useCallback((sectionId: string) => {
