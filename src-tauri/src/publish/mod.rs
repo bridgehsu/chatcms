@@ -172,10 +172,12 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
         .route("/publish/platforms", get(list_publish_platforms))
         .route("/publish/script", get(get_publish_script))
         .route("/collect/script", get(get_collect_script))
-        .route("/nav/bookmarks", get(list_nav_bookmarks).post(create_nav_bookmark))
+        // 插件导航同源业务地图（常用工具 + 分类 + 网站）；旧 /nav/bookmarks 已废弃
+        .route("/map", get(get_map_nav))
+        .route("/map/links", post(create_map_link))
         .route(
-            "/nav/bookmarks/{id}",
-            put(update_nav_bookmark).delete(delete_nav_bookmark),
+            "/map/links/{id}",
+            put(update_map_link).delete(delete_map_link),
         )
         .route("/health", get(|| async { "ok" }))
         .merge(crate::chat_bridge::routes())
@@ -276,74 +278,87 @@ async fn get_collect_script(
     }
 }
 
-async fn list_nav_bookmarks(State(bridge): State<PublishBridge>) -> Response {
+async fn get_map_nav(State(bridge): State<PublishBridge>) -> Response {
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
     };
-    Json(crate::nav_bookmarks::list(&app)).into_response()
+    Json(crate::business_map::nav_view(&app)).into_response()
 }
 
 #[derive(Debug, Deserialize)]
-struct NavBookmarkBody {
+struct MapLinkBody {
+    /// `"favorites"` 或分类 id
+    section_id: String,
     title: String,
-    url: String,
     #[serde(default)]
-    note: String,
+    desc: String,
     #[serde(default)]
-    sort_order: Option<i32>,
+    mark: String,
+    #[serde(default)]
+    url: Option<String>,
+    #[serde(default)]
+    tone: Option<String>,
 }
 
-async fn create_nav_bookmark(
+#[derive(Debug, Deserialize)]
+struct MapLinkDeleteQuery {
+    section_id: String,
+}
+
+async fn create_map_link(
     State(bridge): State<PublishBridge>,
-    Json(body): Json<NavBookmarkBody>,
+    Json(body): Json<MapLinkBody>,
 ) -> Response {
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
     };
-    match crate::nav_bookmarks::upsert(
+    match crate::business_map::upsert_link(
         &app,
+        &body.section_id,
         None,
         body.title,
+        body.desc,
+        body.mark,
         body.url,
-        body.note,
-        body.sort_order,
-        None,
+        body.tone,
     ) {
         Ok(item) => (StatusCode::CREATED, Json(item)).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
     }
 }
 
-async fn update_nav_bookmark(
+async fn update_map_link(
     State(bridge): State<PublishBridge>,
     Path(id): Path<String>,
-    Json(body): Json<NavBookmarkBody>,
+    Json(body): Json<MapLinkBody>,
 ) -> Response {
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
     };
-    match crate::nav_bookmarks::upsert(
+    match crate::business_map::upsert_link(
         &app,
+        &body.section_id,
         Some(id),
         body.title,
+        body.desc,
+        body.mark,
         body.url,
-        body.note,
-        body.sort_order,
-        None,
+        body.tone,
     ) {
         Ok(item) => Json(item).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
     }
 }
 
-async fn delete_nav_bookmark(
+async fn delete_map_link(
     State(bridge): State<PublishBridge>,
     Path(id): Path<String>,
+    Query(q): Query<MapLinkDeleteQuery>,
 ) -> Response {
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
     };
-    match crate::nav_bookmarks::remove(&app, id) {
+    match crate::business_map::remove_link(&app, &q.section_id, &id) {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => (StatusCode::NOT_FOUND, e).into_response(),
     }
