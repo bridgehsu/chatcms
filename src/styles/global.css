@@ -4095,6 +4095,22 @@ body,
   font-variant-numeric: tabular-nums;
   margin-left: auto;
 }
+.map-clock__diff {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.map-clock__diff.is-next {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+.map-clock__diff.is-prev {
+  background: color-mix(in srgb, #f59e0b 15%, transparent);
+  color: #d97706;
+}
 
 .map-deadline-bar {
   display: flex;

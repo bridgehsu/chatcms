@@ -16,6 +16,9 @@ const ZONES: Zone[] = [
   { id: "jp", label: "日本", abbr: "TK", timeZone: "Asia/Tokyo" },
 ];
 
+const getDay = (timeZone: string, now: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+
 const formatDate = (now: Date) =>
   new Intl.DateTimeFormat("zh-CN", {
     timeZone: "Asia/Shanghai",
@@ -33,6 +36,12 @@ const formatTime = (timeZone: string, now: Date) =>
     hour12: false,
   }).format(now);
 
+const dayDiff = (now: Date, timeZone: string): number => {
+  const bjDay = new Date(getDay("Asia/Shanghai", now));
+  const tzDay = new Date(getDay(timeZone, now));
+  return Math.round((tzDay.getTime() - bjDay.getTime()) / 86400000);
+};
+
 export const MapWorldClock = () => {
   const [now, setNow] = useState(() => new Date());
 
@@ -48,13 +57,23 @@ export const MapWorldClock = () => {
         <span className="map-clock__date">{formatDate(now)}</span>
       </header>
       <div className="map-clock__list">
-        {ZONES.map((z) => (
-          <div key={z.id} className="map-clock__row">
-            <span className="map-clock__abbr">{z.abbr}</span>
-            <span className="map-clock__label">{z.label}</span>
-            <span className="map-clock__time">{formatTime(z.timeZone, now)}</span>
-          </div>
-        ))}
+        {ZONES.map((z) => {
+          const diff = dayDiff(now, z.timeZone);
+          return (
+            <div key={z.id} className="map-clock__row">
+              <span className="map-clock__abbr">{z.abbr}</span>
+              <span className="map-clock__label">{z.label}</span>
+              <span className="map-clock__time">
+                {formatTime(z.timeZone, now)}
+                {diff !== 0 && (
+                  <span className={`map-clock__diff${diff > 0 ? " is-next" : " is-prev"}`}>
+                    {diff > 0 ? `+${diff}` : diff}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
