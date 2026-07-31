@@ -2,6 +2,32 @@ import { useLocation } from "react-router-dom";
 import { IconPlus } from "@/components/icons";
 import { subtitleForPath, titleForPath } from "@/layout/nav";
 import { useChatStore } from "@/stores/useChatStore";
+import { MapSearch } from "@/views/map/components/MapSearch";
+import { useBusinessMap } from "@/views/map/hooks/useBusinessMap";
+
+const MapActions = () => {
+  const { favorites, sections } = useBusinessMap();
+
+  const openAddSection = () => {
+    window.dispatchEvent(new CustomEvent("map:open-add-section"));
+  };
+
+  return (
+    <>
+      <MapSearch favorites={favorites} sections={sections} />
+      <button
+        type="button"
+        className="topbar-action-btn"
+        aria-label="新增导航分类"
+        title="新增导航分类"
+        onClick={openAddSection}
+      >
+        <IconPlus />
+        <span>新增导航分类</span>
+      </button>
+    </>
+  );
+};
 
 export const Topbar = () => {
   const { pathname } = useLocation();
@@ -13,10 +39,6 @@ export const Topbar = () => {
   const subtitle =
     isChat && activeSession?.title ? activeSession.title : pageDesc;
 
-  const openAddSection = () => {
-    window.dispatchEvent(new CustomEvent("map:open-add-section"));
-  };
-
   return (
     <header className="topbar">
       <div className="topbar-text">
@@ -24,18 +46,7 @@ export const Topbar = () => {
         {subtitle ? <p className="topbar-sub">{subtitle}</p> : null}
       </div>
       <div className="topbar-actions">
-        {isMap ? (
-          <button
-            type="button"
-            className="topbar-action-btn"
-            aria-label="新增导航分类"
-            title="新增导航分类"
-            onClick={openAddSection}
-          >
-            <IconPlus />
-            <span>新增导航分类</span>
-          </button>
-        ) : null}
+        {isMap ? <MapActions /> : null}
       </div>
     </header>
   );
