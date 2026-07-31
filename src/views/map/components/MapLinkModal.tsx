@@ -5,6 +5,7 @@ import type { MapLink } from "../types";
 type Props = {
   open: boolean;
   title: string;
+  initial?: Omit<MapLink, "id">;
   onClose: () => void;
   onSubmit: (link: Omit<MapLink, "id">) => void;
 };
@@ -18,21 +19,21 @@ const TONE_OPTIONS = [
   { value: "slate", label: "灰" },
 ] as const;
 
-export const MapLinkModal = ({ open, title, onClose, onSubmit }: Props) => {
-  const [form, setForm] = useState({
-    title: "",
-    desc: "",
-    mark: "",
-    url: "",
-    tone: "teal" as NonNullable<MapLink["tone"]>,
-  });
+const EMPTY_FORM = { title: "", desc: "", mark: "", url: "", tone: "teal" as NonNullable<MapLink["tone"]> };
+
+export const MapLinkModal = ({ open, title, initial, onClose, onSubmit }: Props) => {
+  const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    setForm({ title: "", desc: "", mark: "", url: "", tone: "teal" });
+    setForm(
+      initial
+        ? { title: initial.title, desc: initial.desc, mark: initial.mark, url: initial.url ?? "", tone: initial.tone ?? "teal" }
+        : EMPTY_FORM
+    );
     setError("");
-  }, [open]);
+  }, [open, initial]);
 
   useEffect(() => {
     if (!open) return;
@@ -44,6 +45,8 @@ export const MapLinkModal = ({ open, title, onClose, onSubmit }: Props) => {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const isEdit = !!initial;
 
   const save = () => {
     const name = form.title.trim();
@@ -82,8 +85,10 @@ export const MapLinkModal = ({ open, title, onClose, onSubmit }: Props) => {
           <div className="mcp-form-row">
             <label>名称</label>
             <input
+              autoFocus
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && save()}
               placeholder="例如：运营看板"
             />
           </div>
@@ -128,7 +133,7 @@ export const MapLinkModal = ({ open, title, onClose, onSubmit }: Props) => {
             取消
           </button>
           <button type="button" className="btn-primary" onClick={save}>
-            添加
+            {isEdit ? "保存" : "添加"}
           </button>
         </div>
       </div>

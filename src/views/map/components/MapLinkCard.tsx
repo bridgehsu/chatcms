@@ -1,3 +1,4 @@
+import { IconPencil, IconTrash } from "@/components/icons";
 import type { MapLink } from "../types";
 
 const toneClass = (tone?: MapLink["tone"]) =>
@@ -5,11 +6,12 @@ const toneClass = (tone?: MapLink["tone"]) =>
 
 type Props = {
   link: MapLink;
+  unlocked?: boolean;
+  onEdit?: () => void;
   onRemove?: () => void;
-  removable?: boolean;
 };
 
-export const MapLinkCard = ({ link, onRemove, removable }: Props) => {
+export const MapLinkCard = ({ link, unlocked, onEdit, onRemove }: Props) => {
   const open = () => {
     if (!link.url) return;
     if (link.url.startsWith("#")) {
@@ -21,12 +23,12 @@ export const MapLinkCard = ({ link, onRemove, removable }: Props) => {
 
   return (
     <div
-      className={`map-link-card${link.url ? " is-clickable" : ""}`}
-      onClick={link.url ? open : undefined}
-      role={link.url ? "link" : undefined}
-      tabIndex={link.url ? 0 : undefined}
+      className={`map-link-card${link.url ? " is-clickable" : ""}${unlocked ? " is-unlocked" : ""}`}
+      onClick={link.url && !unlocked ? open : undefined}
+      role={link.url && !unlocked ? "link" : undefined}
+      tabIndex={link.url && !unlocked ? 0 : undefined}
       onKeyDown={(e) => {
-        if (!link.url) return;
+        if (!link.url || unlocked) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           open();
@@ -40,18 +42,35 @@ export const MapLinkCard = ({ link, onRemove, removable }: Props) => {
         <div className="map-link-card__title">{link.title}</div>
         <div className="map-link-card__desc">{link.desc}</div>
       </div>
-      {removable && onRemove && (
-        <button
-          type="button"
-          className="map-link-card__remove"
-          aria-label={`移除 ${link.title}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-        >
-          ×
-        </button>
+      {unlocked && (
+        <div className="map-link-card__actions">
+          {onEdit && (
+            <button
+              type="button"
+              className="map-link-card__action-btn"
+              aria-label={`编辑 ${link.title}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <IconPencil />
+            </button>
+          )}
+          {onRemove && (
+            <button
+              type="button"
+              className="map-link-card__action-btn map-link-card__action-btn--danger"
+              aria-label={`删除 ${link.title}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+            >
+              <IconTrash />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -17,10 +17,8 @@ export const useBusinessMap = () => {
       if (data && data.sections?.length) {
         setState(data);
       } else if (data) {
-        // 后端有记录但 sections 为空，用 seed 补全 sections
         setState({ ...createSeedState(), ...data });
       }
-      // 首次无数据，保留 useState 初始的 seed state
       setLoaded(true);
     });
   }, []);
@@ -52,12 +50,11 @@ export const useBusinessMap = () => {
     }));
   }, []);
 
-  const addSection = useCallback((title: string, url: string, sortOrder: number) => {
+  const addSection = useCallback((title: string, sortOrder: number) => {
     const section: MapSection = {
       id: newId(),
       title,
       icon: "",
-      url: url || undefined,
       sort_order: sortOrder,
       locked: false,
       collapsed: false,
@@ -71,13 +68,13 @@ export const useBusinessMap = () => {
     }));
   }, []);
 
-  const updateSection = useCallback((sectionId: string, title: string, url: string, sortOrder: number) => {
+  const updateSection = useCallback((sectionId: string, title: string, sortOrder: number) => {
     setState((s) => ({
       ...s,
       sections: s.sections
         .map((sec) =>
           sec.id === sectionId
-            ? { ...sec, title, url: url || undefined, sort_order: sortOrder }
+            ? { ...sec, title, sort_order: sortOrder }
             : sec,
         )
         .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)),
@@ -102,6 +99,25 @@ export const useBusinessMap = () => {
         sections: s.sections.map((sec) =>
           sec.id === sectionId && !sec.locked
             ? { ...sec, links: [...sec.links, next] }
+            : sec,
+        ),
+      };
+    });
+  }, []);
+
+  const updateLink = useCallback((sectionId: string | "favorites", linkId: string, data: Omit<MapLink, "id">) => {
+    setState((s) => {
+      if (sectionId === "favorites") {
+        return {
+          ...s,
+          favorites: s.favorites.map((l) => l.id === linkId ? { ...data, id: linkId } : l),
+        };
+      }
+      return {
+        ...s,
+        sections: s.sections.map((sec) =>
+          sec.id === sectionId && !sec.locked
+            ? { ...sec, links: sec.links.map((l) => l.id === linkId ? { ...data, id: linkId } : l) }
             : sec,
         ),
       };
@@ -139,6 +155,7 @@ export const useBusinessMap = () => {
     updateSection,
     removeSection,
     addLink,
+    updateLink,
     removeLink,
     reset,
   };

@@ -16,11 +16,15 @@ const ZONES: Zone[] = [
   { id: "jp", label: "日本", abbr: "TK", timeZone: "Asia/Tokyo" },
 ];
 
-const formatTime = (timeZone: string, now: Date) =>
+const formatDateTime = (timeZone: string, now: Date) =>
   new Intl.DateTimeFormat("zh-CN", {
     timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     hour12: false,
   }).format(now);
 
@@ -28,7 +32,7 @@ export const MapWorldClock = () => {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const t = window.setInterval(() => setNow(new Date()), 30_000);
+    const t = window.setInterval(() => setNow(new Date()), 1_000);
     return () => window.clearInterval(t);
   }, []);
 
@@ -42,7 +46,7 @@ export const MapWorldClock = () => {
           <div key={z.id} className="map-clock__row">
             <span className="map-clock__abbr">{z.abbr}</span>
             <span className="map-clock__label">{z.label}</span>
-            <span className="map-clock__time">{formatTime(z.timeZone, now)}</span>
+            <span className="map-clock__time">{formatDateTime(z.timeZone, now)}</span>
           </div>
         ))}
       </div>

@@ -3,21 +3,19 @@ import type { MapSection } from "../types";
 
 type Props = {
   open: boolean;
-  initial?: Pick<MapSection, "title" | "url" | "sort_order">;
+  initial?: Pick<MapSection, "title" | "sort_order">;
   onClose: () => void;
-  onSubmit: (title: string, url: string, sortOrder: number) => void;
+  onSubmit: (title: string, sortOrder: number) => void;
 };
 
 export const MapSectionModal = ({ open, initial, onClose, onSubmit }: Props) => {
   const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
   const [sortOrder, setSortOrder] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setTitle(initial?.title ?? "");
-    setUrl(initial?.url ?? "");
     setSortOrder(initial?.sort_order != null ? String(initial.sort_order) : "");
     setError("");
   }, [open, initial]);
@@ -41,7 +39,7 @@ export const MapSectionModal = ({ open, initial, onClose, onSubmit }: Props) => 
       setError("请填写导航名称");
       return;
     }
-    onSubmit(t, url.trim(), sortOrder !== "" ? Number(sortOrder) : 999);
+    onSubmit(t, sortOrder !== "" ? Number(sortOrder) : 999);
     onClose();
   };
 
@@ -71,14 +69,6 @@ export const MapSectionModal = ({ open, initial, onClose, onSubmit }: Props) => 
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && save()}
               placeholder="例如：运营工具"
-            />
-          </div>
-          <div className="mcp-form-row">
-            <label>关联链接（用于图标）</label>
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
             />
           </div>
           <div className="mcp-form-row">

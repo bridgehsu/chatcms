@@ -6,18 +6,18 @@ import type { MapLink } from "../types";
 import { MapDeadlineBar } from "./MapDeadlineBar";
 import { MapLinkCard } from "./MapLinkCard";
 import { MapLinkModal } from "./MapLinkModal";
-import { MapMetricRow } from "./MapMetricRow";
 import { MapQuickNote } from "./MapQuickNote";
 import { MapSectionCard } from "./MapSection";
 import { MapSectionModal } from "./MapSectionModal";
 import { MapWorldClock } from "./MapWorldClock";
+
+type LinkTarget = { sectionId: string | "favorites"; link: MapLink } | null;
 
 export const MapBoard = () => {
   const {
     favorites,
     sections,
     note,
-    metrics,
     setNote,
     toggleSection,
     toggleLock,
@@ -25,10 +25,12 @@ export const MapBoard = () => {
     updateSection,
     removeSection,
     addLink,
+    updateLink,
     removeLink,
   } = useBusinessMap();
 
-  const [modalTarget, setModalTarget] = useState<string | "favorites" | null>(null);
+  const [addTarget, setAddTarget] = useState<string | "favorites" | null>(null);
+  const [editingLink, setEditingLink] = useState<LinkTarget>(null);
   const [sectionModal, setSectionModal] = useState(false);
   const [editingSection, setEditingSection] = useState<typeof sections[number] | null>(null);
   const deadlines = useMemo(() => buildDeadlines(), []);
@@ -108,7 +110,7 @@ export const MapBoard = () => {
                   type="button"
                   className="map-add-btn"
                   aria-label="添加常用工具"
-                  onClick={() => setModalTarget("favorites")}
+                  onClick={() => setAddTarget("favorites")}
                 >
                   <IconPlus />
                 </button>
@@ -123,7 +125,6 @@ export const MapBoard = () => {
                     <MapLinkCard
                       key={link.id}
                       link={link}
-                      removable
                       onRemove={() => removeLink("favorites", link.id)}
                     />
                   ))}
@@ -139,42 +140,55 @@ export const MapBoard = () => {
         </div>
       </div>
 
-      <MapMetricRow metrics={metrics} />
-
       {sections.map((section) => (
         <MapSectionCard
           key={section.id}
           section={section}
           onToggle={() => toggleSection(section.id)}
           onToggleLock={() => toggleLock(section.id)}
-          onAdd={() => setModalTarget(section.id)}
+          onAdd={() => setAddTarget(section.id)}
           onEdit={() => setEditingSection(section)}
           onRemove={() => removeSection(section.id)}
+          onEditLink={(link) => setEditingLink({ sectionId: section.id, link })}
           onRemoveLink={(linkId) => removeLink(section.id, linkId)}
         />
       ))}
 
+      {/* 添加导航元素弹窗 */}
       <MapLinkModal
-        open={modalTarget !== null}
-        title={modalTarget === "favorites" ? "添加常用工具" : "添加入口"}
-        onClose={() => setModalTarget(null)}
+        open={addTarget !== null}
+        title={addTarget === "favorites" ? "添加常用工具" : "添加入口"}
+        onClose={() => setAddTarget(null)}
         onSubmit={(link: Omit<MapLink, "id">) => {
-          if (modalTarget) addLink(modalTarget, link);
+          if (addTarget) addLink(addTarget, link);
         }}
       />
 
+      {/* 编辑导航元素弹窗 */}
+      <MapLinkModal
+        open={editingLink !== null}
+        title="编辑入口"
+        initial={editingLink?.link}
+        onClose={() => setEditingLink(null)}
+        onSubmit={(data: Omit<MapLink, "id">) => {
+          if (editingLink) updateLink(editingLink.sectionId, editingLink.link.id, data);
+        }}
+      />
+
+      {/* 新增分类弹窗 */}
       <MapSectionModal
         open={sectionModal}
         onClose={() => setSectionModal(false)}
-        onSubmit={(title, url, sortOrder) => addSection(title, url, sortOrder)}
+        onSubmit={(title, sortOrder) => addSection(title, sortOrder)}
       />
 
+      {/* 编辑分类弹窗 */}
       <MapSectionModal
         open={editingSection !== null}
         initial={editingSection ?? undefined}
         onClose={() => setEditingSection(null)}
-        onSubmit={(title, url, sortOrder) => {
-          if (editingSection) updateSection(editingSection.id, title, url, sortOrder);
+        onSubmit={(title, sortOrder) => {
+          if (editingSection) updateSection(editingSection.id, title, sortOrder);
         }}
       />
     </div>
