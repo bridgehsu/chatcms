@@ -1,16 +1,15 @@
-import { IconChevron, IconLock, IconPlus, IconTrash } from "@/components/icons";
+import { IconChevron, IconLock, IconPencil, IconPlus, IconTrash } from "@/components/icons";
 import type { MapLink, MapSection as MapSectionData } from "../types";
 import { MapLinkCard } from "./MapLinkCard";
-
-const SEED_IDS = new Set(["content", "accounts", "automation"]);
 
 type Props = {
   section: MapSectionData;
   onToggle: () => void;
   onToggleLock: () => void;
   onAdd: () => void;
+  onEdit: () => void;
+  onRemove: () => void;
   onRemoveLink: (linkId: string) => void;
-  onRemove?: () => void;
 };
 
 const SectionIcon = ({ section }: { section: MapSectionData }) => {
@@ -42,8 +41,9 @@ export const MapSectionCard = ({
   onToggle,
   onToggleLock,
   onAdd,
-  onRemoveLink,
+  onEdit,
   onRemove,
+  onRemoveLink,
 }: Props) => (
   <section className={`map-section${section.collapsed ? " is-collapsed" : ""}`}>
     <header className="map-section__header">
@@ -53,17 +53,24 @@ export const MapSectionCard = ({
         <span className="map-section__count">{section.links.length}</span>
       </div>
       <div className="map-section__actions">
-        {!SEED_IDS.has(section.id) && onRemove ? (
-          <button
-            type="button"
-            className="map-icon-btn map-icon-btn--danger"
-            aria-label="删除分区"
-            title="删除分区"
-            onClick={onRemove}
-          >
-            <IconTrash />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="map-icon-btn"
+          aria-label="编辑分类"
+          title="编辑"
+          onClick={onEdit}
+        >
+          <IconPencil />
+        </button>
+        <button
+          type="button"
+          className="map-icon-btn map-icon-btn--danger"
+          aria-label="删除分类"
+          title="删除"
+          onClick={onRemove}
+        >
+          <IconTrash />
+        </button>
         <button
           type="button"
           className={`map-icon-btn${section.locked ? " is-on" : ""}`}

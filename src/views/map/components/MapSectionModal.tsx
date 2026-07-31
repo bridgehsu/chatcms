@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import type { MapSection } from "../types";
 
 type Props = {
   open: boolean;
+  initial?: Pick<MapSection, "title" | "url" | "sort_order">;
   onClose: () => void;
   onSubmit: (title: string, url: string, sortOrder: number) => void;
 };
 
-export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
+export const MapSectionModal = ({ open, initial, onClose, onSubmit }: Props) => {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [sortOrder, setSortOrder] = useState("");
@@ -14,11 +16,11 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
 
   useEffect(() => {
     if (!open) return;
-    setTitle("");
-    setUrl("");
-    setSortOrder("");
+    setTitle(initial?.title ?? "");
+    setUrl(initial?.url ?? "");
+    setSortOrder(initial?.sort_order != null ? String(initial.sort_order) : "");
     setError("");
-  }, [open]);
+  }, [open, initial]);
 
   useEffect(() => {
     if (!open) return;
@@ -31,13 +33,15 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
 
   if (!open) return null;
 
+  const isEdit = !!initial;
+
   const save = () => {
     const t = title.trim();
     if (!t) {
       setError("请填写导航名称");
       return;
     }
-    onSubmit(t, url.trim(), sortOrder ? Number(sortOrder) : 999);
+    onSubmit(t, url.trim(), sortOrder !== "" ? Number(sortOrder) : 999);
     onClose();
   };
 
@@ -52,7 +56,7 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
       >
         <div className="model-modal__header">
           <h2 id="map-section-modal-title" className="model-modal__title">
-            新增导航分类
+            {isEdit ? "编辑导航分类" : "新增导航分类"}
           </h2>
           <button type="button" className="model-modal__close" onClick={onClose}>
             ×
@@ -94,7 +98,7 @@ export const MapSectionModal = ({ open, onClose, onSubmit }: Props) => {
             取消
           </button>
           <button type="button" className="btn-primary" onClick={save}>
-            添加
+            {isEdit ? "保存" : "添加"}
           </button>
         </div>
       </div>

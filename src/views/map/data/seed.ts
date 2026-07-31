@@ -39,6 +39,7 @@ export const createSeedState = (): BusinessMapState => ({
       id: "content",
       title: "内容生产",
       icon: "✎",
+      sort_order: 0,
       locked: false,
       collapsed: false,
       links: [
@@ -79,6 +80,7 @@ export const createSeedState = (): BusinessMapState => ({
       id: "accounts",
       title: "账号与渠道",
       icon: "◎",
+      sort_order: 1,
       locked: false,
       collapsed: false,
       links: [
@@ -111,6 +113,7 @@ export const createSeedState = (): BusinessMapState => ({
       id: "automation",
       title: "自动化与技能",
       icon: "⚡",
+      sort_order: 2,
       locked: false,
       collapsed: false,
       links: [

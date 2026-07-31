@@ -22,6 +22,7 @@ export const MapBoard = () => {
     toggleSection,
     toggleLock,
     addSection,
+    updateSection,
     removeSection,
     addLink,
     removeLink,
@@ -29,6 +30,7 @@ export const MapBoard = () => {
 
   const [modalTarget, setModalTarget] = useState<string | "favorites" | null>(null);
   const [sectionModal, setSectionModal] = useState(false);
+  const [editingSection, setEditingSection] = useState<typeof sections[number] | null>(null);
   const deadlines = useMemo(() => buildDeadlines(), []);
   const sideRef = useRef<HTMLElement>(null);
   const favoritesRef = useRef<HTMLElement>(null);
@@ -146,8 +148,9 @@ export const MapBoard = () => {
           onToggle={() => toggleSection(section.id)}
           onToggleLock={() => toggleLock(section.id)}
           onAdd={() => setModalTarget(section.id)}
-          onRemoveLink={(linkId) => removeLink(section.id, linkId)}
+          onEdit={() => setEditingSection(section)}
           onRemove={() => removeSection(section.id)}
+          onRemoveLink={(linkId) => removeLink(section.id, linkId)}
         />
       ))}
 
@@ -164,6 +167,15 @@ export const MapBoard = () => {
         open={sectionModal}
         onClose={() => setSectionModal(false)}
         onSubmit={(title, url, sortOrder) => addSection(title, url, sortOrder)}
+      />
+
+      <MapSectionModal
+        open={editingSection !== null}
+        initial={editingSection ?? undefined}
+        onClose={() => setEditingSection(null)}
+        onSubmit={(title, url, sortOrder) => {
+          if (editingSection) updateSection(editingSection.id, title, url, sortOrder);
+        }}
       />
     </div>
   );

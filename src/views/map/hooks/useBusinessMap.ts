@@ -15,8 +15,12 @@ export const useBusinessMap = () => {
   useEffect(() => {
     invoke<BusinessMapState>("map_state_get").then((data) => {
       if (data && data.sections?.length) {
+        setState(data);
+      } else if (data) {
+        // 后端有记录但 sections 为空，用 seed 补全 sections
         setState({ ...createSeedState(), ...data });
       }
+      // 首次无数据，保留 useState 初始的 seed state
       setLoaded(true);
     });
   }, []);
@@ -64,6 +68,19 @@ export const useBusinessMap = () => {
       sections: [...s.sections, section].sort(
         (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999),
       ),
+    }));
+  }, []);
+
+  const updateSection = useCallback((sectionId: string, title: string, url: string, sortOrder: number) => {
+    setState((s) => ({
+      ...s,
+      sections: s.sections
+        .map((sec) =>
+          sec.id === sectionId
+            ? { ...sec, title, url: url || undefined, sort_order: sortOrder }
+            : sec,
+        )
+        .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)),
     }));
   }, []);
 
@@ -119,6 +136,7 @@ export const useBusinessMap = () => {
     toggleSection,
     toggleLock,
     addSection,
+    updateSection,
     removeSection,
     addLink,
     removeLink,
