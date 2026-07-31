@@ -1,0 +1,106 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ── 启动 ───────────────────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 启动",
+      "type": "shell",
+      "command": "pnpm tauri dev",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    // ── 停止 ───────────────────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 停止",
+      "type": "shell",
+      "command": "pkill -f 'pnpm tauri dev' 2>/dev/null; pkill -f 'vite' 2>/dev/null; pkill -f 'chatcms' 2>/dev/null; lsof -ti:17890 | xargs kill -9 2>/dev/null; lsof -ti:15420 | xargs kill -9 2>/dev/null; echo '已停止'",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    // ── 重启 ───────────────────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 重启",
+      "dependsOrder": "sequence",
+      "dependsOn": ["ChatCMS: 停止", "ChatCMS: 启动"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    },
+
+    // ── Cargo Check ────────────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: Cargo Check",
+      "type": "shell",
+      "command": "cargo check 2>&1",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": {
+        "owner": "rust",
+        "source": "cargo",
+        "fileLocation": ["relative", "${workspaceFolder}/src-tauri"],
+        "pattern": {
+          "regexp": "^error(?:\\[(.+)\\])?: (.+)$",
+          "code": 1,
+          "message": 2
+        }
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/src-tauri"
+      }
+    },
+
+    // ── Build Release ──────────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: Build Release",
+      "type": "shell",
+      "command": "pnpm tauri build",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    }
+  ]
+}
