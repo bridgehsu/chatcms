@@ -5,7 +5,7 @@
     {
       "label": "ChatCMS: 启动",
       "type": "shell",
-      "command": "pnpm tauri dev",
+      "command": "bash scripts/dev.sh",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -44,16 +44,19 @@
     // ── 重启 ───────────────────────────────────────────────────────────────
     {
       "label": "ChatCMS: 重启",
-      "dependsOrder": "sequence",
-      "dependsOn": ["ChatCMS: 停止", "ChatCMS: 启动"],
-      "group": "build",
+      "type": "shell",
+      "command": "bash scripts/dev.sh",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
         "group": "chatcms",
-        "showReuseMessage": false
+        "showReuseMessage": false,
+        "clear": true
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
     },
 
     // ── Cargo Check ────────────────────────────────────────────────────────
@@ -69,16 +72,7 @@
         "showReuseMessage": false,
         "clear": true
       },
-      "problemMatcher": {
-        "owner": "rust",
-        "source": "cargo",
-        "fileLocation": ["relative", "${workspaceFolder}/src-tauri"],
-        "pattern": {
-          "regexp": "^error(?:\\[(.+)\\])?: (.+)$",
-          "code": 1,
-          "message": 2
-        }
-      },
+      "problemMatcher": [],
       "options": {
         "cwd": "${workspaceFolder}/src-tauri"
       }
