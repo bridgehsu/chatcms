@@ -3608,7 +3608,9 @@ body,
 /* ── 搜索框 ─────────────────────────────────────────────── */
 .map-search {
   position: relative;
-  width: 100%;
+  width: 480px;
+  max-width: 100%;
+  margin: 0 auto;
 }
 .map-search__input-wrap {
   display: flex;
