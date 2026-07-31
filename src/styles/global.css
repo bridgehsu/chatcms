@@ -3615,12 +3615,35 @@ body,
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 12px;
+  height: 34px;
+  padding: 0 10px 0 0;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   transition: border-color 150ms, box-shadow 150ms;
+}
+.map-search__engine {
+  height: 100%;
+  border: none;
+  border-radius: 9px 0 0 9px;
+  background: var(--bg-3);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 8px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  border-right: 1px solid var(--border);
+  min-width: 64px;
+  text-align: center;
+}
+.map-search__engine:focus {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-3));
+}
+.map-search__divider {
+  display: none;
 }
 .map-search__input-wrap:focus-within {
   border-color: var(--accent);

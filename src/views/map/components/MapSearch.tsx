@@ -1,5 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { MapLink, MapSection } from "../types";
+
+type Engine = {
+  id: string;
+  label: string;
+  buildUrl: (q: string) => string;
+};
+
+const ENGINES: Engine[] = [
+  { id: "local", label: "本站", buildUrl: () => "" },
+  { id: "google", label: "Google", buildUrl: (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}` },
+  { id: "chatgpt", label: "ChatGPT", buildUrl: (q) => `https://chatgpt.com/?q=${encodeURIComponent(q)}` },
+  { id: "deepseek", label: "DeepSeek", buildUrl: (q) => `https://chat.deepseek.com/?q=${encodeURIComponent(q)}` },
+];
 
 type ResultItem = {
   link: MapLink;
@@ -11,44 +25,54 @@ type Props = {
   sections: MapSection[];
 };
 
-const openLink = (url?: string) => {
-  if (!url) return;
-  if (url.startsWith("#")) {
-    window.location.hash = url.slice(1);
-    return;
-  }
-  window.open(url, "_blank", "noopener,noreferrer");
-};
-
 export const MapSearch = ({ favorites, sections }: Props) => {
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [engineId, setEngineId] = useState("local");
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  const engine = ENGINES.find((e) => e.id === engineId) ?? ENGINES[0];
+  const isLocal = engine.id === "local";
+
   const results: ResultItem[] = (() => {
+    if (!isLocal) return [];
     const q = query.trim().toLowerCase();
     if (!q) return [];
     const match = (link: MapLink) =>
-      link.title.toLowerCase().includes(q) ||
-      link.desc.toLowerCase().includes(q);
-
-    const favMatches: ResultItem[] = favorites
-      .filter(match)
-      .map((link) => ({ link, sectionTitle: "常用工具" }));
-
-    const sectionMatches: ResultItem[] = sections.flatMap((sec) =>
-      sec.links.filter(match).map((link) => ({ link, sectionTitle: sec.title }))
-    );
-
-    return [...favMatches, ...sectionMatches].slice(0, 12);
+      link.title.toLowerCase().includes(q) || link.desc.toLowerCase().includes(q);
+    return [
+      ...favorites.filter(match).map((link) => ({ link, sectionTitle: "常用工具" })),
+      ...sections.flatMap((sec) =>
+        sec.links.filter(match).map((link) => ({ link, sectionTitle: sec.title }))
+      ),
+    ].slice(0, 12);
   })();
+
+  const openLink = (url?: string) => {
+    if (!url) return;
+    if (url.startsWith("#")) {
+      window.location.hash = url.slice(1);
+      return;
+    }
+    openUrl(url);
+  };
+
+  const submit = () => {
+    const q = query.trim();
+    if (!q) return;
+    if (!isLocal) {
+      openUrl(engine.buildUrl(q));
+      setQuery("");
+      setDropdownOpen(false);
+    }
+  };
 
   // 点击外部关闭
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        setDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -61,11 +85,11 @@ export const MapSearch = ({ favorites, sections }: Props) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         inputRef.current?.focus();
-        setOpen(true);
+        setDropdownOpen(true);
       }
       if (e.key === "Escape") {
         setQuery("");
-        setOpen(false);
+        setDropdownOpen(false);
         inputRef.current?.blur();
       }
     };
@@ -76,6 +100,17 @@ export const MapSearch = ({ favorites, sections }: Props) => {
   return (
     <div className="map-search" ref={wrapRef}>
       <div className="map-search__input-wrap">
+        <select
+          className="map-search__engine"
+          value={engineId}
+          onChange={(e) => setEngineId(e.target.value)}
+          aria-label="搜索引擎"
+        >
+          {ENGINES.map((e) => (
+            <option key={e.id} value={e.id}>{e.label}</option>
+          ))}
+        </select>
+        <div className="map-search__divider" />
         <svg className="map-search__icon" viewBox="0 0 16 16" fill="none">
           <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5" />
           <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -83,13 +118,16 @@ export const MapSearch = ({ favorites, sections }: Props) => {
         <input
           ref={inputRef}
           className="map-search__input"
-          placeholder="搜索入口… ⌘K"
+          placeholder={isLocal ? "搜索入口… ⌘K" : `用 ${engine.label} 搜索… ⌘K`}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setOpen(true);
+            setDropdownOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => setDropdownOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+          }}
         />
         {query && (
           <button
@@ -102,7 +140,7 @@ export const MapSearch = ({ favorites, sections }: Props) => {
         )}
       </div>
 
-      {open && query.trim() && (
+      {dropdownOpen && isLocal && query.trim() && (
         <div className="map-search__dropdown">
           {results.length === 0 ? (
             <div className="map-search__empty">没有找到相关入口</div>
@@ -114,7 +152,7 @@ export const MapSearch = ({ favorites, sections }: Props) => {
                 onClick={() => {
                   openLink(item.link.url);
                   setQuery("");
-                  setOpen(false);
+                  setDropdownOpen(false);
                 }}
               >
                 <span className="map-search__item-title">{item.link.title}</span>
