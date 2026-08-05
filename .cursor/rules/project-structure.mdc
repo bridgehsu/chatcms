@@ -18,14 +18,15 @@ alwaysApply: true
 chatcms/
 ├── src/                 # React 前端
 ├── src-tauri/           # Tauri / Rust 后端
+├── bin/                 # 打包脚本（mac / windows）
 ├── doc/                 # 原理说明（如 how-it-works.md）
 ├── .cursor/rules/       # Cursor rules（含本文件）
 ├── .cursor/skills/      # 项目 skills
-├── package.json         # 前端依赖；脚本 pnpm tauri / pnpm dev
+├── package.json         # 前端依赖；脚本 pnpm tauri / pnpm package*
 └── prompt.md            # 开发进度备忘（非运行时）
 ```
 
-忽略：`node_modules/`、`src-tauri/target/`、`dist/`。
+忽略：`node_modules/`、`src-tauri/target/`、`dist/`、`release/`。
 
 ## 前端 `src/`
 

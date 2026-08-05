@@ -95,6 +95,107 @@
       "options": {
         "cwd": "${workspaceFolder}"
       }
+    },
+
+    // ── 打包（自动识别系统）────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 打包",
+      "type": "shell",
+      "command": "bash bin/package.sh",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    // ── 打包 macOS ─────────────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 打包 macOS",
+      "type": "shell",
+      "command": "bash bin/package-mac.sh",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    // ── 打包 macOS Universal ───────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 打包 macOS (Universal)",
+      "type": "shell",
+      "command": "bash bin/package-mac.sh --universal",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    // ── 打包 Windows ───────────────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 打包 Windows",
+      "type": "shell",
+      "command": "bash bin/package-windows.sh",
+      "windows": {
+        "command": "powershell -ExecutionPolicy Bypass -File bin/package-windows.ps1"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+
+    // ── 打包 Windows (+ MSI) ───────────────────────────────────────────────
+    {
+      "label": "ChatCMS: 打包 Windows (+ MSI)",
+      "type": "shell",
+      "command": "bash bin/package-windows.sh --msi",
+      "windows": {
+        "command": "powershell -ExecutionPolicy Bypass -File bin/package-windows.ps1 -Msi"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "chatcms",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
     }
   ]
 }

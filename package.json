@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "package": "bash bin/package.sh",
+    "package:mac": "bash bin/package-mac.sh",
+    "package:win": "bash bin/package-windows.sh",
+    "package:win:ps": "powershell -ExecutionPolicy Bypass -File bin/package-windows.ps1"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
