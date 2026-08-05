@@ -20,6 +20,7 @@ mod permission;
 mod agents;
 mod business_map;
 mod chat_bridge;
+mod crawler;
 
 const STORE_FILE: &str = "chatcms.json";
 
@@ -44,3 +45,4 @@ pub use permission::*;
 pub use agents::*;
 pub use business_map::*;
 pub use chat_bridge::*;
+pub use crawler::*;

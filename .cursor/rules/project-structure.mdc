@@ -43,7 +43,7 @@ src/
 │   ├── map/                # 业务地图看板（分区入口 / 笔记 / 时钟）
 │   ├── content/            # 内容管理 · AI 笔记（Notion 风格）
 │   ├── images/             # 图片管理 · AI 生图与本地保存
-│   ├── videos/             # 视频管理 · AI 生视频与本地保存
+│   ├── videos/             # 视频管理 · AI 生视频 / MPT 口播工程页 / 本地保存
 │   ├── accounts/           # 账号管理 · 多平台账号与密钥 CRUD
 │   ├── schedules/          # 任务调度 · 项目列表 + n8n 风格工作流画布
 │   ├── skills/             # 技能管理 · OpenClaw SKILL.md CRUD
@@ -104,8 +104,11 @@ src-tauri/src/
 ├── agents/mod.rs        # 多代理档案 / 默认代理 / 技能白名单 / 权限覆盖
 ├── images/mod.rs        # AI 生图 + 本地落盘
 ├── videos/mod.rs        # AI 生视频（Videos API）+ 本地落盘
+├── mpt/                 # MoneyPrinterTurbo 客户端（配置 / 转发 / 成片入库）
+│   ├── mod.rs           # HTTP 客户端 + VideoParams / studio config
+│   └── commands.rs      # mpt_* Tauri commands
 ├── config/mod.rs        # AppConfig（含 PermissionConfig）/ Provider CRUD
-└── persist/mod.rs       # tauri-plugin-store（含 permission_audit）
+└── persist/mod.rs       # tauri-plugin-store（含 permission_audit / mpt_config）
 ```
 
 ## 关键数据流

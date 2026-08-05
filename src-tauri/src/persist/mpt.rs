@@ -1,6 +1,6 @@
 use tauri::AppHandle;
 
-/// MoneyPrinterTurbo 连接配置（JSON Value，避免 persist ↔ mpt 循环依赖）。
+/// chatcms-video 连接配置（JSON Value，避免 persist ↔ mpt 循环依赖）。
 pub fn save_mpt_config(app: &AppHandle, config: &serde_json::Value) {
     let Some(store) = super::open(app) else { return };
     store.set("mpt_config", config.clone());

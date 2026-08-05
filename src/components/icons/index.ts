@@ -1,4 +1,7 @@
 export { IconSettings } from "./IconSettings";
+export { IconMptVisual } from "./IconMptVisual";
+export { IconMptVoice } from "./IconMptVoice";
+export { IconMptSubtitle } from "./IconMptSubtitle";
 export { IconClose } from "./IconClose";
 export { IconChat } from "./IconChat";
 export { IconMap } from "./IconMap";
@@ -8,6 +11,7 @@ export { IconContent } from "./IconContent";
 export { IconVideos } from "./IconVideos";
 export { IconAccounts } from "./IconAccounts";
 export { IconMedia } from "./IconMedia";
+export { IconCrawler } from "./IconCrawler";
 export { IconCron } from "./IconCron";
 export { IconSkills } from "./IconSkills";
 export { IconAgents } from "./IconAgents";

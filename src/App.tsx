@@ -1,11 +1,12 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/layout/AppLayout";
+import { CrawlerPage } from "@/views/crawler";
 import { ChatPage } from "@/views/chat";
 import { MapPage } from "@/views/map";
 import { NavBookmarksPage } from "@/views/nav";
 import { ContentPage } from "@/views/content";
 import { ImagesPage, ImageGeneratePage } from "@/views/images";
-import { VideosPage, VideoGeneratePage } from "@/views/videos";
+import { VideosPage, VideoGeneratePage, VideoStudioPage } from "@/views/videos";
 import { AccountsPage } from "@/views/accounts";
 import {
   MediaPlatformsPage,
@@ -37,6 +38,7 @@ const App = () => (
         <Route path="images/generate" element={<ImageGeneratePage />} />
         <Route path="videos" element={<VideosPage />} />
         <Route path="videos/generate" element={<VideoGeneratePage />} />
+        <Route path="videos/studio" element={<VideoStudioPage />} />
         <Route path="media-platforms" element={<MediaPlatformsPage />} />
         <Route
           path="media-platforms/:platformId/script"
@@ -47,6 +49,7 @@ const App = () => (
           element={<CollectScriptPage />}
         />
         <Route path="accounts" element={<AccountsPage />} />
+        <Route path="crawler" element={<CrawlerPage />} />
         <Route path="schedules" element={<SchedulesPage />} />
         <Route path="schedules/:projectId" element={<WorkflowEditorPage />} />
         <Route path="cron" element={<Navigate to="/schedules" replace />} />

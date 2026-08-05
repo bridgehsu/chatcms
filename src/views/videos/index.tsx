@@ -1,6 +1,7 @@
 import { VideosBoard } from "./components/VideosBoard";
 
 export { VideoGeneratePage } from "./components/VideoGeneratePage";
+export { VideoStudioPage } from "./components/VideoStudioPage";
 
 /** 视频管理 · 列表素材库 */
 export const VideosPage = () => (

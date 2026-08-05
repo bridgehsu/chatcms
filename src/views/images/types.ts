@@ -18,6 +18,7 @@ export const mediaSourceOf = (model: string): MediaSourceKind => {
 };
 
 export const mediaSourceLabel = (model: string): string => {
+  if (model === "chatcms-video" || model === "moneyprinterturbo") return "口播";
   switch (mediaSourceOf(model)) {
     case "web":
       return "网页";

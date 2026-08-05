@@ -6,6 +6,7 @@ import {
   IconChat,
   IconContent,
   IconCron,
+  IconCrawler,
   IconImages,
   IconLock,
   IconMap,
@@ -85,6 +86,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     label: "视频管理",
     description: "视频列表：上传、AI 生成与网页导入成片",
     Icon: IconVideos,
+  },
+  {
+    kind: "leaf",
+    path: "/crawler",
+    label: "采集中心",
+    description: "经 HTTP 连接 chatcms-collect：启停任务、查看日志与数据文件",
+    Icon: IconCrawler,
   },
   {
     kind: "leaf",
@@ -205,6 +213,7 @@ const leafForPath = (pathname: string) => {
 export const titleForPath = (pathname: string): string => {
   if (pathname === "/images/generate") return "AI 生成图片";
   if (pathname === "/videos/generate") return "AI 生成视频";
+  if (pathname === "/videos/studio") return "视频工程";
   if (pathname.match(/^\/media-platforms\/[^/]+\/collect-script$/))
     return "采集脚本";
   if (pathname.match(/^\/media-platforms\/[^/]+\/script$/)) return "填表脚本";

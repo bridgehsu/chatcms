@@ -5,11 +5,13 @@ mod business_map;
 mod channels;
 mod chat_bridge;
 mod config;
+mod crawler;
 mod images;
 mod knowledge;
 mod mcp;
 mod media_platforms;
 mod memory;
+mod mpt;
 mod nav_bookmarks;
 mod permission;
 mod persist;
@@ -148,6 +150,25 @@ pub fn run() {
             videos::commands::video_delete,
             videos::commands::video_upload,
             videos::commands::video_update,
+            // chatcms-video studio
+            mpt::commands::mpt_config_get,
+            mpt::commands::mpt_config_set,
+            mpt::commands::mpt_health,
+            mpt::commands::mpt_meta_options,
+            mpt::commands::mpt_meta_voices,
+            mpt::commands::mpt_voice_preview,
+            mpt::commands::mpt_studio_config_get,
+            mpt::commands::mpt_studio_config_set,
+            mpt::commands::mpt_generate_script,
+            mpt::commands::mpt_generate_terms,
+            mpt::commands::mpt_create_video,
+            mpt::commands::mpt_get_task,
+            mpt::commands::mpt_import_video,
+            mpt::commands::mpt_list_bgm,
+            mpt::commands::mpt_upload_bgm,
+            mpt::commands::mpt_list_materials,
+            mpt::commands::mpt_upload_material,
+            mpt::commands::mpt_upload_custom_audio,
             // accounts
             accounts::commands::account_list,
             accounts::commands::account_add,
@@ -187,6 +208,15 @@ pub fn run() {
             schedules::commands::schedule_update,
             schedules::commands::schedule_save_workflow,
             schedules::commands::schedule_remove,
+            // crawler / chatcms-collect worker
+            crawler::commands::crawler_config_get,
+            crawler::commands::crawler_config_set,
+            crawler::commands::crawler_health,
+            crawler::commands::crawler_start,
+            crawler::commands::crawler_stop,
+            crawler::commands::crawler_status,
+            crawler::commands::crawler_logs,
+            crawler::commands::crawler_list_data,
             // skills
             skills::commands::skill_list,
             skills::commands::skill_add,

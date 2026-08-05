@@ -122,6 +122,14 @@ export const VideosBoard = () => {
           </button>
           <button
             type="button"
+            className="btn-mcp-action"
+            disabled={busy}
+            onClick={() => navigate("/videos/studio")}
+          >
+            视频工程
+          </button>
+          <button
+            type="button"
             className="model-btn-add"
             disabled={busy}
             onClick={() => navigate("/videos/generate")}
