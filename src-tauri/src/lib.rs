@@ -81,6 +81,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(AgentState::new())
         .manage(PublishBridge::new())
+        .manage(accounts::vault::VaultState::new())
         .invoke_handler(tauri::generate_handler![
             // agent / session
             agent::commands::chat_send,
@@ -174,6 +175,11 @@ pub fn run() {
             accounts::commands::account_add,
             accounts::commands::account_update,
             accounts::commands::account_remove,
+            accounts::commands::account_reveal,
+            accounts::commands::vault_status,
+            accounts::commands::vault_setup,
+            accounts::commands::vault_unlock,
+            accounts::commands::vault_lock,
             // media platforms
             media_platforms::commands::media_platform_list,
             media_platforms::commands::media_platform_list_page,

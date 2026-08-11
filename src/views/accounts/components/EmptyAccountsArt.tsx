@@ -1,0 +1,65 @@
+/** 账号表空状态插图 */
+export const EmptyAccountsArt = () => (
+  <svg
+    className="account-empty__art"
+    width="120"
+    height="96"
+    viewBox="0 0 120 96"
+    fill="none"
+    aria-hidden="true"
+  >
+    <rect
+      x="28"
+      y="18"
+      width="64"
+      height="60"
+      rx="10"
+      stroke="currentColor"
+      strokeWidth="2"
+      opacity="0.35"
+    />
+    <rect
+      x="38"
+      y="28"
+      width="44"
+      height="8"
+      rx="4"
+      fill="currentColor"
+      opacity="0.18"
+    />
+    <rect
+      x="38"
+      y="44"
+      width="28"
+      height="6"
+      rx="3"
+      fill="currentColor"
+      opacity="0.12"
+    />
+    <rect
+      x="38"
+      y="56"
+      width="36"
+      height="6"
+      rx="3"
+      fill="currentColor"
+      opacity="0.12"
+    />
+    <circle
+      cx="78"
+      cy="66"
+      r="14"
+      fill="var(--bg-2)"
+      stroke="currentColor"
+      strokeWidth="2"
+      opacity="0.55"
+    />
+    <path
+      d="M74 66h8M78 62v8"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      opacity="0.45"
+    />
+  </svg>
+);

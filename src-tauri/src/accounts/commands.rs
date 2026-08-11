@@ -1,51 +1,112 @@
-use super::PlatformAccount;
-use tauri::AppHandle;
+use super::{PlatformAccountInfo, RevealedSecrets, VaultStatus, VaultState};
+use tauri::{AppHandle, State};
 
 #[tauri::command]
-pub fn account_list(app: AppHandle) -> Vec<PlatformAccount> {
+pub fn account_list(app: AppHandle) -> Vec<PlatformAccountInfo> {
     super::list(&app)
 }
 
 #[tauri::command]
 pub fn account_add(
     app: AppHandle,
+    vault: State<'_, VaultState>,
     name: String,
     platform: String,
+    phone: String,
+    email: String,
     account_id: String,
     access_key: String,
     secret_key: String,
     enabled: bool,
     notes: String,
-) -> Result<PlatformAccount, String> {
-    super::add(&app, name, platform, account_id, access_key, secret_key, enabled, notes)
+) -> Result<PlatformAccountInfo, String> {
+    super::add(
+        &app,
+        &vault,
+        name,
+        platform,
+        phone,
+        email,
+        account_id,
+        access_key,
+        secret_key,
+        enabled,
+        notes,
+    )
 }
 
 #[tauri::command]
 pub fn account_update(
     app: AppHandle,
+    vault: State<'_, VaultState>,
     id: String,
     name: String,
     platform: String,
+    phone: String,
+    email: String,
     account_id: String,
     access_key: String,
     secret_key: String,
     enabled: bool,
     notes: String,
-) -> Result<PlatformAccount, String> {
-    super::update(&app, id, name, platform, account_id, access_key, secret_key, enabled, notes)
+    update_secrets: Option<bool>,
+) -> Result<PlatformAccountInfo, String> {
+    super::update(
+        &app,
+        &vault,
+        id,
+        name,
+        platform,
+        phone,
+        email,
+        account_id,
+        access_key,
+        secret_key,
+        enabled,
+        notes,
+        update_secrets.unwrap_or(true),
+    )
 }
 
 #[tauri::command]
 pub fn account_remove(app: AppHandle, id: String) -> Result<(), String> {
     super::remove(&app, id)
 }
-pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
-    tauri::plugin::Builder::<tauri::Wry>::new("accounts")
-        .invoke_handler(tauri::generate_handler![
-            account_list,
-            account_add,
-            account_update,
-            account_remove,
-        ])
-        .build()
+
+#[tauri::command]
+pub fn account_reveal(
+    app: AppHandle,
+    vault: State<'_, VaultState>,
+    id: String,
+) -> Result<RevealedSecrets, String> {
+    super::reveal(&app, &vault, id)
+}
+
+#[tauri::command]
+pub fn vault_status(app: AppHandle, vault: State<'_, VaultState>) -> VaultStatus {
+    super::vault_status(&app, &vault)
+}
+
+#[tauri::command]
+pub fn vault_setup(
+    app: AppHandle,
+    vault: State<'_, VaultState>,
+    password: String,
+) -> Result<VaultStatus, String> {
+    super::vault_setup(&app, &vault, password)
+}
+
+#[tauri::command]
+pub fn vault_unlock(
+    app: AppHandle,
+    vault: State<'_, VaultState>,
+    password: String,
+) -> Result<VaultStatus, String> {
+    super::vault_unlock(&app, &vault, password)
+}
+
+#[tauri::command]
+pub fn vault_lock(app: AppHandle, vault: State<'_, VaultState>) -> VaultStatus {
+    vault.lock();
+    super::vault_status(&app, &vault)
 }

@@ -265,12 +265,29 @@ export interface PlatformAccount {
   id: string;
   name: string;
   platform: string;
+  phone: string;
+  email: string;
   account_id: string;
+  /** 列表接口恒为空；完整值经 account_reveal */
   access_key: string;
   secret_key: string;
+  has_access_key?: boolean;
+  has_secret_key?: boolean;
+  secrets_encrypted?: boolean;
   enabled: boolean;
   notes: string;
   updated_at: number;
+}
+
+export interface VaultStatus {
+  configured: boolean;
+  unlocked: boolean;
+}
+
+export interface RevealedSecrets {
+  id: string;
+  access_key: string;
+  secret_key: string;
 }
 
 // ── Media platforms / publish scripts ─────────────────────────────────────────

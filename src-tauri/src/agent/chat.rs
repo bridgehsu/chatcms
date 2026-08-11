@@ -38,10 +38,12 @@ pub async fn send_message(
 
 // ── 准备阶段 ──────────────────────────────────────────────────────────────────
 
-/// 知识库检索 + 默认代理人格 + 技能白名单 → system prompt。
+/// 组装本轮 system prompt：默认代理人格 + 知识库相关片段 + 技能说明。
+/// `content` 用于知识库检索与技能关键词匹配（与会话历史无关）。
 fn build_system_prompt(state: &State<'_, AgentState>, content: &str) -> Option<String> {
     let mut blocks: Vec<String> = Vec::new();
 
+    // 优先取「默认且启用」的代理；没有则退化为任意启用代理
     let active_agent = state
         .agents
         .lock()
@@ -59,10 +61,12 @@ fn build_system_prompt(state: &State<'_, AgentState>, content: &str) -> Option<S
                 .cloned()
         });
 
+    // ① 代理人格 / 系统角色说明
     if let Some(ref agent) = active_agent {
         blocks.push(crate::agents::format_persona(agent));
     }
 
+    // ② 按用户本轮输入检索知识库，取 Top-K 拼进 prompt
     let entries = state.knowledge.lock().unwrap().clone();
     let relevant = knowledge::search(&entries, content, 3);
     let memory = knowledge::format_for_prompt(&relevant);
@@ -70,6 +74,7 @@ fn build_system_prompt(state: &State<'_, AgentState>, content: &str) -> Option<S
         blocks.push(memory);
     }
 
+    // ③ 技能：受当前代理白名单约束；按输入打分注入相关技能正文
     let skill_list = state.skills.lock().unwrap().clone();
     let allowlist = active_agent
         .as_ref()
@@ -79,6 +84,7 @@ fn build_system_prompt(state: &State<'_, AgentState>, content: &str) -> Option<S
         blocks.push(skill_prompt);
     }
 
+    // 三段都空则不传 system（由模型走默认行为）
     if blocks.is_empty() {
         None
     } else {

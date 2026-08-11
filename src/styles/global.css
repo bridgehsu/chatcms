@@ -3256,13 +3256,14 @@ body,
 }
 
 .account-table__notes {
-  margin-top: 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
-  max-width: 220px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
 }
 
 .account-enabled {
@@ -3278,6 +3279,70 @@ body,
   width: 16px;
   height: 16px;
   accent-color: var(--accent);
+}
+
+.account-vault-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-1);
+}
+.account-vault-bar__text {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.account-vault-bar__text--ok {
+  color: var(--text);
+}
+.account-platform-link {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.account-platform-link:hover {
+  text-decoration: underline;
+}
+.account-inline-link {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0 0 0 4px;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.account-inline-link:hover {
+  text-decoration: underline;
+}
+.account-reveal__row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.account-reveal__value {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  word-break: break-all;
 }
 
 .model-table-wrap {
@@ -3352,6 +3417,34 @@ body,
   font-size: 14px;
 }
 
+.account-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 220px;
+  padding: 24px 16px;
+  text-align: center;
+}
+.account-empty__art {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-dim);
+}
+.account-empty__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.account-empty__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
 .model-table__actions {
   display: flex;
   gap: 8px;
@@ -3421,11 +3514,17 @@ body,
 }
 
 .model-modal__body .mcp-form-row input,
+.model-modal__body .mcp-form-row textarea,
 .model-modal__body .ui-select__trigger {
   min-height: 40px;
   padding: 8px 12px;
   font-size: 14px;
   border-radius: 8px;
+}
+.model-modal__body .mcp-form-row textarea {
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.45;
 }
 
 .model-modal__body .ui-select {
@@ -3485,7 +3584,8 @@ body,
   gap: 4px;
 }
 .mcp-form-row label { font-size: 11px; color: var(--text-dim); }
-.mcp-form-row input {
+.mcp-form-row input,
+.mcp-form-row textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -3497,10 +3597,15 @@ body,
   width: 100%;
   box-sizing: border-box;
 }
+.mcp-form-row textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
 .mcp-form-row .ui-select {
   width: 100%;
 }
-.mcp-form-row input:focus { border-color: var(--accent); }
+.mcp-form-row input:focus,
+.mcp-form-row textarea:focus { border-color: var(--accent); }
 .mcp-env-input {
   background: var(--bg);
   border: 1px solid var(--border);

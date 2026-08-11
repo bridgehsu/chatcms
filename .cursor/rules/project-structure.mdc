@@ -45,7 +45,7 @@ src/
 │   ├── content/            # 内容管理 · AI 笔记（Notion 风格）
 │   ├── images/             # 图片管理 · AI 生图与本地保存
 │   ├── videos/             # 视频管理 · AI 生视频 / MPT 口播工程页 / 本地保存
-│   ├── accounts/           # 账号管理 · 多平台账号与密钥 CRUD
+│   ├── accounts/           # 账号管理 · 本地密码本（序号/跳转/主密码解锁查看）
 │   ├── schedules/          # 任务调度 · 项目列表 + n8n 风格工作流画布
 │   ├── skills/             # 技能管理 · OpenClaw SKILL.md CRUD
 │   ├── agents/             # 代理管理 · 多 Agent 档案 / 技能白名单
@@ -99,7 +99,10 @@ src-tauri/src/
 ├── knowledge/mod.rs     # 知识库检索 → system prompt
 ├── channels/mod.rs      # 多 IM 渠道（各平台可并行；同 kind 一份；现仅 Telegram 运行时）
 ├── publish/mod.rs       # 本机发布桥 127.0.0.1:17890 → 浏览器插件自动填表
-├── accounts/mod.rs      # 多平台账号与密钥 CRUD
+├── accounts/            # 多平台账号 CRUD + 主密码保险柜
+│   ├── mod.rs           # 列表脱敏 / reveal / 加解密写入
+│   ├── vault.rs         # Argon2id + AES-256-GCM
+│   └── commands.rs      # account_* / vault_* commands
 ├── schedules/mod.rs     # 任务调度项目 + 工作流图 CRUD
 ├── skills/mod.rs        # OpenClaw 风格 Skills（SKILL.md）+ 提示词注入
 ├── agents/mod.rs        # 多代理档案 / 默认代理 / 技能白名单 / 权限覆盖
