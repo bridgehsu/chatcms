@@ -1,6 +1,6 @@
 use tauri::AppHandle;
 
-use crate::nav_bookmarks::NavBookmark;
+use crate::bmarks::NavBookmark;
 
 pub fn save_nav_bookmarks(app: &AppHandle, bookmarks: &[NavBookmark]) {
     let Some(store) = super::open(app) else { return };

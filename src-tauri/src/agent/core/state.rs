@@ -8,7 +8,7 @@ use tokio::sync::oneshot;
 use crate::agents::AgentProfile;
 use crate::channels::ChannelState;
 use crate::config::AppConfig;
-use crate::knowledge::KnowledgeEntry;
+use crate::kbase::KnowledgeEntry;
 use crate::mcp::McpManager;
 use crate::memory::Session;
 use crate::permission::{RememberScope, SessionGrantStore};

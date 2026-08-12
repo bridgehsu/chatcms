@@ -33,6 +33,9 @@ pub struct AgentProfile {
     /// 域策略覆盖（domain id → allow|ask|deny）
     #[serde(default)]
     pub permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    /// 独立工作目录：read_file / write_file 受限于此路径，bash 以此为 cwd。None = 不限制。
+    #[serde(default)]
+    pub workspace_dir: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -78,6 +81,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             skills: None,
             allow_as_subagent: true,
             permission_overrides: std::collections::HashMap::new(),
+            workspace_dir: None,
             created_at: ts,
             updated_at: ts,
         },
@@ -93,6 +97,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             skills: Some(vec!["content-publish".into(), "image-brief".into()]),
             allow_as_subagent: true,
             permission_overrides: std::collections::HashMap::new(),
+            workspace_dir: None,
             created_at: ts,
             updated_at: ts,
         },
@@ -108,6 +113,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             skills: None,
             allow_as_subagent: true,
             permission_overrides: std::collections::HashMap::new(),
+            workspace_dir: None,
             created_at: ts,
             updated_at: ts,
         },
@@ -169,6 +175,7 @@ pub fn add(
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
     permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    workspace_dir: Option<String>,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -195,6 +202,7 @@ pub fn add(
         skills,
         allow_as_subagent,
         permission_overrides,
+        workspace_dir: workspace_dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
         created_at: ts,
         updated_at: ts,
     };
@@ -215,6 +223,7 @@ pub fn update(
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
     permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    workspace_dir: Option<String>,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -240,6 +249,7 @@ pub fn update(
     profile.skills = skills;
     profile.allow_as_subagent = allow_as_subagent;
     profile.permission_overrides = permission_overrides;
+    profile.workspace_dir = workspace_dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
     profile.updated_at = now_ms();
 
     if !profile.enabled && profile.is_default {

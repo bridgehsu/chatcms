@@ -1,35 +1,121 @@
-use tauri::AppHandle;
+use sqlx::Row;
+use tauri::{AppHandle, Manager};
 
-use crate::knowledge::{KnowledgeEntry, KnowledgeSiteProfile};
+use crate::db::DbPool;
+use crate::kbase::{KnowledgeEntry, KnowledgeSiteProfile};
 
-pub fn save_knowledge(app: &AppHandle, entries: &[KnowledgeEntry]) {
-    let Some(store) = super::open(app) else { return };
-    let val = serde_json::to_value(entries).unwrap_or_default();
-    store.set("knowledge", val);
-    let _ = store.save();
+fn pool(app: &AppHandle) -> sqlx::SqlitePool {
+    app.state::<DbPool>().inner().0.clone()
 }
 
-pub fn load_knowledge(app: &AppHandle) -> Vec<KnowledgeEntry> {
-    let Some(store) = super::open(app) else { return vec![] };
-    store
-        .get("knowledge")
-        .and_then(|v| serde_json::from_value(v).ok())
-        .unwrap_or_default()
+/// 新增或更新单条知识条目。
+pub async fn save_knowledge_entry(app: &AppHandle, entry: &KnowledgeEntry) {
+    let p = pool(app);
+    let tags = serde_json::to_string(&entry.tags).unwrap_or_else(|_| "[]".into());
+    let _ = sqlx::query(
+        "INSERT INTO knowledge (id, title, description, content, tags, visibility, kind, slug, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           title       = excluded.title,
+           description = excluded.description,
+           content     = excluded.content,
+           tags        = excluded.tags,
+           visibility  = excluded.visibility,
+           kind        = excluded.kind,
+           slug        = excluded.slug,
+           updated_at  = excluded.updated_at",
+    )
+    .bind(&entry.id)
+    .bind(&entry.title)
+    .bind(&entry.description)
+    .bind(&entry.content)
+    .bind(&tags)
+    .bind(&entry.visibility)
+    .bind(&entry.kind)
+    .bind(&entry.slug)
+    .bind(entry.created_at as i64)
+    .bind(entry.updated_at as i64)
+    .execute(&p)
+    .await;
 }
 
-pub fn save_knowledge_site_profile(app: &AppHandle, profile: &KnowledgeSiteProfile) {
-    let Some(store) = super::open(app) else { return };
-    let val = serde_json::to_value(profile).unwrap_or_default();
-    store.set("knowledge_site_profile", val);
-    let _ = store.save();
+/// 删除单条知识条目。
+pub async fn delete_knowledge_entry(app: &AppHandle, id: &str) {
+    let p = pool(app);
+    let _ = sqlx::query("DELETE FROM knowledge WHERE id = ?")
+        .bind(id)
+        .execute(&p)
+        .await;
 }
 
-pub fn load_knowledge_site_profile(app: &AppHandle) -> KnowledgeSiteProfile {
-    let Some(store) = super::open(app) else {
-        return KnowledgeSiteProfile::default();
-    };
-    store
-        .get("knowledge_site_profile")
-        .and_then(|v| serde_json::from_value(v).ok())
+/// 启动时加载所有知识条目。
+pub async fn load_all_knowledge(app: &AppHandle) -> Vec<KnowledgeEntry> {
+    let p = pool(app);
+    load_knowledge_from_pool(&p).await.unwrap_or_default()
+}
+
+async fn load_knowledge_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<Vec<KnowledgeEntry>> {
+    let rows = sqlx::query(
+        "SELECT id, title, description, content, tags, visibility, kind, slug, created_at, updated_at
+         FROM knowledge ORDER BY updated_at DESC",
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let entries = rows
+        .into_iter()
+        .map(|r| {
+            let tags_str: String = r.get("tags");
+            let tags: Vec<String> =
+                serde_json::from_str(&tags_str).unwrap_or_default();
+            KnowledgeEntry {
+                id: r.get("id"),
+                title: r.get("title"),
+                description: r.get("description"),
+                content: r.get("content"),
+                tags,
+                visibility: r.get("visibility"),
+                kind: r.get("kind"),
+                slug: r.get("slug"),
+                created_at: r.get::<i64, _>("created_at") as u64,
+                updated_at: r.get::<i64, _>("updated_at") as u64,
+            }
+        })
+        .collect();
+
+    Ok(entries)
+}
+
+/// 保存知识站点 profile。
+pub async fn save_knowledge_site_profile(app: &AppHandle, profile: &KnowledgeSiteProfile) {
+    let p = pool(app);
+    let _ = sqlx::query(
+        "INSERT INTO knowledge_site_profile (id, handle, display_name, bio)
+         VALUES (1, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           handle       = excluded.handle,
+           display_name = excluded.display_name,
+           bio          = excluded.bio",
+    )
+    .bind(&profile.handle)
+    .bind(&profile.display_name)
+    .bind(&profile.bio)
+    .execute(&p)
+    .await;
+}
+
+/// 加载知识站点 profile。
+pub async fn load_knowledge_site_profile(app: &AppHandle) -> KnowledgeSiteProfile {
+    let p = pool(app);
+    sqlx::query("SELECT handle, display_name, bio FROM knowledge_site_profile WHERE id = 1")
+        .fetch_optional(&p)
+        .await
+        .ok()
+        .flatten()
+        .map(|r| KnowledgeSiteProfile {
+            handle: r.get("handle"),
+            display_name: r.get("display_name"),
+            bio: r.get("bio"),
+        })
         .unwrap_or_default()
 }

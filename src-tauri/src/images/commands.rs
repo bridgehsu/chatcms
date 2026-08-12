@@ -17,40 +17,42 @@ pub async fn image_generate(
 }
 
 #[tauri::command]
-pub fn image_list(app: AppHandle) -> Vec<GeneratedImage> {
-    super::list(&app)
+pub async fn image_list(app: AppHandle) -> Vec<GeneratedImage> {
+    super::list(&app).await
 }
 
 #[tauri::command]
-pub fn image_delete(app: AppHandle, id: String) -> Result<(), String> {
-    super::delete(&app, id).map_err(|e| e.to_string())
+pub async fn image_delete(app: AppHandle, id: String) -> Result<(), String> {
+    super::delete(&app, id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn image_upload(
+pub async fn image_upload(
     app: AppHandle,
     data_base64: String,
     filename: String,
     content_type: Option<String>,
 ) -> Result<GeneratedImage, String> {
     super::upload_base64(&app, &data_base64, &filename, content_type.as_deref())
+        .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn image_update(
+pub async fn image_update(
     app: AppHandle,
     id: String,
     title: String,
     note: String,
 ) -> Result<GeneratedImage, String> {
-    super::update(&app, id, title, note).map_err(|e| e.to_string())
+    super::update(&app, id, title, note).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn image_data_url(path: String) -> Result<String, String> {
     super::read_data_url(path).map_err(|e| e.to_string())
 }
+
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("images")
         .invoke_handler(tauri::generate_handler![

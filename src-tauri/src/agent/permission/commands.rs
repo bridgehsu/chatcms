@@ -135,8 +135,8 @@ pub fn permission_domains(state: State<'_, AgentState>) -> Vec<DomainInfo> {
 }
 
 #[tauri::command]
-pub fn permission_audit_list(app: AppHandle, limit: Option<usize>) -> Vec<AuditEvent> {
-    super::list_audit(&app, limit.unwrap_or(100))
+pub async fn permission_audit_list(app: AppHandle, limit: Option<usize>) -> Vec<AuditEvent> {
+    super::list_audit(&app, limit.unwrap_or(100)).await
 }
 
 #[tauri::command]

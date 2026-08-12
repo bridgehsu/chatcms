@@ -11,7 +11,7 @@ pub async fn chat_send(
     session_id: Option<String>,
     content: String,
 ) -> Result<String, String> {
-    super::send_message(app, state, session_id, content)
+    super::chat::send_message(app, state, session_id, content)
         .await
         .map_err(|e| e.to_string())
 }
@@ -44,21 +44,23 @@ pub fn session_get(state: State<'_, AgentState>, session_id: String) -> Option<S
 }
 
 #[tauri::command]
-pub fn session_delete(
+pub async fn session_delete(
     app: AppHandle,
     state: State<'_, AgentState>,
     session_id: String,
 ) -> Result<(), String> {
-    let mut sessions = state.sessions.lock().unwrap();
-    if sessions.remove(&session_id).is_none() {
-        return Err("会话不存在".into());
+    {
+        let mut sessions = state.sessions.lock().unwrap();
+        if sessions.remove(&session_id).is_none() {
+            return Err("会话不存在".into());
+        }
     }
-    persist::save_sessions(&app, &sessions);
+    persist::delete_session(&app, &session_id).await;
     Ok(())
 }
 
 #[tauri::command]
-pub fn session_rename(
+pub async fn session_rename(
     app: AppHandle,
     state: State<'_, AgentState>,
     session_id: String,
@@ -68,34 +70,41 @@ pub fn session_rename(
     if trimmed.is_empty() {
         return Err("标题不能为空".into());
     }
-    let mut sessions = state.sessions.lock().unwrap();
-    let session = sessions
-        .get_mut(&session_id)
-        .ok_or_else(|| "会话不存在".to_string())?;
-    session.title = trimmed;
-    session.updated_at = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    persist::save_sessions(&app, &sessions);
+    let session = {
+        let mut sessions = state.sessions.lock().unwrap();
+        let session = sessions
+            .get_mut(&session_id)
+            .ok_or_else(|| "会话不存在".to_string())?;
+        session.title = trimmed;
+        session.updated_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        session.clone()
+    };
+    persist::save_session(&app, &session).await;
     Ok(())
 }
 
 #[tauri::command]
-pub fn session_pin(
+pub async fn session_pin(
     app: AppHandle,
     state: State<'_, AgentState>,
     session_id: String,
     pinned: bool,
 ) -> Result<(), String> {
-    let mut sessions = state.sessions.lock().unwrap();
-    let session = sessions
-        .get_mut(&session_id)
-        .ok_or_else(|| "会话不存在".to_string())?;
-    session.pinned = pinned;
-    persist::save_sessions(&app, &sessions);
+    let session = {
+        let mut sessions = state.sessions.lock().unwrap();
+        let session = sessions
+            .get_mut(&session_id)
+            .ok_or_else(|| "会话不存在".to_string())?;
+        session.pinned = pinned;
+        session.clone()
+    };
+    persist::save_session(&app, &session).await;
     Ok(())
 }
+
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("agent")
         .invoke_handler(tauri::generate_handler![

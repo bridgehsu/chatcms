@@ -1,0 +1,179 @@
+//! SQLite 连接池与 Schema 初始化。
+
+use anyhow::Result;
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use tauri::{AppHandle, Manager};
+
+/// Tauri 托管状态：全局连接池。
+pub struct DbPool(pub SqlitePool);
+
+/// 初始化连接池并创建 Schema（首次运行时建表）。
+pub async fn init(app: &AppHandle) -> Result<SqlitePool> {
+    let dir = app.path().app_data_dir()?;
+    std::fs::create_dir_all(&dir)?;
+    let db_path = dir.join("chatcms.db");
+    let url = format!("sqlite://{}?mode=rwc", db_path.display());
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect(&url)
+        .await?;
+
+    run_schema(&pool).await?;
+    Ok(pool)
+}
+
+async fn run_schema(pool: &SqlitePool) -> Result<()> {
+    sqlx::query("PRAGMA journal_mode = WAL").execute(pool).await?;
+    sqlx::query("PRAGMA foreign_keys = ON").execute(pool).await?;
+
+    // Sessions
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sessions (
+            id         TEXT PRIMARY KEY,
+            title      TEXT NOT NULL DEFAULT 'New Chat',
+            pinned     INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )",
+    )
+    .execute(pool)
+    .await?;
+
+    // Messages (belongs to session)
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS messages (
+            id         TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+            role       TEXT NOT NULL,
+            content    TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at)",
+    )
+    .execute(pool)
+    .await?;
+
+    // Knowledge base entries
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS knowledge (
+            id          TEXT PRIMARY KEY,
+            title       TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            content     TEXT NOT NULL DEFAULT '',
+            tags        TEXT NOT NULL DEFAULT '[]',
+            visibility  TEXT NOT NULL DEFAULT 'private',
+            kind        TEXT NOT NULL DEFAULT 'note',
+            slug        TEXT NOT NULL DEFAULT '',
+            created_at  INTEGER NOT NULL,
+            updated_at  INTEGER NOT NULL
+        )",
+    )
+    .execute(pool)
+    .await?;
+
+    // Knowledge site profile (singleton row id=1)
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS knowledge_site_profile (
+            id           INTEGER PRIMARY KEY DEFAULT 1,
+            handle       TEXT NOT NULL DEFAULT 'me',
+            display_name TEXT NOT NULL DEFAULT 'ChatCMS User',
+            bio          TEXT NOT NULL DEFAULT ''
+        )",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query("INSERT OR IGNORE INTO knowledge_site_profile (id) VALUES (1)")
+        .execute(pool)
+        .await?;
+
+    // Tool permission audit log
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS audit_log (
+            id            TEXT PRIMARY KEY,
+            ts            INTEGER NOT NULL,
+            session_id    TEXT NOT NULL,
+            agent_id      TEXT,
+            domain        TEXT NOT NULL,
+            tool_name     TEXT NOT NULL,
+            input_summary TEXT NOT NULL DEFAULT '',
+            decision      TEXT NOT NULL,
+            run_mode      TEXT NOT NULL,
+            mode_name     TEXT NOT NULL DEFAULT '',
+            grant_used    INTEGER NOT NULL DEFAULT 0
+        )",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts DESC)")
+        .execute(pool)
+        .await?;
+
+    // Skill packages
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS skill_pkg (
+            id                       TEXT PRIMARY KEY,
+            name                     TEXT NOT NULL UNIQUE,
+            description              TEXT NOT NULL DEFAULT '',
+            emoji                    TEXT NOT NULL DEFAULT '',
+            body                     TEXT NOT NULL DEFAULT '',
+            file_path                TEXT NOT NULL DEFAULT '',
+            source                   TEXT NOT NULL DEFAULT 'manual',
+            pkg_name                 TEXT,
+            homepage                 TEXT,
+            enabled                  INTEGER NOT NULL DEFAULT 1,
+            user_invocable           INTEGER NOT NULL DEFAULT 1,
+            disable_model_invocation INTEGER NOT NULL DEFAULT 0,
+            created_at               INTEGER NOT NULL,
+            updated_at               INTEGER NOT NULL
+        )",
+    )
+    .execute(pool)
+    .await?;
+
+    // Images metadata
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS images (
+            id         TEXT PRIMARY KEY,
+            prompt     TEXT NOT NULL DEFAULT '',
+            model      TEXT NOT NULL DEFAULT '',
+            size       TEXT NOT NULL DEFAULT '',
+            path       TEXT NOT NULL DEFAULT '',
+            note       TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_images_created ON images(created_at DESC)")
+        .execute(pool)
+        .await?;
+
+    // Videos metadata
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS videos (
+            id         TEXT PRIMARY KEY,
+            prompt     TEXT NOT NULL DEFAULT '',
+            model      TEXT NOT NULL DEFAULT '',
+            size       TEXT NOT NULL DEFAULT '',
+            seconds    TEXT NOT NULL DEFAULT '',
+            path       TEXT NOT NULL DEFAULT '',
+            remote_id  TEXT,
+            note       TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created_at DESC)")
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}

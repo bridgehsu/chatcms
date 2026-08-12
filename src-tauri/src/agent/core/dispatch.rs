@@ -18,6 +18,7 @@ pub async fn dispatch_tool(
     app: &AppHandle,
     state: &State<'_, AgentState>,
     session_id: &str,
+    workspace_dir: Option<&str>,
 ) -> tools::ToolResult {
     let (cfg, agent_overrides, agent_id) = {
         let config = state.config.lock().unwrap();
@@ -164,7 +165,7 @@ pub async fn dispatch_tool(
         return dispatch_mcp_tool(tc, state).await;
     }
 
-    tools::execute(tc).await
+    tools::execute(tc, workspace_dir).await
 }
 
 async fn dispatch_spawn_agent(
@@ -176,7 +177,7 @@ async fn dispatch_spawn_agent(
     let agent_key = tc.input["agent"].as_str().map(str::trim).filter(|s| !s.is_empty());
     let override_sys = tc.input["system_prompt"].as_str().map(String::from);
 
-    let (sys, label) = if let Some(key) = agent_key {
+    let (sys, label, sub_workspace) = if let Some(key) = agent_key {
         match crate::agents::find_by_slug_or_id(app, key) {
             Some(profile) if profile.enabled && profile.allow_as_subagent => {
                 let mut blocks = vec![crate::agents::format_persona(&profile)];
@@ -191,19 +192,22 @@ async fn dispatch_spawn_agent(
                 if !skill_prompt.is_empty() {
                     blocks.push(skill_prompt);
                 }
+                let ws = profile.workspace_dir.clone();
                 (
                     Some(blocks.join("\n\n")),
                     format!("{} ({})", profile.name, profile.slug),
+                    ws,
                 )
             }
             Some(_) => (
                 override_sys.clone(),
                 format!("agent `{key}` disabled or not allowed as subagent"),
+                None,
             ),
-            None => (override_sys.clone(), format!("unknown agent `{key}`")),
+            None => (override_sys.clone(), format!("unknown agent `{key}`"), None),
         }
     } else {
-        (override_sys, "adhoc".into())
+        (override_sys, "adhoc".into(), None)
     };
 
     let _ = app.emit(
@@ -216,7 +220,7 @@ async fn dispatch_spawn_agent(
         }),
     );
 
-    let result_text = match run_sub_agent(app.clone(), sys, prompt).await {
+    let result_text = match run_sub_agent(app.clone(), sys, prompt, sub_workspace).await {
         Ok(text) => text,
         Err(e) => format!("[sub-agent error] {e}"),
     };
@@ -257,6 +261,7 @@ pub async fn dispatch_sub_tool(
     tc: &tools::ToolCall,
     app: &AppHandle,
     mcp_tool_names: &[String],
+    workspace_dir: Option<&str>,
 ) -> tools::ToolResult {
     let s = app.state::<AgentState>();
     // 子 agent 无独立 session，用占位 id 走策略但不污染主会话 grants
@@ -341,5 +346,5 @@ pub async fn dispatch_sub_tool(
         };
     }
 
-    tools::execute(tc).await
+    tools::execute(tc, workspace_dir).await
 }

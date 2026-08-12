@@ -21,7 +21,7 @@ use tauri::AppHandle;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
-use crate::media_platforms;
+use crate::medias;
 use crate::persist;
 
 pub const BRIDGE_PORT: u16 = 17890;
@@ -136,17 +136,21 @@ impl PublishBridge {
 
     fn resolve_media(&self, kind: &str, id: &str) -> Option<PathBuf> {
         let app = self.app_handle()?;
-        match kind {
-            "image" => persist::load_images(&app)
-                .into_iter()
-                .find(|i| i.id == id)
-                .map(|i| PathBuf::from(i.path)),
-            "video" => persist::load_videos(&app)
-                .into_iter()
-                .find(|v| v.id == id)
-                .map(|v| PathBuf::from(v.path)),
-            _ => None,
-        }
+        let id = id.to_owned();
+        tokio::task::block_in_place(|| {
+            let handle = tokio::runtime::Handle::current();
+            match kind {
+                "image" => handle.block_on(persist::load_all_images(&app))
+                    .into_iter()
+                    .find(|i| i.id == id)
+                    .map(|i| PathBuf::from(i.path)),
+                "video" => handle.block_on(persist::load_all_videos(&app))
+                    .into_iter()
+                    .find(|v| v.id == id)
+                    .map(|v| PathBuf::from(v.path)),
+                _ => None,
+            }
+        })
     }
 }
 
@@ -180,7 +184,7 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
             put(update_map_link).delete(delete_map_link),
         )
         .route("/health", get(|| async { "ok" }))
-        .merge(crate::chat_bridge::routes())
+        .merge(crate::bridge::routes())
         .layer(cors)
         .with_state(bridge);
 
@@ -219,7 +223,7 @@ async fn list_publish_platforms(State(bridge): State<PublishBridge>) -> Response
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
     };
-    Json(media_platforms::bridge_list_platforms(&app)).into_response()
+    Json(medias::bridge_list_platforms(&app)).into_response()
 }
 
 #[derive(Debug, Deserialize)]
@@ -237,7 +241,7 @@ async fn get_publish_script(
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
     };
-    match media_platforms::bridge_get_script(&app, &q.platform) {
+    match medias::bridge_get_script(&app, &q.platform) {
         Ok(script) => {
             if let Some(kind) = q.kind.filter(|k| !k.trim().is_empty()) {
                 if !script.kind.eq_ignore_ascii_case(kind.trim()) {
@@ -261,7 +265,7 @@ async fn get_collect_script(
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "bridge app not ready").into_response();
     };
-    match media_platforms::bridge_get_collect_script(&app, &q.platform) {
+    match medias::bridge_get_collect_script(&app, &q.platform) {
         Ok(script) => {
             if let Some(kind) = q.kind.filter(|k| !k.trim().is_empty()) {
                 if !script.kind.eq_ignore_ascii_case(kind.trim()) {
@@ -465,7 +469,7 @@ async fn import_media(
                             source_hint,
                             title,
                             "web_import",
-                        ),
+                        ).await,
                         Err(e) => Err(anyhow::anyhow!(e)),
                     }
                 } else {
@@ -498,7 +502,7 @@ async fn import_media(
                             source_hint,
                             title,
                             "web_import",
-                        ),
+                        ).await,
                         Err(e) => Err(anyhow::anyhow!(e)),
                     }
                 } else {

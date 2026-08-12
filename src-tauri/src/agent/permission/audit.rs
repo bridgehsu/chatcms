@@ -21,8 +21,6 @@ pub struct AuditEvent {
     pub grant_used: bool,
 }
 
-const AUDIT_CAP: usize = 500;
-
 pub fn now_secs() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -31,17 +29,14 @@ pub fn now_secs() -> u64 {
 }
 
 pub fn append_audit(app: &AppHandle, event: AuditEvent) {
-    let mut list = crate::persist::load_permission_audit(app);
-    list.insert(0, event);
-    if list.len() > AUDIT_CAP {
-        list.truncate(AUDIT_CAP);
-    }
-    crate::persist::save_permission_audit(app, &list);
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        crate::persist::append_audit_event(&app, &event).await;
+    });
 }
 
-pub fn list_audit(app: &AppHandle, limit: usize) -> Vec<AuditEvent> {
-    let list = crate::persist::load_permission_audit(app);
-    list.into_iter().take(limit.max(1)).collect()
+pub async fn list_audit(app: &AppHandle, limit: usize) -> Vec<AuditEvent> {
+    crate::persist::load_permission_audit(app, limit.max(1) as i64).await
 }
 
 pub fn make_audit(

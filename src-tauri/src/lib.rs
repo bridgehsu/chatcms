@@ -1,25 +1,28 @@
 mod agent;
+
+// 迁移到 agent/ 下，保留 crate 根路径别名，存量引用零修改
+pub use agent::agents;
+pub use agent::mcp;
+pub use agent::memory;
+pub use agent::permission;
+pub use agent::provider;
+pub use agent::skills;
+pub use agent::tools;
 mod accounts;
-mod agents;
 mod business_map;
 mod channels;
-mod chat_bridge;
+mod bridge;
 mod config;
 mod crawler;
+mod db;
 mod images;
-mod knowledge;
-mod mcp;
-mod media_platforms;
-mod memory;
+mod kbase;
+mod medias;
 mod mpt;
-mod nav_bookmarks;
-mod permission;
+mod bmarks;
 mod persist;
-mod provider;
 mod publish;
 mod schedules;
-mod skills;
-mod tools;
 mod videos;
 
 use agent::AgentState;
@@ -39,15 +42,24 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         let _ = bridge.ensure_running().await;
     });
 
+    // Initialize SQLite (using a dedicated runtime for blocking init in setup)
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("failed to build tokio rt for db init");
+
+    let pool = rt.block_on(crate::db::init(&handle)).expect("db init failed");
+    handle.manage(crate::db::DbPool(pool));
+
     // Sync state from disk
     if let Some(mut config) = persist::load_config(&handle) {
         config.ensure_profiles();
         persist::save_config(&handle, &config);
         *state.config.lock().unwrap() = config;
     }
-    *state.sessions.lock().unwrap() = persist::load_sessions(&handle);
-    *state.knowledge.lock().unwrap() = persist::load_knowledge(&handle);
-    *state.skills.lock().unwrap() = skills::ensure_seeded(&handle);
+    *state.sessions.lock().unwrap() = rt.block_on(persist::load_all_sessions(&handle));
+    *state.knowledge.lock().unwrap() = rt.block_on(persist::load_all_knowledge(&handle));
+    *state.skills.lock().unwrap() = rt.block_on(skills::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = agents::ensure_seeded(&handle);
 
     // MCP — connect all enabled servers
@@ -120,14 +132,14 @@ pub fn run() {
             mcp::commands::mcp_disconnect,
             mcp::commands::mcp_tools,
             // knowledge
-            knowledge::commands::knowledge_list,
-            knowledge::commands::knowledge_add,
-            knowledge::commands::knowledge_update,
-            knowledge::commands::knowledge_remove,
-            knowledge::commands::knowledge_site_profile_get,
-            knowledge::commands::knowledge_site_profile_set,
-            knowledge::commands::knowledge_public_feed,
-            knowledge::commands::knowledge_export_public,
+            kbase::commands::knowledge_list,
+            kbase::commands::knowledge_add,
+            kbase::commands::knowledge_update,
+            kbase::commands::knowledge_remove,
+            kbase::commands::knowledge_site_profile_get,
+            kbase::commands::knowledge_site_profile_set,
+            kbase::commands::knowledge_public_feed,
+            kbase::commands::knowledge_export_public,
             // channels
             channels::commands::channel_list,
             channels::commands::channel_get,
@@ -181,29 +193,29 @@ pub fn run() {
             accounts::commands::vault_unlock,
             accounts::commands::vault_lock,
             // media platforms
-            media_platforms::commands::media_platform_list,
-            media_platforms::commands::media_platform_list_page,
-            media_platforms::commands::media_platform_get,
-            media_platforms::commands::media_platform_upsert,
-            media_platforms::commands::media_platform_set_enabled,
-            media_platforms::commands::media_platform_remove,
-            media_platforms::commands::publish_script_get,
-            media_platforms::commands::publish_script_list,
-            media_platforms::commands::publish_script_save_draft,
-            media_platforms::commands::publish_script_publish,
-            media_platforms::commands::publish_script_discard_draft,
-            media_platforms::commands::collect_script_get,
-            media_platforms::commands::collect_script_list,
-            media_platforms::commands::collect_script_save_draft,
-            media_platforms::commands::collect_script_publish,
-            media_platforms::commands::collect_script_discard_draft,
+            medias::commands::media_platform_list,
+            medias::commands::media_platform_list_page,
+            medias::commands::media_platform_get,
+            medias::commands::media_platform_upsert,
+            medias::commands::media_platform_set_enabled,
+            medias::commands::media_platform_remove,
+            medias::commands::publish_script_get,
+            medias::commands::publish_script_list,
+            medias::commands::publish_script_save_draft,
+            medias::commands::publish_script_publish,
+            medias::commands::publish_script_discard_draft,
+            medias::commands::collect_script_get,
+            medias::commands::collect_script_list,
+            medias::commands::collect_script_save_draft,
+            medias::commands::collect_script_publish,
+            medias::commands::collect_script_discard_draft,
             // nav bookmarks
-            nav_bookmarks::commands::nav_bookmark_list,
-            nav_bookmarks::commands::nav_bookmark_upsert,
-            nav_bookmarks::commands::nav_bookmark_remove,
-            nav_bookmarks::commands::nav_custom_list,
-            nav_bookmarks::commands::nav_custom_upsert,
-            nav_bookmarks::commands::nav_custom_remove,
+            bmarks::commands::nav_bookmark_list,
+            bmarks::commands::nav_bookmark_upsert,
+            bmarks::commands::nav_bookmark_remove,
+            bmarks::commands::nav_custom_list,
+            bmarks::commands::nav_custom_upsert,
+            bmarks::commands::nav_custom_remove,
             // business map
             business_map::commands::map_state_get,
             business_map::commands::map_state_save,
@@ -228,6 +240,7 @@ pub fn run() {
             skills::commands::skill_add,
             skills::commands::skill_update,
             skills::commands::skill_remove,
+            skills::commands::skill_install_npx,
             skills::commands::skill_export_md,
             // agents
             agents::commands::agent_list,

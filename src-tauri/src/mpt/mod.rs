@@ -564,15 +564,12 @@ pub async fn import_video_url(
         full.as_str(),
         Some(title),
         "chatcms-video",
-    )?;
+    )
+    .await?;
     if let Some(tid) = task_id {
         record.remote_id = Some(tid.to_string());
-        let mut list = persist::load_videos(app);
-        if let Some(item) = list.iter_mut().find(|v| v.id == record.id) {
-            item.remote_id = Some(tid.to_string());
-            record = item.clone();
-            persist::save_videos(app, &list);
-        }
+        record.updated_at = record.created_at;
+        persist::save_video(app, &record).await;
     }
     Ok(record)
 }

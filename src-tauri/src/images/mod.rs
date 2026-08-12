@@ -186,9 +186,7 @@ pub async fn generate(
         updated_at: ts,
     };
 
-    let mut list = crate::persist::load_images(app);
-    list.insert(0, record.clone());
-    crate::persist::save_images(app, &list);
+    crate::persist::save_image(app, &record).await;
 
     Ok(record)
 }
@@ -240,11 +238,11 @@ pub async fn import_from_url(
     if bytes.len() > MAX_BYTES {
         bail!("图片超过 20MB 上限");
     }
-    import_bytes(app, bytes.to_vec(), &content_type, url, title, "web_import")
+    import_bytes(app, bytes.to_vec(), &content_type, url, title, "web_import").await
 }
 
 /// 扩展已拉取 / 本机上传的字节直接入库。
-pub fn import_bytes(
+pub async fn import_bytes(
     app: &AppHandle,
     bytes: Vec<u8>,
     content_type: &str,
@@ -298,14 +296,12 @@ pub fn import_bytes(
         updated_at: ts,
     };
 
-    let mut list = crate::persist::load_images(app);
-    list.insert(0, record.clone());
-    crate::persist::save_images(app, &list);
+    crate::persist::save_image(app, &record).await;
     Ok(record)
 }
 
 /// 本机上传：base64 → 图片库。
-pub fn upload_base64(
+pub async fn upload_base64(
     app: &AppHandle,
     data_base64: &str,
     filename: &str,
@@ -319,11 +315,11 @@ pub fn upload_base64(
     let title = if name.is_empty() { None } else { Some(name) };
     let ct = content_type.unwrap_or("").trim();
     let hint = if name.is_empty() { "upload.png" } else { name };
-    import_bytes(app, bytes, ct, hint, title, "local_upload")
+    import_bytes(app, bytes, ct, hint, title, "local_upload").await
 }
 
 /// 更新名称与备注。
-pub fn update(
+pub async fn update(
     app: &AppHandle,
     id: String,
     title: String,
@@ -334,15 +330,15 @@ pub fn update(
         bail!("名称不能为空");
     }
     let note = note.chars().take(500).collect::<String>();
-    let mut list = crate::persist::load_images(app);
-    let Some(item) = list.iter_mut().find(|i| i.id == id) else {
+    let mut images = crate::persist::load_all_images(app).await;
+    let Some(item) = images.iter_mut().find(|i| i.id == id) else {
         bail!("图片不存在");
     };
     item.prompt = title.chars().take(200).collect();
     item.note = note;
     item.updated_at = now_ms();
     let updated = item.clone();
-    crate::persist::save_images(app, &list);
+    crate::persist::save_image(app, &updated).await;
     Ok(updated)
 }
 
@@ -393,16 +389,16 @@ fn guess_image_ext(url: &str, content_type: &str) -> &'static str {
     "png"
 }
 
-pub fn list(app: &AppHandle) -> Vec<GeneratedImage> {
-    crate::persist::load_images(app)
+pub async fn list(app: &AppHandle) -> Vec<GeneratedImage> {
+    crate::persist::load_all_images(app).await
 }
 
-pub fn delete(app: &AppHandle, id: String) -> Result<()> {
-    let mut list = crate::persist::load_images(app);
-    if let Some(pos) = list.iter().position(|i| i.id == id) {
-        let item = list.remove(pos);
-        let _ = fs::remove_file(&item.path);
-        crate::persist::save_images(app, &list);
+pub async fn delete(app: &AppHandle, id: String) -> Result<()> {
+    let images = crate::persist::load_all_images(app).await;
+    if let Some(item) = images.iter().find(|i| i.id == id) {
+        let path = item.path.clone();
+        crate::persist::delete_image(app, &id).await;
+        let _ = fs::remove_file(&path);
         Ok(())
     } else {
         bail!("图片不存在");

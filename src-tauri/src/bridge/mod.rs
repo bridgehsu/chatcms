@@ -296,8 +296,8 @@ async fn delete_session(
         if sessions.remove(&id).is_none() {
             return (StatusCode::NOT_FOUND, "会话不存在").into_response();
         }
-        persist::save_sessions(&app, &sessions);
     }
+    persist::delete_session(&app, &id).await;
     bridge.clear_bindings_for_session(&id);
     let map = bridge.page_bindings_snapshot();
     persist::save_page_bindings(&app, &map);
@@ -321,16 +321,19 @@ async fn rename_session(
         return (StatusCode::BAD_REQUEST, "标题不能为空").into_response();
     }
     let state = app.state::<AgentState>();
-    let mut sessions = state.sessions.lock().unwrap();
-    let Some(session) = sessions.get_mut(&id) else {
-        return (StatusCode::NOT_FOUND, "会话不存在").into_response();
+    let session = {
+        let mut sessions = state.sessions.lock().unwrap();
+        let Some(session) = sessions.get_mut(&id) else {
+            return (StatusCode::NOT_FOUND, "会话不存在").into_response();
+        };
+        session.title = trimmed;
+        session.updated_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        session.clone()
     };
-    session.title = trimmed;
-    session.updated_at = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    persist::save_sessions(&app, &sessions);
+    persist::save_session(&app, &session).await;
     let _ = app.emit(
         "sessions-changed",
         json!({ "source": "extension", "session_id": id }),
@@ -347,12 +350,15 @@ async fn pin_session(
         return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
     };
     let state = app.state::<AgentState>();
-    let mut sessions = state.sessions.lock().unwrap();
-    let Some(session) = sessions.get_mut(&id) else {
-        return (StatusCode::NOT_FOUND, "会话不存在").into_response();
+    let session = {
+        let mut sessions = state.sessions.lock().unwrap();
+        let Some(session) = sessions.get_mut(&id) else {
+            return (StatusCode::NOT_FOUND, "会话不存在").into_response();
+        };
+        session.pinned = body.pinned;
+        session.clone()
     };
-    session.pinned = body.pinned;
-    persist::save_sessions(&app, &sessions);
+    persist::save_session(&app, &session).await;
     let _ = app.emit(
         "sessions-changed",
         json!({ "source": "extension", "session_id": id }),
@@ -394,11 +400,11 @@ async fn ensure_session(
 
     let session = Session::new(title);
     let sid = session.id.clone();
+    persist::save_session(&app, &session).await;
     {
         let state = app.state::<AgentState>();
         let mut sessions = state.sessions.lock().unwrap();
         sessions.insert(sid.clone(), session);
-        persist::save_sessions(&app, &sessions);
     }
     bind_and_persist(&bridge, &page_key, &sid);
 
@@ -431,11 +437,11 @@ async fn reset_session(
 
     let session = Session::new(title);
     let sid = session.id.clone();
+    persist::save_session(&app, &session).await;
     {
         let state = app.state::<AgentState>();
         let mut sessions = state.sessions.lock().unwrap();
         sessions.insert(sid.clone(), session);
-        persist::save_sessions(&app, &sessions);
     }
     bind_and_persist(&bridge, &page_key, &sid);
 
@@ -502,11 +508,11 @@ async fn chat_send_sse(
         let title = "New Chat".to_string();
         let session = Session::new(title);
         let sid = session.id.clone();
+        persist::save_session(&app, &session).await;
         {
             let state = app.state::<AgentState>();
             let mut sessions = state.sessions.lock().unwrap();
             sessions.insert(sid.clone(), session);
-            persist::save_sessions(&app, &sessions);
         }
         if let Some(ref pk) = page_key {
             bind_and_persist(&bridge, pk, &sid);

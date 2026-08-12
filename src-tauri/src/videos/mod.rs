@@ -234,6 +234,7 @@ pub async fn generate(
         seconds,
         Some(remote_id),
     )
+    .await
 }
 
 async fn save_from_url(
@@ -255,10 +256,10 @@ async fn save_from_url(
         .await
         .context("读取视频失败")?
         .to_vec();
-    save_bytes(app, bin, prompt, model, size, seconds, remote_id)
+    save_bytes(app, bin, prompt, model, size, seconds, remote_id).await
 }
 
-fn save_bytes(
+async fn save_bytes(
     app: &AppHandle,
     bytes: Vec<u8>,
     prompt: String,
@@ -285,9 +286,7 @@ fn save_bytes(
         updated_at: ts,
     };
 
-    let mut list = crate::persist::load_videos(app);
-    list.insert(0, record.clone());
-    crate::persist::save_videos(app, &list);
+    crate::persist::save_video(app, &record).await;
     Ok(record)
 }
 
@@ -343,11 +342,11 @@ pub async fn import_from_url(
     if bytes.len() > MAX_BYTES {
         bail!("视频超过 200MB 上限");
     }
-    import_bytes(app, bytes.to_vec(), &content_type, url, title, "web_import")
+    import_bytes(app, bytes.to_vec(), &content_type, url, title, "web_import").await
 }
 
 /// 扩展已拉取 / 本机上传的字节直接入库。
-pub fn import_bytes(
+pub async fn import_bytes(
     app: &AppHandle,
     bytes: Vec<u8>,
     content_type: &str,
@@ -400,14 +399,12 @@ pub fn import_bytes(
         updated_at: ts,
     };
 
-    let mut list = crate::persist::load_videos(app);
-    list.insert(0, record.clone());
-    crate::persist::save_videos(app, &list);
+    crate::persist::save_video(app, &record).await;
     Ok(record)
 }
 
 /// 本机上传：base64 → 视频库。
-pub fn upload_base64(
+pub async fn upload_base64(
     app: &AppHandle,
     data_base64: &str,
     filename: &str,
@@ -421,11 +418,11 @@ pub fn upload_base64(
     let title = if name.is_empty() { None } else { Some(name) };
     let ct = content_type.unwrap_or("").trim();
     let hint = if name.is_empty() { "upload.mp4" } else { name };
-    import_bytes(app, bytes, ct, hint, title, "local_upload")
+    import_bytes(app, bytes, ct, hint, title, "local_upload").await
 }
 
 /// 更新名称与备注。
-pub fn update(
+pub async fn update(
     app: &AppHandle,
     id: String,
     title: String,
@@ -436,15 +433,15 @@ pub fn update(
         bail!("名称不能为空");
     }
     let note = note.chars().take(500).collect::<String>();
-    let mut list = crate::persist::load_videos(app);
-    let Some(item) = list.iter_mut().find(|i| i.id == id) else {
+    let mut videos = crate::persist::load_all_videos(app).await;
+    let Some(item) = videos.iter_mut().find(|i| i.id == id) else {
         bail!("视频不存在");
     };
     item.prompt = title.chars().take(200).collect();
     item.note = note;
     item.updated_at = now_ms();
     let updated = item.clone();
-    crate::persist::save_videos(app, &list);
+    crate::persist::save_video(app, &updated).await;
     Ok(updated)
 }
 
@@ -469,16 +466,16 @@ fn guess_video_ext(url: &str, content_type: &str) -> &'static str {
     "mp4"
 }
 
-pub fn list(app: &AppHandle) -> Vec<GeneratedVideo> {
-    crate::persist::load_videos(app)
+pub async fn list(app: &AppHandle) -> Vec<GeneratedVideo> {
+    crate::persist::load_all_videos(app).await
 }
 
-pub fn delete(app: &AppHandle, id: String) -> Result<()> {
-    let mut list = crate::persist::load_videos(app);
-    if let Some(pos) = list.iter().position(|i| i.id == id) {
-        let item = list.remove(pos);
-        let _ = fs::remove_file(&item.path);
-        crate::persist::save_videos(app, &list);
+pub async fn delete(app: &AppHandle, id: String) -> Result<()> {
+    let videos = crate::persist::load_all_videos(app).await;
+    if let Some(item) = videos.iter().find(|i| i.id == id) {
+        let path = item.path.clone();
+        crate::persist::delete_video(app, &id).await;
+        let _ = fs::remove_file(&path);
         Ok(())
     } else {
         bail!("视频不存在");

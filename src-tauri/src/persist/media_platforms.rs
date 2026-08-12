@@ -1,6 +1,6 @@
 use tauri::AppHandle;
 
-use crate::media_platforms::{MediaPlatform, PublishScript};
+use crate::medias::{MediaPlatform, PublishScript};
 
 pub fn save_media_platforms(app: &AppHandle, platforms: &[MediaPlatform]) {
     let Some(store) = super::open(app) else { return };

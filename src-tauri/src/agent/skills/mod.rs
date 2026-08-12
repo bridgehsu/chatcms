@@ -8,7 +8,7 @@ mod seed;
 mod store;
 mod prompt;
 
-pub use types::Skill;
+pub use types::{Skill, SkillSource};
 pub use seed::ensure_seeded;
-pub use store::{list, add, update, remove};
+pub use store::{list, add, update, remove, install_npx, parse_skill_md};
 pub use prompt::{format_for_prompt, to_skill_md};

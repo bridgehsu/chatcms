@@ -15,6 +15,7 @@ pub async fn run_sub_agent(
     app: AppHandle,
     system_prompt: Option<String>,
     prompt: String,
+    workspace_dir: Option<String>,
 ) -> Result<String> {
     // 复用父进程里的配置与 MCP 工具列表
     let (config, mcp_api_tools) = {
@@ -53,7 +54,7 @@ pub async fn run_sub_agent(
 
         let mut results = Vec::new();
         for tc in &output.tool_calls {
-            results.push(dispatch_sub_tool(tc, &app, &mcp_tool_names).await);
+            results.push(dispatch_sub_tool(tc, &app, &mcp_tool_names, workspace_dir.as_deref()).await);
         }
         api_messages.extend(provider::encode_tool_turn(
             config.provider.kind.clone(),
