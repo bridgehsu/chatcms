@@ -118,33 +118,6 @@ export const ChatWindow = () => {
 
   return (
     <div className="chat-window">
-      {/* 顶部模型/权限选择条 */}
-      <div className="chat-header">
-        <div className="chat-header__model">
-          <Select
-            aria-label="选择模型"
-            value={familyId}
-            options={[...FAMILY_OPTIONS]}
-            onChange={(id) => void selectFamily(id)}
-          />
-          <Select
-            aria-label="选择版本"
-            value={versionId}
-            options={versionOptions}
-            onChange={(id) => void selectVersion(id)}
-          />
-        </div>
-        {permissionOptions.length > 0 && (
-          <Select
-            className="composer__perm"
-            aria-label="选择权限模式"
-            value={permissionValue}
-            options={permissionOptions}
-            onChange={(id) => void setActivePermissionMode(id)}
-          />
-        )}
-      </div>
-
       <div className="messages" ref={messagesRef}>
         <div className="messages__inner">
           {isEmpty && (
@@ -204,6 +177,34 @@ export const ChatWindow = () => {
             >
               {isStreaming ? <span className="btn-send__dots">…</span> : <IconSend />}
             </button>
+          </div>
+          <div className="composer__footer">
+            <div className="composer__model">
+              <Select
+                aria-label="选择模型"
+                placement="top"
+                value={familyId}
+                options={[...FAMILY_OPTIONS]}
+                onChange={(id) => void selectFamily(id)}
+              />
+              <Select
+                aria-label="选择版本"
+                placement="top"
+                value={versionId}
+                options={versionOptions}
+                onChange={(id) => void selectVersion(id)}
+              />
+            </div>
+            {permissionOptions.length > 0 && (
+              <Select
+                className="composer__perm"
+                aria-label="选择权限模式"
+                placement="top"
+                value={permissionValue}
+                options={permissionOptions}
+                onChange={(id) => void setActivePermissionMode(id)}
+              />
+            )}
           </div>
         </div>
       </div>
