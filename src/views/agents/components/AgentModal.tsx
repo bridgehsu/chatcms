@@ -143,90 +143,100 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="model-modal skill-modal"
+        className="agent-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="agent-modal-title"
       >
-        <div className="model-modal__header">
-          <h2 id="agent-modal-title" className="model-modal__title">
+        {/* Header */}
+        <div className="agent-modal__header">
+          <h2 id="agent-modal-title" className="agent-modal__title">
             {mode === "edit" ? "编辑代理" : "新建代理"}
           </h2>
-          <button type="button" className="model-modal__close" onClick={onClose}>
-            ×
+          <button type="button" className="agent-modal__close" onClick={onClose} aria-label="关闭">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
           </button>
         </div>
 
-        <div className="model-modal__body">
-          <p className="skill-modal__hint">
-            对齐 OpenClaw <code>agents.list</code>：人格、技能白名单、可否作为子代理
-          </p>
+        {/* Body */}
+        <div className="agent-modal__body">
 
-          <div className="agent-form-grid">
-            <div className="mcp-form-row">
-              <label>名称</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="内容写手"
-              />
+          {/* Section: 基本信息 */}
+          <div className="agent-modal__section">
+            <p className="agent-modal__section-title">基本信息</p>
+            <div className="agent-modal__row2">
+              <div className="agent-modal__field">
+                <label className="agent-modal__label">代理名称</label>
+                <input
+                  className="agent-modal__input"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="内容写手"
+                />
+              </div>
+              <div className="agent-modal__field">
+                <label className="agent-modal__label">ID（slug）</label>
+                <input
+                  className="agent-modal__input agent-modal__input--mono"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  placeholder="writer"
+                />
+              </div>
             </div>
-            <div className="mcp-form-row">
-              <label>ID（slug）</label>
-              <input
-                value={form.slug}
-                onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                placeholder="writer"
-              />
+            <div className="agent-modal__row2">
+              <div className="agent-modal__field">
+                <label className="agent-modal__label">Emoji</label>
+                <input
+                  className="agent-modal__input agent-modal__input--emoji"
+                  value={form.emoji}
+                  onChange={(e) => setForm({ ...form, emoji: e.target.value })}
+                  placeholder="✍️"
+                />
+              </div>
+              <div className="agent-modal__field">
+                <label className="agent-modal__label">简介</label>
+                <input
+                  className="agent-modal__input"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                  placeholder="一句话说明职责"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="agent-form-grid">
-            <div className="mcp-form-row">
-              <label>Emoji</label>
-              <input
-                value={form.emoji}
-                onChange={(e) => setForm({ ...form, emoji: e.target.value })}
-                placeholder="✍️"
-              />
-            </div>
-            <div className="mcp-form-row">
-              <label>简介</label>
-              <input
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-                placeholder="一句话说明职责"
-              />
-            </div>
-          </div>
-
-          <div className="mcp-form-row">
-            <label>人格 / 系统提示</label>
+          {/* Section: 人格 */}
+          <div className="agent-modal__section">
+            <p className="agent-modal__section-title">系统提示</p>
             <textarea
-              className="skill-body"
+              className="agent-modal__textarea"
               rows={6}
               value={form.systemPrompt}
               onChange={(e) =>
                 setForm({ ...form, systemPrompt: e.target.value })
               }
-              placeholder="你是……"
+              placeholder="你是一位专业的……，你的职责是……"
             />
           </div>
 
-          <div className="mcp-form-row">
-            <label>技能可见性</label>
-            <div className="agent-skills-mode">
+          {/* Section: 技能 */}
+          <div className="agent-modal__section">
+            <p className="agent-modal__section-title">技能配置</p>
+            <div className="agent-modal__radios">
               {(
                 [
                   ["all", "全部技能"],
-                  ["allowlist", "白名单"],
-                  ["none", "无技能"],
+                  ["allowlist", "指定白名单"],
+                  ["none", "不使用技能"],
                 ] as const
               ).map(([value, label]) => (
-                <label key={value} className="account-enabled">
+                <label key={value} className="agent-modal__radio-label">
                   <input
                     type="radio"
                     name="skills-mode"
@@ -237,62 +247,69 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
                 </label>
               ))}
             </div>
-          </div>
 
-          {form.skillsMode === "allowlist" && (
-            <div className="agent-skill-picks">
-              {skillOptions.length === 0 ? (
-                <p className="skill-modal__hint">暂无可用技能，请先到技能管理添加</p>
-              ) : (
-                skillOptions.map((s) => (
-                  <label key={s.id} className="account-enabled">
-                    <input
-                      type="checkbox"
-                      checked={form.skills.includes(s.name)}
-                      onChange={() => toggleSkill(s.name)}
-                    />
-                    <span>
-                      <code>{s.name}</code>
-                      <span className="agent-skill-picks__desc">
-                        {s.description}
+            {form.skillsMode === "allowlist" && (
+              <div className="agent-modal__skill-picks">
+                {skillOptions.length === 0 ? (
+                  <p className="agent-modal__empty-hint">暂无可用技能，请先到技能管理添加</p>
+                ) : (
+                  skillOptions.map((s) => (
+                    <label key={s.id} className="agent-modal__check-label">
+                      <input
+                        type="checkbox"
+                        checked={form.skills.includes(s.name)}
+                        onChange={() => toggleSkill(s.name)}
+                      />
+                      <span className="agent-modal__skill-name">
+                        <code>{s.name}</code>
+                        <span className="agent-modal__skill-desc">{s.description}</span>
                       </span>
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
-          )}
-
-          <div className="skill-toggles">
-            <label className="account-enabled">
-              <input
-                type="checkbox"
-                checked={form.enabled}
-                onChange={(e) =>
-                  setForm({ ...form, enabled: e.target.checked })
-                }
-              />
-              <span>启用</span>
-            </label>
-            <label className="account-enabled">
-              <input
-                type="checkbox"
-                checked={form.allowAsSubagent}
-                onChange={(e) =>
-                  setForm({ ...form, allowAsSubagent: e.target.checked })
-                }
-              />
-              <span>可作为子代理（spawn_agent）</span>
-            </label>
+                    </label>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="mcp-form-row">
-            <label>权限覆盖（未设 = 继承全局域策略）</label>
-            <div className="agent-perm-overrides">
+          {/* Section: 行为 */}
+          <div className="agent-modal__section">
+            <p className="agent-modal__section-title">行为设置</p>
+            <div className="agent-modal__toggles">
+              <label className="agent-modal__check-label">
+                <input
+                  type="checkbox"
+                  checked={form.enabled}
+                  onChange={(e) =>
+                    setForm({ ...form, enabled: e.target.checked })
+                  }
+                />
+                <span>启用此代理</span>
+              </label>
+              <label className="agent-modal__check-label">
+                <input
+                  type="checkbox"
+                  checked={form.allowAsSubagent}
+                  onChange={(e) =>
+                    setForm({ ...form, allowAsSubagent: e.target.checked })
+                  }
+                />
+                <span>允许作为子代理调用（spawn_agent）</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Section: 权限覆盖 */}
+          <div className="agent-modal__section">
+            <p className="agent-modal__section-title">
+              权限覆盖
+              <span className="agent-modal__section-hint">未设置则继承全局域策略</span>
+            </p>
+            <div className="agent-modal__perm-grid">
               {OVERRIDE_DOMAINS.map((d) => (
-                <div key={d.id} className="agent-perm-overrides__row">
-                  <span>{d.label}</span>
+                <div key={d.id} className="agent-modal__perm-row">
+                  <span className="agent-modal__perm-label">{d.label}</span>
                   <select
+                    className="agent-modal__perm-select"
                     value={form.permissionOverrides[d.id] ?? ""}
                     onChange={(e) => {
                       const v = e.target.value as DomainPolicy | "";
@@ -317,7 +334,8 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
           {error && <div className="mcp-form-error">{error}</div>}
         </div>
 
-        <div className="model-modal__footer">
+        {/* Footer */}
+        <div className="agent-modal__footer">
           <button type="button" className="btn-ghost" onClick={onClose}>
             取消
           </button>
@@ -327,7 +345,7 @@ export const AgentModal = ({ mode, agent, onClose, onSaved }: Props) => {
             onClick={() => void save()}
             disabled={!form.name.trim() || !form.slug.trim() || busy}
           >
-            {busy ? "保存中…" : mode === "edit" ? "保存" : "添加"}
+            {busy ? "保存中…" : mode === "edit" ? "保存更改" : "创建代理"}
           </button>
         </div>
       </div>

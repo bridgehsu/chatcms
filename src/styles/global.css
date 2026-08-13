@@ -7148,47 +7148,309 @@ body,
   padding: 4px 0;
 }
 
-/* ── Agents ─────────────────────────────────────────────────────────────────── */
-.agent-form-grid {
+/* ── Agent Modal ─────────────────────────────────────────────────────────────── */
+.agent-modal {
+  width: min(640px, 96vw);
+  max-height: min(90vh, 800px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.agent-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.agent-modal__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.agent-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.agent-modal__close:hover {
+  background: var(--bg-3);
+  color: var(--text);
+}
+
+.agent-modal__body {
+  padding: 0 24px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: auto;
+}
+
+/* Section */
+.agent-modal__section {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.agent-modal__section:last-child {
+  border-bottom: none;
+}
+
+.agent-modal__section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.agent-modal__section-hint {
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+/* Field */
+.agent-modal__row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.agent-skills-mode {
+.agent-modal__field {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px 16px;
+  flex-direction: column;
+  gap: 5px;
 }
 
-.agent-skill-picks {
+.agent-modal__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.agent-modal__input {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  color: var(--text);
+  font-size: 14px;
+  transition: border-color 120ms;
+}
+.agent-modal__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.agent-modal__input--mono {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.agent-modal__input--emoji {
+  font-size: 20px;
+  text-align: center;
+  max-width: 64px;
+}
+
+.agent-modal__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 120ms;
+}
+.agent-modal__textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Radio / checkbox rows */
+.agent-modal__radios {
+  display: flex;
+  gap: 6px;
+}
+
+.agent-modal__radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.agent-modal__radio-label input {
+  accent-color: var(--accent);
+}
+.agent-modal__radio-label:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-1));
+  color: var(--accent);
+}
+
+.agent-modal__toggles {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 180px;
+}
+
+.agent-modal__check-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.4;
+}
+.agent-modal__check-label input {
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+/* Skill picks */
+.agent-modal__skill-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 160px;
   overflow: auto;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg-3);
+  background: var(--bg-1);
 }
 
-.agent-skill-picks__desc {
-  display: block;
-  margin-top: 2px;
+.agent-modal__empty-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.agent-modal__skill-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.agent-modal__skill-name code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.agent-modal__skill-desc {
   font-size: 11px;
   color: var(--text-dim);
   line-height: 1.35;
 }
 
-.agent-skill-picks code {
-  font-family: var(--mono);
-  font-size: 12px;
+/* Permission grid */
+.agent-modal__perm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
 }
 
-@media (max-width: 640px) {
-  .agent-form-grid {
+.agent-modal__perm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+}
+
+.agent-modal__perm-label {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.agent-modal__perm-select {
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.agent-modal__perm-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Footer */
+.agent-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.agent-modal__footer .btn-primary,
+.agent-modal__footer .btn-ghost {
+  min-height: 36px;
+  padding: 0 18px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+@media (max-width: 560px) {
+  .agent-modal__row2 {
     grid-template-columns: 1fr;
+  }
+  .agent-modal__perm-grid {
+    grid-template-columns: 1fr;
+  }
+  .agent-modal__radios {
+    flex-wrap: wrap;
   }
 }
 
