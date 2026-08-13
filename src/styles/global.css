@@ -1900,13 +1900,8 @@ body,
 
 .model-picker__option--auto {
   grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  gap: 1px 6px;
-}
-
-.model-picker__option--auto .model-picker__option-desc {
-  grid-column: 2;
-  grid-row: 2;
+  gap: 0 8px;
+  align-items: center;
 }
 
 .model-picker__option--auto .model-picker__option-name {
@@ -1916,6 +1911,20 @@ body,
 
 .model-picker__option--auto.is-selected {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.model-picker__option-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.model-picker__empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
 }
 
 .model-picker__option-dot {

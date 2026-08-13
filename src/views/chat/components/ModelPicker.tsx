@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { MODEL_FAMILIES } from "@/config/modelPresets";
-import type { FamilyId } from "@/config/modelPresets";
+import { invoke } from "@/hooks/useTauri";
+import { useProviderStore } from "@/stores/useProviderStore";
+import type { ProviderProfile } from "@/types";
 
 const AUTO_KEY = "chatcms.autoModel";
 
-function readAuto() {
+export function readAuto() {
   try { return localStorage.getItem(AUTO_KEY) !== "0"; } catch { return true; }
 }
 function writeAuto(v: boolean) {
@@ -12,24 +13,23 @@ function writeAuto(v: boolean) {
 }
 
 type Props = {
-  familyId: FamilyId;
-  versionId: string;
   autoModel: boolean;
-  onSelectFamily: (id: FamilyId) => void;
-  onSelectVersion: (id: string) => void;
   onAutoChange: (v: boolean) => void;
 };
 
-export const ModelPicker = ({
-  familyId,
-  versionId,
-  autoModel,
-  onSelectFamily,
-  onSelectVersion,
-  onAutoChange,
-}: Props) => {
+export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
   const [open, setOpen] = useState(false);
+  const [profiles, setProfiles] = useState<ProviderProfile[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
+  const load = useProviderStore((s) => s.load);
+
+  const refresh = () => {
+    invoke<ProviderProfile[]>("provider_list")
+      .then(setProfiles)
+      .catch(console.error);
+  };
+
+  useEffect(() => { refresh(); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -45,14 +45,16 @@ export const ModelPicker = ({
     };
   }, [open]);
 
-  const family = MODEL_FAMILIES.find((f) => f.id === familyId) ?? MODEL_FAMILIES[0];
-  const version = family.versions.find((v) => v.id === versionId) ?? family.versions[0];
+  const active = profiles.find((p) => p.active);
 
-  const label = autoModel ? "Auto" : `${family.label} · ${version.label}`;
+  const label = autoModel
+    ? "Auto"
+    : (active?.name ?? "选择模型");
 
-  const select = (fid: FamilyId, vid: string) => {
-    onSelectFamily(fid);
-    onSelectVersion(vid);
+  const select = async (id: string) => {
+    await invoke("provider_activate", { id });
+    await load();
+    refresh();
     onAutoChange(false);
     writeAuto(false);
     setOpen(false);
@@ -69,7 +71,7 @@ export const ModelPicker = ({
       <button
         type="button"
         className={`model-picker__trigger${autoModel ? " is-auto" : ""}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => { if (open) { setOpen(false); } else { refresh(); setOpen(true); } }}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -82,7 +84,7 @@ export const ModelPicker = ({
 
       {open && (
         <div className="model-picker__menu" role="listbox">
-          {/* Auto 选项 */}
+          {/* Auto */}
           <button
             type="button"
             role="option"
@@ -91,35 +93,40 @@ export const ModelPicker = ({
             onClick={selectAuto}
           >
             <span className="model-picker__option-dot" />
-            <span className="model-picker__option-name">Auto</span>
-            <span className="model-picker__option-desc">由系统自动选择最佳模型</span>
+            <div className="model-picker__option-main">
+              <span className="model-picker__option-name">Auto</span>
+              <span className="model-picker__option-desc">由系统自动选择最佳模型</span>
+            </div>
           </button>
 
-          <div className="model-picker__sep" />
+          {profiles.length > 0 && <div className="model-picker__sep" />}
 
-          {/* 模型列表 */}
-          {MODEL_FAMILIES.map((fam) =>
-            fam.versions.map((ver) => {
-              const selected = !autoModel && fam.id === familyId && ver.id === versionId;
-              return (
-                <button
-                  key={`${fam.id}-${ver.id}`}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  className={`model-picker__option${selected ? " is-selected" : ""}`}
-                  onClick={() => select(fam.id as FamilyId, ver.id)}
-                >
-                  <span className="model-picker__option-name">{ver.label}</span>
-                  <span className="model-picker__option-provider">{fam.label}</span>
-                </button>
-              );
-            })
+          {profiles.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="option"
+              aria-selected={!autoModel && p.active}
+              className={`model-picker__option${!autoModel && p.active ? " is-selected" : ""}`}
+              onClick={() => void select(p.id)}
+            >
+              <div className="model-picker__option-main">
+                <span className="model-picker__option-name">{p.name}</span>
+                <span className="model-picker__option-desc">{p.model}</span>
+              </div>
+              <span className="model-picker__option-provider">
+                {p.kind === "anthropic" ? "Anthropic" : "OpenAI"}
+              </span>
+            </button>
+          ))}
+
+          {profiles.length === 0 && (
+            <div className="model-picker__empty">
+              暂无配置，请到「模型」页添加
+            </div>
           )}
         </div>
       )}
     </div>
   );
 };
-
-export { readAuto };

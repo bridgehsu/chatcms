@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { IconSend } from "@/components/icons";
 import { Select } from "@/components/Select";
-import { getVersionOptions } from "@/config/modelPresets";
 import { useChatStore } from "@/stores/useChatStore";
 import { usePermissionStore } from "@/stores/usePermissionStore";
 import { useProviderStore } from "@/stores/useProviderStore";
@@ -54,7 +53,7 @@ export const ChatWindow = () => {
     sendMessage,
     clearError,
   } = useChatStore();
-  const { familyId, versionId, load, selectFamily, selectVersion } = useProviderStore();
+  const { load } = useProviderStore();
   const {
     modes: permissionModes,
     activeModeId,
@@ -102,7 +101,6 @@ export const ChatWindow = () => {
     }
   };
 
-  void getVersionOptions; // unused, kept for future ref
   const permissionOptions = permissionModes.map((m) => ({
     value: m.id,
     label: m.name,
@@ -179,11 +177,7 @@ export const ChatWindow = () => {
           </div>
           <div className="composer__footer">
             <ModelPicker
-              familyId={familyId}
-              versionId={versionId}
               autoModel={autoModel}
-              onSelectFamily={(id) => void selectFamily(id)}
-              onSelectVersion={(id) => void selectVersion(id)}
               onAutoChange={setAutoModel}
             />
             {permissionOptions.length > 0 && (
