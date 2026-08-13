@@ -54,17 +54,17 @@ export type NavEntry = NavLeaf | NavGroup;
 export const NAV_ENTRIES: NavEntry[] = [
   {
     kind: "leaf",
-    path: "/chat",
-    label: "智能会话",
-    description: "与 Agent 对话，调用工具与技能完成任务",
-    Icon: IconChat,
-  },
-  {
-    kind: "leaf",
     path: "/map",
     label: "业务地图",
     description: "分区入口、笔记与截止提醒，一览业务全貌",
     Icon: IconMap,
+  },
+  {
+    kind: "leaf",
+    path: "/chat",
+    label: "智能会话",
+    description: "与 Agent 对话，调用工具与技能完成任务",
+    Icon: IconChat,
   },
   {
     kind: "leaf",
