@@ -173,15 +173,16 @@ export const SessionList = () => {
     value: a.id,
     label: `${a.emoji || "🤖"} ${a.name}`,
   }));
+  const pickerValue = activeAgentId ?? activeAgent?.id ?? "";
 
   return (
     <aside className="session-pane">
       {/* Agent 下拉选择 */}
-      {agents.length > 0 && activeAgentId && (
+      {agents.length > 0 && pickerValue && (
         <div className="agent-picker">
           <Select
             aria-label="选择 Agent"
-            value={activeAgentId}
+            value={pickerValue}
             options={agentOptions}
             onChange={(id) => setActiveAgent(id)}
           />
