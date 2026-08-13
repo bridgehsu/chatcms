@@ -194,20 +194,6 @@ export const SessionList = () => {
         )}
       </div>
 
-      {/* New Session Button */}
-      <div className="session-pane-header">
-        <button
-          className="btn-new-session"
-          onClick={newSession}
-          type="button"
-        >
-          <span className="btn-new-session__icon">
-            <IconPlus />
-          </span>
-          {activeAgent ? `${activeAgent.emoji || "🤖"} 新会话` : "发起新会话"}
-        </button>
-      </div>
-
       <div className="session-pane-label">
         {activeAgent ? activeAgent.name : "最近会话"}
       </div>
@@ -354,6 +340,20 @@ export const SessionList = () => {
           );
         })}
       </nav>
+
+      {/* 底部新建会话按钮 */}
+      <div className="session-pane-footer">
+        <button
+          className="btn-new-session"
+          onClick={newSession}
+          type="button"
+        >
+          <span className="btn-new-session__icon">
+            <IconPlus />
+          </span>
+          {activeAgent ? `${activeAgent.emoji || "🤖"} 新会话` : "发起新会话"}
+        </button>
+      </div>
 
       {pendingDelete && (
         <SessionDeleteDialog

@@ -662,6 +662,12 @@ body,
   gap: 10px;
 }
 
+.session-pane-footer {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 .btn-new-session {
   width: 100%;
   display: flex;
@@ -1230,6 +1236,25 @@ body,
   overflow: hidden;
   min-width: 0;
   min-height: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background: color-mix(in srgb, var(--bg-2) 70%, transparent);
+  backdrop-filter: blur(6px);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.chat-header__model {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .chat-toolbar {
