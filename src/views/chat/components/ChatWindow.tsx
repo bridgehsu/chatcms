@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { IconSend } from "@/components/icons";
 import { Select } from "@/components/Select";
-import {
-  FAMILY_OPTIONS,
-  getVersionOptions,
-} from "@/config/modelPresets";
+import { getVersionOptions } from "@/config/modelPresets";
 import { useChatStore } from "@/stores/useChatStore";
 import { usePermissionStore } from "@/stores/usePermissionStore";
 import { useProviderStore } from "@/stores/useProviderStore";
 import type { Message } from "@/types";
 import { MarkdownContent } from "./MarkdownContent";
+import { ModelPicker, readAuto } from "./ModelPicker";
 import { PermissionPrompt } from "./PermissionPrompt";
 import { ToolMessage } from "./ToolMessage";
 
@@ -64,19 +62,9 @@ export const ChatWindow = () => {
     setActive: setActivePermissionMode,
   } = usePermissionStore();
   const [input, setInput] = useState("");
-  const [autoModel, setAutoModel] = useState(() => {
-    try { return localStorage.getItem("chatcms.autoModel") !== "0"; } catch { return true; }
-  });
+  const [autoModel, setAutoModel] = useState(readAuto);
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const toggleAutoModel = () => {
-    setAutoModel((v) => {
-      const next = !v;
-      try { localStorage.setItem("chatcms.autoModel", next ? "1" : "0"); } catch { /* */ }
-      return next;
-    });
-  };
 
   useEffect(() => {
     void load();
@@ -114,7 +102,7 @@ export const ChatWindow = () => {
     }
   };
 
-  const versionOptions = getVersionOptions(familyId);
+  void getVersionOptions; // unused, kept for future ref
   const permissionOptions = permissionModes.map((m) => ({
     value: m.id,
     label: m.name,
@@ -190,37 +178,14 @@ export const ChatWindow = () => {
             </button>
           </div>
           <div className="composer__footer">
-            {/* 左侧：Auto 切换 + 手动模型选择 */}
-            <div className="composer__model-row">
-              <button
-                type="button"
-                className={`composer__auto-btn${autoModel ? " is-auto" : ""}`}
-                onClick={toggleAutoModel}
-                title={autoModel ? "点击手动选择模型" : "点击开启 Auto 模式"}
-              >
-                <span className="composer__auto-dot" />
-                {autoModel ? "Auto" : "手动"}
-              </button>
-              {!autoModel && (
-                <>
-                  <Select
-                    aria-label="选择模型"
-                    placement="top"
-                    value={familyId}
-                    options={[...FAMILY_OPTIONS]}
-                    onChange={(id) => void selectFamily(id)}
-                  />
-                  <Select
-                    aria-label="选择版本"
-                    placement="top"
-                    value={versionId}
-                    options={versionOptions}
-                    onChange={(id) => void selectVersion(id)}
-                  />
-                </>
-              )}
-            </div>
-            {/* 右侧：权限模式 */}
+            <ModelPicker
+              familyId={familyId}
+              versionId={versionId}
+              autoModel={autoModel}
+              onSelectFamily={(id) => void selectFamily(id)}
+              onSelectVersion={(id) => void selectVersion(id)}
+              onAutoChange={setAutoModel}
+            />
             {permissionOptions.length > 0 && (
               <Select
                 className="composer__perm"
