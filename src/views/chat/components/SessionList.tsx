@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { IconMore, IconPencil, IconPin, IconPlus, IconTrash } from "@/components/icons";
+import { Select } from "@/components/Select";
 import { invoke } from "@/hooks/useTauri";
 import { useChatStore } from "@/stores/useChatStore";
 import type { AgentProfile } from "@/types";
@@ -43,7 +44,15 @@ export const SessionList = () => {
   }, [loadSessions]);
 
   useEffect(() => {
-    invoke<AgentProfile[]>("agent_list").then(setAgents).catch(console.error);
+    invoke<AgentProfile[]>("agent_list").then((list) => {
+      const enabled = list.filter((a) => a.enabled);
+      setAgents(enabled);
+      // 自动选中默认 agent 或第一个
+      if (enabled.length > 0) {
+        const def = enabled.find((a) => a.is_default) ?? enabled[0];
+        setActiveAgent(def.id);
+      }
+    }).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -159,43 +168,28 @@ export const SessionList = () => {
     }
   };
 
-  const enabledAgents = agents.filter((a) => a.enabled);
-  const activeAgent = enabledAgents.find((a) => a.id === activeAgentId) ?? null;
+  const activeAgent = agents.find((a) => a.id === activeAgentId) ?? agents[0] ?? null;
+  const agentOptions = agents.map((a) => ({
+    value: a.id,
+    label: `${a.emoji || "🤖"} ${a.name}`,
+  }));
 
   return (
     <aside className="session-pane">
-      {/* Agent Picker */}
-      <div className="agent-picker">
-        {enabledAgents.length === 0 ? (
-          <div className="agent-picker__empty">暂无 Agent</div>
-        ) : (
-          <div className="agent-picker__list">
-            <button
-              type="button"
-              className={`agent-picker__item${activeAgentId === null ? " is-active" : ""}`}
-              onClick={() => setActiveAgent(null)}
-            >
-              <span className="agent-picker__emoji">💬</span>
-              <span className="agent-picker__name">全部</span>
-            </button>
-            {enabledAgents.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                className={`agent-picker__item${activeAgentId === a.id ? " is-active" : ""}`}
-                onClick={() => setActiveAgent(a.id)}
-                title={a.description || a.name}
-              >
-                <span className="agent-picker__emoji">{a.emoji || "🤖"}</span>
-                <span className="agent-picker__name">{a.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Agent 下拉选择 */}
+      {agents.length > 0 && activeAgentId && (
+        <div className="agent-picker">
+          <Select
+            aria-label="选择 Agent"
+            value={activeAgentId}
+            options={agentOptions}
+            onChange={(id) => setActiveAgent(id)}
+          />
+        </div>
+      )}
 
       <div className="session-pane-label">
-        {activeAgent ? activeAgent.name : "最近会话"}
+        {activeAgent?.name ?? "最近会话"}
       </div>
 
       <nav className="session-list" ref={listRef}>

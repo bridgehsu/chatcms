@@ -990,58 +990,17 @@ body,
 
 /* ── Agent Picker ────────────────────────────────────────────────────────── */
 .agent-picker {
-  padding: 10px 8px 4px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
 }
 
-.agent-picker__list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.agent-picker__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  text-align: left;
+.agent-picker .ui-select {
   width: 100%;
-  transition: background 120ms;
 }
 
-.agent-picker__item:hover {
-  background: var(--bg-hover);
-}
-
-.agent-picker__item.is-active {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.agent-picker__emoji {
-  font-size: 15px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.agent-picker__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.agent-picker__empty {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  padding: 8px 10px;
+.agent-picker .ui-select__trigger {
+  width: 100%;
+  justify-content: space-between;
 }
 
 /* ── input-bar meta row (model + permission) ─────────────────────────────── */
