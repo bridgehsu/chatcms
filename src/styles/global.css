@@ -1797,10 +1797,49 @@ body,
   z-index: 21;
 }
 
-.composer__model {
+.composer__footer:has(.ui-select.is-open) {
+  z-index: 40;
+}
+
+.composer__model-row {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.composer__auto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 150ms, color 150ms, background 150ms;
+  white-space: nowrap;
+}
+
+.composer__auto-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.composer__auto-btn.is-auto {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
+.composer__auto-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
 
 .composer__footer:has(.ui-select.is-open) {

@@ -64,8 +64,19 @@ export const ChatWindow = () => {
     setActive: setActivePermissionMode,
   } = usePermissionStore();
   const [input, setInput] = useState("");
+  const [autoModel, setAutoModel] = useState(() => {
+    try { return localStorage.getItem("chatcms.autoModel") !== "0"; } catch { return true; }
+  });
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const toggleAutoModel = () => {
+    setAutoModel((v) => {
+      const next = !v;
+      try { localStorage.setItem("chatcms.autoModel", next ? "1" : "0"); } catch { /* */ }
+      return next;
+    });
+  };
 
   useEffect(() => {
     void load();
@@ -118,21 +129,6 @@ export const ChatWindow = () => {
 
   return (
     <div className="chat-window">
-      <div className="chat-header">
-        <Select
-          aria-label="选择模型"
-          value={familyId}
-          options={[...FAMILY_OPTIONS]}
-          onChange={(id) => void selectFamily(id)}
-        />
-        <Select
-          aria-label="选择版本"
-          value={versionId}
-          options={versionOptions}
-          onChange={(id) => void selectVersion(id)}
-        />
-      </div>
-
       <div className="messages" ref={messagesRef}>
         <div className="messages__inner">
           {isEmpty && (
@@ -193,8 +189,39 @@ export const ChatWindow = () => {
               {isStreaming ? <span className="btn-send__dots">…</span> : <IconSend />}
             </button>
           </div>
-          {permissionOptions.length > 0 && (
-            <div className="composer__footer">
+          <div className="composer__footer">
+            {/* 左侧：Auto 切换 + 手动模型选择 */}
+            <div className="composer__model-row">
+              <button
+                type="button"
+                className={`composer__auto-btn${autoModel ? " is-auto" : ""}`}
+                onClick={toggleAutoModel}
+                title={autoModel ? "点击手动选择模型" : "点击开启 Auto 模式"}
+              >
+                <span className="composer__auto-dot" />
+                {autoModel ? "Auto" : "手动"}
+              </button>
+              {!autoModel && (
+                <>
+                  <Select
+                    aria-label="选择模型"
+                    placement="top"
+                    value={familyId}
+                    options={[...FAMILY_OPTIONS]}
+                    onChange={(id) => void selectFamily(id)}
+                  />
+                  <Select
+                    aria-label="选择版本"
+                    placement="top"
+                    value={versionId}
+                    options={versionOptions}
+                    onChange={(id) => void selectVersion(id)}
+                  />
+                </>
+              )}
+            </div>
+            {/* 右侧：权限模式 */}
+            {permissionOptions.length > 0 && (
               <Select
                 className="composer__perm"
                 aria-label="选择权限模式"
@@ -203,8 +230,8 @@ export const ChatWindow = () => {
                 options={permissionOptions}
                 onChange={(id) => void setActivePermissionMode(id)}
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
