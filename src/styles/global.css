@@ -3316,15 +3316,24 @@ body,
 
 .model-table__idx {
   width: 60px;
+  min-width: 60px;
   text-align: center;
   color: var(--text-dim);
   white-space: nowrap;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: inherit;
 }
 
 .model-table__col-name {
   width: 250px;
   min-width: 250px;
   max-width: 250px;
+  position: sticky;
+  left: 60px;
+  z-index: 2;
+  background: inherit;
 }
 
 .model-table__col-status {
@@ -3337,6 +3346,22 @@ body,
   width: 120px;
   min-width: 120px;
   white-space: nowrap;
+}
+
+.model-table__col-actions {
+  width: 250px;
+  min-width: 250px;
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: inherit;
+}
+
+/* 固定列与固定表头交叉处提升层级 */
+.model-table thead .model-table__idx,
+.model-table thead .model-table__col-name,
+.model-table thead .model-table__col-actions {
+  z-index: 3;
 }
 
 .model-panel__header {

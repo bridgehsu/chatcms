@@ -130,7 +130,7 @@ export const AgentsPanel = () => {
               <th>子代理</th>
               <th className="model-table__col-status">状态</th>
               <th className="model-table__col-time">更新</th>
-              <th>操作</th>
+              <th className="model-table__col-actions">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -178,7 +178,7 @@ export const AgentsPanel = () => {
                     )}
                   </td>
                   <td className="model-table__col-time model-table__mono">{formatTime(a.updated_at)}</td>
-                  <td>
+                  <td className="model-table__col-actions">
                     <div
                       className="model-table__actions"
                       onClick={(e) => e.stopPropagation()}
