@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Select } from "@/components/Select";
 import { invoke } from "@/hooks/useTauri";
 import type { Skill, SkillSource } from "@/types";
@@ -35,6 +35,13 @@ export const SkillsPanel = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // npx install
+  const [npxOpen, setNpxOpen] = useState(false);
+  const [npxPkg, setNpxPkg] = useState("");
+  const [npxBusy, setNpxBusy] = useState(false);
+  const [npxResult, setNpxResult] = useState<string | null>(null);
+  const npxInputRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
     const list = await invoke<Skill[]>("skill_list");
@@ -139,6 +146,42 @@ export const SkillsPanel = () => {
     }
   };
 
+  const openNpx = () => {
+    setNpxOpen(true);
+    setNpxPkg("");
+    setNpxResult(null);
+    setError("");
+    window.setTimeout(() => npxInputRef.current?.focus(), 50);
+  };
+
+  const closeNpx = () => {
+    setNpxOpen(false);
+    setNpxPkg("");
+    setNpxResult(null);
+  };
+
+  const installNpx = async () => {
+    const pkg = npxPkg.trim();
+    if (!pkg) return;
+    setNpxBusy(true);
+    setNpxResult(null);
+    setError("");
+    try {
+      const installed = await invoke<Skill[]>("skill_install_npx", { pkgName: pkg });
+      await refresh();
+      setNpxResult(
+        installed.length > 0
+          ? `已安装 ${installed.length} 个技能：${installed.map((s) => s.name).join("、")}`
+          : "未发现新技能（包可能已安装）",
+      );
+      setNpxPkg("");
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setNpxBusy(false);
+    }
+  };
+
   return (
     <div className="model-panel">
       <div className="model-toolbar">
@@ -161,12 +204,57 @@ export const SkillsPanel = () => {
             />
           </div>
         </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 新建技能
-        </button>
+        <div className="model-btn-group">
+          <button className="model-btn-add" onClick={openNpx} type="button">
+            安装 NPX
+          </button>
+          <button className="model-btn-add" onClick={openAdd} type="button">
+            + 新建技能
+          </button>
+        </div>
       </div>
 
-      {error && <div className="mcp-form-error">{error}</div>}
+      {npxOpen && (
+        <div className="skill-npx-panel">
+          <div className="skill-npx-title">从 npm 安装技能包</div>
+          <div className="skill-npx-row">
+            <span className="skill-npx-prefix">npx --yes</span>
+            <input
+              ref={npxInputRef}
+              className="skill-npx-input"
+              type="text"
+              value={npxPkg}
+              onChange={(e) => setNpxPkg(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void installNpx();
+                if (e.key === "Escape") closeNpx();
+              }}
+              placeholder="@chatcms/skill-xxx 或 chatcms-skill-xxx"
+              disabled={npxBusy}
+            />
+            <button
+              type="button"
+              className="btn-primary skill-npx-btn"
+              onClick={() => void installNpx()}
+              disabled={!npxPkg.trim() || npxBusy}
+            >
+              {npxBusy ? "安装中…" : "安装"}
+            </button>
+            <button
+              type="button"
+              className="btn-ghost skill-npx-btn"
+              onClick={closeNpx}
+              disabled={npxBusy}
+            >
+              取消
+            </button>
+          </div>
+          {npxResult && <div className="skill-npx-result">{npxResult}</div>}
+          {error && <div className="mcp-form-error">{error}</div>}
+        </div>
+      )}
+
+      {!npxOpen && error && <div className="mcp-form-error">{error}</div>}
 
       <div className="model-table-wrap">
         <table className="model-table">
