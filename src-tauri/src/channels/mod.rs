@@ -462,7 +462,7 @@ async fn route_to_agent(
     use tauri::Manager;
 
     let state = app.state::<AgentState>();
-    match send_message(app.clone(), state, session_id, content).await {
+    match send_message(app.clone(), state, session_id, None, content).await {
         Ok(sid) => Some(sid),
         Err(e) => {
             eprintln!("[telegram] agent error: {e}");

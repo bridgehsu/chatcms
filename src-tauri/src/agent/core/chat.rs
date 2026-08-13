@@ -20,13 +20,18 @@ pub async fn send_message(
     app: AppHandle,
     state: State<'_, AgentState>,
     session_id: Option<String>,
+    agent_id: Option<String>,
     content: String,
 ) -> Result<String> {
     let config = state.config.lock().unwrap().clone();
-    let sid = ensure_session(&app, &state, session_id).await;
+    let sid = ensure_session(&app, &state, session_id, agent_id.clone()).await;
     push_user_message(&app, &state, &sid, &content).await;
 
-    let active_agent = resolve_active_agent(&state);
+    // 优先用 session 绑定的 agent，否则按 agent_id 参数找，最后 fallback 到默认
+    let resolved_agent_id = agent_id.or_else(|| {
+        state.sessions.lock().unwrap().get(&sid).and_then(|s| s.agent_id.clone())
+    });
+    let active_agent = resolve_active_agent(&state, resolved_agent_id.as_deref());
     let workspace_dir = active_agent.as_ref().and_then(|a| a.workspace_dir.clone());
     let system_prompt = build_system_prompt(&state, &content, active_agent);
     let mut api_messages = build_api_messages(&state, &sid, &config);
@@ -71,8 +76,13 @@ fn build_system_prompt(
     }
 }
 
-fn resolve_active_agent(state: &State<'_, AgentState>) -> Option<crate::agents::AgentProfile> {
+fn resolve_active_agent(state: &State<'_, AgentState>, agent_id: Option<&str>) -> Option<crate::agents::AgentProfile> {
     let agents = state.agents.lock().unwrap();
+    if let Some(id) = agent_id {
+        if let Some(a) = agents.iter().find(|a| a.id == id && a.enabled) {
+            return Some(a.clone());
+        }
+    }
     agents
         .iter()
         .find(|a| a.is_default && a.enabled)
@@ -237,9 +247,8 @@ async fn ensure_session(
     app: &AppHandle,
     state: &State<'_, AgentState>,
     session_id: Option<String>,
+    agent_id: Option<String>,
 ) -> String {
-    // Return existing session or create a new one. Keep the lock scope
-    // strictly before any await so MutexGuard is dropped.
     let (sid, new_session) = {
         let mut sessions = state.sessions.lock().unwrap();
         if let Some(id) = session_id {
@@ -247,14 +256,15 @@ async fn ensure_session(
                 return id;
             }
         }
-        let s = Session::new("New Chat");
+        let s = match agent_id {
+            Some(aid) => Session::new_with_agent("New Chat", aid),
+            None => Session::new("New Chat"),
+        };
         let sid = s.id.clone();
         let clone = s.clone();
         sessions.insert(sid.clone(), s);
         (sid, clone)
-        // MutexGuard drops here
     };
-    // Persist new empty session immediately (after guard is dropped)
     crate::persist::save_session(app, &new_session).await;
     sid
 }

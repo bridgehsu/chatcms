@@ -58,6 +58,11 @@ async fn run_schema(pool: &SqlitePool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // Migration: add agent_id to sessions if not exists (ignore error if already present)
+    let _ = sqlx::query("ALTER TABLE sessions ADD COLUMN agent_id TEXT")
+        .execute(pool)
+        .await;
+
     // Knowledge base entries
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS knowledge (

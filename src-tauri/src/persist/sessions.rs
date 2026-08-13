@@ -18,16 +18,18 @@ pub async fn save_session(app: &AppHandle, session: &Session) {
 
 async fn upsert_session(pool: &sqlx::SqlitePool, session: &Session) -> anyhow::Result<()> {
     sqlx::query(
-        "INSERT INTO sessions (id, title, pinned, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?)
+        "INSERT INTO sessions (id, title, pinned, agent_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            title      = excluded.title,
            pinned     = excluded.pinned,
+           agent_id   = excluded.agent_id,
            updated_at = excluded.updated_at",
     )
     .bind(&session.id)
     .bind(&session.title)
     .bind(session.pinned as i64)
+    .bind(&session.agent_id)
     .bind(session.created_at as i64)
     .bind(session.updated_at as i64)
     .execute(pool)
@@ -79,7 +81,7 @@ pub async fn load_all_sessions(app: &AppHandle) -> HashMap<String, Session> {
 
 async fn load_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<HashMap<String, Session>> {
     let rows =
-        sqlx::query("SELECT id, title, pinned, created_at, updated_at FROM sessions")
+        sqlx::query("SELECT id, title, pinned, agent_id, created_at, updated_at FROM sessions")
             .fetch_all(pool)
             .await?;
 
@@ -88,6 +90,7 @@ async fn load_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<HashMap<Strin
         let id: String = row.get("id");
         let title: String = row.get("title");
         let pinned: i64 = row.get("pinned");
+        let agent_id: Option<String> = row.get("agent_id");
         let created_at: i64 = row.get("created_at");
         let updated_at: i64 = row.get("updated_at");
 
@@ -125,6 +128,7 @@ async fn load_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<HashMap<Strin
                 title,
                 messages,
                 pinned: pinned != 0,
+                agent_id,
                 created_at: created_at as u64,
                 updated_at: updated_at as u64,
             },

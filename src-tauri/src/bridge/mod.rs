@@ -550,6 +550,7 @@ async fn chat_send_sse(
             app2.clone(),
             state,
             Some(sid_for_send.clone()),
+            None,
             content,
         )
         .await;

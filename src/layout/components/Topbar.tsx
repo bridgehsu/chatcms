@@ -65,6 +65,8 @@ export const Topbar = () => {
   const subtitle =
     isChat && activeSession?.title ? activeSession.title : pageDesc;
 
+  if (isChat) return null;
+
   return (
     <header className="topbar">
       <div className="topbar-text">

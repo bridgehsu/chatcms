@@ -1,22 +1,21 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { IconMore, IconPencil, IconPin, IconPlus, IconTrash } from "@/components/icons";
+import { invoke } from "@/hooks/useTauri";
 import { useChatStore } from "@/stores/useChatStore";
+import type { AgentProfile } from "@/types";
 import { SessionDeleteDialog } from "./SessionDeleteDialog";
 
 type PendingDelete = { id: string; title: string };
 
 /**
- * 最近会话列表
- * 交互对齐主流对话产品（ChatGPT / Claude）：
- * - 悬停露出 ⋯ 溢出菜单（置顶 / 重命名 / 删除）
- * - 右键打开同一菜单
- * - 重命名为行内编辑：Enter 保存，Esc 取消，失焦保存
- * - 删除走二次确认对话框，避免系统 confirm
+ * 最近会话列表（含顶部 Agent Picker）
  */
 export const SessionList = () => {
   const {
     sessions,
     activeSessionId,
+    activeAgentId,
+    setActiveAgent,
     loadSessions,
     selectSession,
     newSession,
@@ -25,6 +24,7 @@ export const SessionList = () => {
     pinSession,
   } = useChatStore();
 
+  const [agents, setAgents] = useState<AgentProfile[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -43,6 +43,10 @@ export const SessionList = () => {
   }, [loadSessions]);
 
   useEffect(() => {
+    invoke<AgentProfile[]>("agent_list").then(setAgents).catch(console.error);
+  }, []);
+
+  useEffect(() => {
     if (!editingId) return;
     inputRef.current?.focus();
     inputRef.current?.select();
@@ -50,7 +54,6 @@ export const SessionList = () => {
 
   useEffect(() => {
     if (!menuId) return;
-
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node;
       if (menuRef.current?.contains(target)) return;
@@ -60,11 +63,9 @@ export const SessionList = () => {
       if (trigger) return;
       setMenuId(null);
     };
-
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenuId(null);
     };
-
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -158,18 +159,58 @@ export const SessionList = () => {
     }
   };
 
+  const enabledAgents = agents.filter((a) => a.enabled);
+  const activeAgent = enabledAgents.find((a) => a.id === activeAgentId) ?? null;
+
   return (
     <aside className="session-pane">
+      {/* Agent Picker */}
+      <div className="agent-picker">
+        {enabledAgents.length === 0 ? (
+          <div className="agent-picker__empty">暂无 Agent</div>
+        ) : (
+          <div className="agent-picker__list">
+            <button
+              type="button"
+              className={`agent-picker__item${activeAgentId === null ? " is-active" : ""}`}
+              onClick={() => setActiveAgent(null)}
+            >
+              <span className="agent-picker__emoji">💬</span>
+              <span className="agent-picker__name">全部</span>
+            </button>
+            {enabledAgents.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                className={`agent-picker__item${activeAgentId === a.id ? " is-active" : ""}`}
+                onClick={() => setActiveAgent(a.id)}
+                title={a.description || a.name}
+              >
+                <span className="agent-picker__emoji">{a.emoji || "🤖"}</span>
+                <span className="agent-picker__name">{a.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* New Session Button */}
       <div className="session-pane-header">
-        <button className="btn-new-session" onClick={newSession} type="button">
+        <button
+          className="btn-new-session"
+          onClick={newSession}
+          type="button"
+        >
           <span className="btn-new-session__icon">
             <IconPlus />
           </span>
-          发起新会话
+          {activeAgent ? `${activeAgent.emoji || "🤖"} 新会话` : "发起新会话"}
         </button>
       </div>
 
-      <div className="session-pane-label">最近会话</div>
+      <div className="session-pane-label">
+        {activeAgent ? activeAgent.name : "最近会话"}
+      </div>
 
       <nav className="session-list" ref={listRef}>
         {sessions.length === 0 && (

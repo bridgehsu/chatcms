@@ -10,6 +10,8 @@ pub struct Session {
     pub updated_at: u64,
     #[serde(default)]
     pub pinned: bool,
+    #[serde(default)]
+    pub agent_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,7 +44,14 @@ impl Session {
             created_at: now,
             updated_at: now,
             pinned: false,
+            agent_id: None,
         }
+    }
+
+    pub fn new_with_agent(title: impl Into<String>, agent_id: String) -> Self {
+        let mut s = Self::new(title);
+        s.agent_id = Some(agent_id);
+        s
     }
 
     pub fn push(&mut self, role: Role, content: impl Into<String>) {

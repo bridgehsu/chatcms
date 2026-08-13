@@ -14,6 +14,7 @@ export interface Session {
   created_at: number;
   updated_at: number;
   pinned?: boolean;
+  agent_id?: string | null;
 }
 
 export interface SessionSummary {
@@ -22,6 +23,7 @@ export interface SessionSummary {
   updated_at: number;
   message_count: number;
   pinned?: boolean;
+  agent_id?: string | null;
 }
 
 export interface StreamChunk {

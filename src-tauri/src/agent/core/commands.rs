@@ -9,17 +9,25 @@ pub async fn chat_send(
     app: AppHandle,
     state: State<'_, AgentState>,
     session_id: Option<String>,
+    agent_id: Option<String>,
     content: String,
 ) -> Result<String, String> {
-    super::chat::send_message(app, state, session_id, content)
+    super::chat::send_message(app, state, session_id, agent_id, content)
         .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn session_list(state: State<'_, AgentState>) -> Vec<serde_json::Value> {
+pub fn session_list(state: State<'_, AgentState>, agent_id: Option<String>) -> Vec<serde_json::Value> {
     let sessions = state.sessions.lock().unwrap();
-    let mut list: Vec<Session> = sessions.values().cloned().collect();
+    let mut list: Vec<Session> = sessions
+        .values()
+        .filter(|s| match &agent_id {
+            Some(id) => s.agent_id.as_deref() == Some(id.as_str()),
+            None => true,
+        })
+        .cloned()
+        .collect();
     list.sort_by(|a, b| match (a.pinned, b.pinned) {
         (true, false) => std::cmp::Ordering::Less,
         (false, true) => std::cmp::Ordering::Greater,
@@ -33,6 +41,7 @@ pub fn session_list(state: State<'_, AgentState>) -> Vec<serde_json::Value> {
                 "updated_at": s.updated_at,
                 "message_count": s.messages.len(),
                 "pinned": s.pinned,
+                "agent_id": s.agent_id,
             })
         })
         .collect()

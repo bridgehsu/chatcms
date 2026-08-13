@@ -17,11 +17,13 @@ interface ChatState {
   sessions: SessionSummary[];
   activeSessionId: string | null;
   activeSession: Session | null;
+  activeAgentId: string | null;
   streamingContent: string;
   isStreaming: boolean;
   pendingPermission: PermissionRequest | null;
   error: string | null;
 
+  setActiveAgent: (agentId: string | null) => void;
   loadSessions: () => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
@@ -162,6 +164,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     sessions: [],
     activeSessionId: null,
     activeSession: null,
+    activeAgentId: null,
     streamingContent: "",
     isStreaming: false,
     pendingPermission: null,
@@ -169,8 +172,16 @@ export const useChatStore = create<ChatState>((set, get) => {
 
     clearError: () => set({ error: null }),
 
+    setActiveAgent: (agentId) => {
+      set({ activeAgentId: agentId, activeSessionId: null, activeSession: null, error: null });
+      void get().loadSessions();
+    },
+
     loadSessions: async () => {
-      const sessions = await invoke<SessionSummary[]>("session_list");
+      const { activeAgentId } = get();
+      const sessions = await invoke<SessionSummary[]>("session_list", {
+        agentId: activeAgentId ?? null,
+      });
       set({ sessions });
     },
 
@@ -212,8 +223,10 @@ export const useChatStore = create<ChatState>((set, get) => {
       });
 
       try {
+        const { activeAgentId } = get();
         const sessionId = await invoke<string>("chat_send", {
           sessionId: activeSessionId,
+          agentId: activeAgentId ?? null,
           content,
         });
 
