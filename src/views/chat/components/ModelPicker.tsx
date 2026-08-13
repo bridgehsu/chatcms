@@ -24,9 +24,7 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
   const load = useProviderStore((s) => s.load);
 
   const refresh = () => {
-    invoke<ProviderProfile[]>("provider_list")
-      .then(setProfiles)
-      .catch(console.error);
+    invoke<ProviderProfile[]>("provider_list").then(setProfiles).catch(console.error);
   };
 
   useEffect(() => { refresh(); }, []);
@@ -46,12 +44,15 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
   }, [open]);
 
   const active = profiles.find((p) => p.active);
+  const label = autoModel ? "Auto" : (active?.name ?? "选择模型");
 
-  const label = autoModel
-    ? "Auto"
-    : (active?.name ?? "选择模型");
+  const pickAuto = () => {
+    onAutoChange(true);
+    writeAuto(true);
+    setOpen(false);
+  };
 
-  const select = async (id: string) => {
+  const pickProfile = async (id: string) => {
     await invoke("provider_activate", { id });
     await load();
     refresh();
@@ -60,73 +61,67 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
     setOpen(false);
   };
 
-  const selectAuto = () => {
-    onAutoChange(true);
-    writeAuto(true);
-    setOpen(false);
-  };
-
   return (
     <div className="model-picker" ref={rootRef}>
       <button
         type="button"
-        className={`model-picker__trigger${autoModel ? " is-auto" : ""}`}
-        onClick={() => { if (open) { setOpen(false); } else { refresh(); setOpen(true); } }}
+        className="model-picker__trigger"
+        onClick={() => { refresh(); setOpen((v) => !v); }}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        {autoModel && <span className="model-picker__dot" aria-hidden="true" />}
         <span>{label}</span>
-        <svg className="model-picker__chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <svg className="model-picker__chevron" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true">
+          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </svg>
       </button>
 
       {open && (
-        <div className="model-picker__menu" role="listbox">
-          {/* Auto 行：标题 + 右侧开关 */}
-          <div className={`model-picker__option model-picker__option--auto${autoModel ? " is-selected" : ""}`}>
-            <span className="model-picker__option-dot" />
-            <span className="model-picker__option-name">Auto</span>
+        <ul className="model-picker__menu" role="listbox" aria-label="选择模型">
+          {/* Auto */}
+          <li role="option" aria-selected={autoModel}>
             <button
               type="button"
-              role="switch"
-              aria-checked={autoModel}
-              className={`mp-toggle${autoModel ? " is-on" : ""}`}
-              onClick={(e) => { e.stopPropagation(); autoModel ? onAutoChange(false) : selectAuto(); writeAuto(!autoModel); }}
+              className={`model-picker__item${autoModel ? " is-active" : ""}`}
+              onClick={pickAuto}
             >
-              <span className="mp-toggle__thumb" />
+              <span className="model-picker__item-label">Auto</span>
+              {autoModel && <CheckIcon />}
             </button>
-          </div>
+          </li>
 
-          {!autoModel && profiles.length > 0 && <div className="model-picker__sep" />}
-
-          {!autoModel && profiles.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              role="option"
-              aria-selected={!autoModel && p.active}
-              className={`model-picker__option${!autoModel && p.active ? " is-selected" : ""}`}
-              onClick={() => void select(p.id)}
-            >
-              <div className="model-picker__option-main">
-                <span className="model-picker__option-name">{p.name}</span>
-                <span className="model-picker__option-desc">{p.model}</span>
-              </div>
-              <span className="model-picker__option-provider">
-                {p.kind === "anthropic" ? "Anthropic" : "OpenAI"}
-              </span>
-            </button>
-          ))}
-
-          {!autoModel && profiles.length === 0 && (
-            <div className="model-picker__empty">
-              暂无配置，请到「模型」页添加
-            </div>
+          {profiles.length > 0 && (
+            <li role="separator" className="model-picker__divider" />
           )}
-        </div>
+
+          {profiles.map((p) => {
+            const selected = !autoModel && p.active;
+            return (
+              <li key={p.id} role="option" aria-selected={selected}>
+                <button
+                  type="button"
+                  className={`model-picker__item${selected ? " is-active" : ""}`}
+                  onClick={() => void pickProfile(p.id)}
+                >
+                  <span className="model-picker__item-label">{p.name}</span>
+                  <span className="model-picker__item-sub">{p.model}</span>
+                  {selected && <CheckIcon />}
+                </button>
+              </li>
+            );
+          })}
+
+          {profiles.length === 0 && (
+            <li className="model-picker__empty">暂无配置，请到「模型」页添加</li>
+          )}
+        </ul>
       )}
     </div>
   );
 };
+
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="model-picker__check">
+    <path d="M2.5 7L5.5 10L11.5 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
