@@ -123,13 +123,13 @@ export const AgentsPanel = () => {
           <thead>
             <tr>
               <th className="model-table__idx">#</th>
-              <th>代理</th>
+              <th className="model-table__col-name">代理</th>
               <th>ID</th>
               <th>备注</th>
               <th>技能</th>
               <th>子代理</th>
-              <th>状态</th>
-              <th>更新</th>
+              <th className="model-table__col-status">状态</th>
+              <th className="model-table__col-time">更新</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -150,7 +150,7 @@ export const AgentsPanel = () => {
                   <td className="model-table__idx model-table__mono">
                     {index + 1}
                   </td>
-                  <td>
+                  <td className="model-table__col-name">
                     <span className="model-table__name">
                       {a.emoji ? `${a.emoji} ` : ""}
                       {a.name}
@@ -168,7 +168,7 @@ export const AgentsPanel = () => {
                       <span className="model-status-idle">禁止</span>
                     )}
                   </td>
-                  <td>
+                  <td className="model-table__col-status">
                     {a.is_default ? (
                       <span className="model-badge">当前</span>
                     ) : a.enabled ? (
@@ -177,7 +177,7 @@ export const AgentsPanel = () => {
                       <span className="model-status-idle">停用</span>
                     )}
                   </td>
-                  <td className="model-table__mono">{formatTime(a.updated_at)}</td>
+                  <td className="model-table__col-time model-table__mono">{formatTime(a.updated_at)}</td>
                   <td>
                     <div
                       className="model-table__actions"

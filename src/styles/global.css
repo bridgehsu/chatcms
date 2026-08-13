@@ -3315,9 +3315,27 @@ body,
 }
 
 .model-table__idx {
-  width: 48px;
+  width: 60px;
   text-align: center;
   color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.model-table__col-name {
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+}
+
+.model-table__col-status {
+  width: 120px;
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.model-table__col-time {
+  width: 120px;
+  min-width: 120px;
   white-space: nowrap;
 }
 
