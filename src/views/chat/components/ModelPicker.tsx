@@ -84,24 +84,24 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
 
       {open && (
         <div className="model-picker__menu" role="listbox">
-          {/* Auto */}
-          <button
-            type="button"
-            role="option"
-            aria-selected={autoModel}
-            className={`model-picker__option model-picker__option--auto${autoModel ? " is-selected" : ""}`}
-            onClick={selectAuto}
-          >
+          {/* Auto 行：标题 + 右侧开关 */}
+          <div className={`model-picker__option model-picker__option--auto${autoModel ? " is-selected" : ""}`}>
             <span className="model-picker__option-dot" />
-            <div className="model-picker__option-main">
-              <span className="model-picker__option-name">Auto</span>
-              <span className="model-picker__option-desc">由系统自动选择最佳模型</span>
-            </div>
-          </button>
+            <span className="model-picker__option-name">Auto</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoModel}
+              className={`mp-toggle${autoModel ? " is-on" : ""}`}
+              onClick={(e) => { e.stopPropagation(); autoModel ? onAutoChange(false) : selectAuto(); writeAuto(!autoModel); }}
+            >
+              <span className="mp-toggle__thumb" />
+            </button>
+          </div>
 
-          {profiles.length > 0 && <div className="model-picker__sep" />}
+          {!autoModel && profiles.length > 0 && <div className="model-picker__sep" />}
 
-          {profiles.map((p) => (
+          {!autoModel && profiles.map((p) => (
             <button
               key={p.id}
               type="button"
@@ -120,7 +120,7 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
             </button>
           ))}
 
-          {profiles.length === 0 && (
+          {!autoModel && profiles.length === 0 && (
             <div className="model-picker__empty">
               暂无配置，请到「模型」页添加
             </div>
