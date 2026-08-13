@@ -133,25 +133,25 @@ export const NAV_ENTRIES: NavEntry[] = [
     children: [
       {
         path: "/agents",
-        label: "Agent",
+        label: "代理管理",
         description: "管理多 Agent 档案、默认代理与技能白名单",
         Icon: IconAgents,
       },
       {
         path: "/skills",
-        label: "Skills",
+        label: "技能管理",
         description: "管理 OpenClaw 风格技能（SKILL.md）与提示词注入",
         Icon: IconSkills,
       },
       {
         path: "/mcp",
-        label: "MCP",
+        label: "工具扩展",
         description: "接入 MCP 服务器，扩展 Agent 可用的外部工具",
         Icon: IconMcp,
       },
       {
         path: "/models",
-        label: "模型",
+        label: "模型配置",
         description: "配置模型提供商、密钥与当前激活模型",
         Icon: IconProvider,
       },
