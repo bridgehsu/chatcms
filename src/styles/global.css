@@ -3537,7 +3537,7 @@ body,
 .model-table th,
 .model-table td {
   padding: 16px 18px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -3582,6 +3582,15 @@ body,
 
 .model-table__url {
   max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-table__note {
+  max-width: 200px;
+  font-size: 13px;
+  color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

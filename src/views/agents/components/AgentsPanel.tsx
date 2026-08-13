@@ -125,6 +125,7 @@ export const AgentsPanel = () => {
               <th className="model-table__idx">#</th>
               <th>代理</th>
               <th>ID</th>
+              <th>备注</th>
               <th>技能</th>
               <th>子代理</th>
               <th>状态</th>
@@ -135,7 +136,7 @@ export const AgentsPanel = () => {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="model-table__empty">
+                <td colSpan={9} className="model-table__empty">
                   {agents.length === 0 ? "暂无代理" : "没有匹配的代理"}
                 </td>
               </tr>
@@ -154,11 +155,9 @@ export const AgentsPanel = () => {
                       {a.emoji ? `${a.emoji} ` : ""}
                       {a.name}
                     </span>
-                    {a.description ? (
-                      <div className="account-table__notes">{a.description}</div>
-                    ) : null}
                   </td>
                   <td className="model-table__mono">{a.slug}</td>
+                  <td className="model-table__note">{a.description || "—"}</td>
                   <td>
                     <div className="skill-table__desc">{skillsLabel(a.skills)}</div>
                   </td>
