@@ -23,8 +23,11 @@ pub async fn dispatch_tool(
     let (cfg, agent_overrides, agent_id) = {
         let config = state.config.lock().unwrap();
         let agents = state.agents.lock().unwrap();
-        let default = agents.iter().find(|a| a.is_default && a.enabled);
-        let overrides = default.map(|a| a.permission_overrides.clone());
+        let active_id = config.active_agent_id.as_deref();
+        let default = active_id
+            .and_then(|id| agents.iter().find(|a| a.id == id && a.enabled))
+            .or_else(|| agents.iter().find(|a| a.enabled));
+        let overrides = default.map(|a| a.perms.clone());
         let id = default.map(|a| a.id.clone());
         (config.permission.clone(), overrides, id)
     };
@@ -179,7 +182,7 @@ async fn dispatch_spawn_agent(
 
     let (sys, label, sub_workspace) = if let Some(key) = agent_key {
         match crate::agents::find_by_slug_or_id(app, key).await {
-            Some(profile) if profile.enabled && profile.allow_as_subagent => {
+            Some(profile) if profile.enabled && profile.spawnable => {
                 let mut blocks = vec![crate::agents::format_persona(&profile)];
                 let skills = {
                     let s = app.state::<AgentState>();

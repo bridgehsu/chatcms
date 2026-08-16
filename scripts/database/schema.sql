@@ -143,22 +143,20 @@ CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created DESC);
 
 -- Agent profiles
 CREATE TABLE IF NOT EXISTS agent (
-    id                   TEXT    PRIMARY KEY,        -- 代理唯一标识（UUID）
-    code                 TEXT    NOT NULL DEFAULT '', -- 可读编号（如 AGT-001，自动生成）
-    slug                 TEXT    NOT NULL,            -- 短标识（spawn_agent 引用用，仅小写字母/数字/连字符/下划线）
-    name                 TEXT    NOT NULL,            -- 代理显示名称
-    description          TEXT    NOT NULL DEFAULT '', -- 代理简介
-    system_prompt        TEXT    NOT NULL DEFAULT '', -- 人格 / 角色系统提示词
-    emoji                TEXT    NOT NULL DEFAULT '', -- 图标 emoji
-    enabled              INTEGER NOT NULL DEFAULT 1, -- 是否启用（0=禁用 1=启用）
-    is_default           INTEGER NOT NULL DEFAULT 0, -- 是否为当前默认代理（0=否 1=是）
-    skills               TEXT,                       -- 技能白名单（JSON 数组；null=不限制 '[]'=无技能）
-    allow_as_subagent    INTEGER NOT NULL DEFAULT 1, -- 是否允许被 spawn_agent 调用（0=否 1=是）
-    permission_overrides TEXT    NOT NULL DEFAULT '{}', -- 域权限覆盖（JSON 对象，domain→policy）
-    workspace_dir        TEXT,                       -- 代理独立工作目录绝对路径（新增时自动创建）
-    create_by            TEXT    NOT NULL DEFAULT '', -- 创建人
-    update_by            TEXT    NOT NULL DEFAULT '', -- 修改人
-    created              INTEGER NOT NULL,            -- 创建时间（Unix 毫秒）
-    updated              INTEGER NOT NULL,            -- 最近修改时间（Unix 毫秒）
-    yn                   INTEGER NOT NULL DEFAULT 0  -- 软删除标志（0=正常 1=已删除）
+    id            TEXT    PRIMARY KEY,               -- 代理唯一标识（UUID）
+    slug          TEXT    NOT NULL,                  -- 短标识（spawn_agent 引用用，仅小写字母/数字/连字符/下划线）
+    name          TEXT    NOT NULL,                  -- 代理显示名称
+    remark        TEXT    NOT NULL DEFAULT '',       -- 代理简介 / 备注
+    system_prompt TEXT    NOT NULL DEFAULT '',       -- 人格 / 角色系统提示词
+    enabled       INTEGER NOT NULL DEFAULT 1,        -- 是否启用（0=禁用 1=启用）
+    skills        TEXT,                              -- 技能白名单（JSON 数组；null=不限制 '[]'=无技能）
+    spawnable     INTEGER NOT NULL DEFAULT 1,        -- 是否允许被 spawn_agent 调用（0=否 1=是）
+    perms         TEXT    NOT NULL DEFAULT '{}',     -- 域权限覆盖（JSON 对象，domain→policy）
+    workspace_dir TEXT,                              -- 代理独立工作目录绝对路径（新增时自动创建）
+    sort          INTEGER NOT NULL DEFAULT 0,        -- 排序权重（越小越靠前）
+    create_by     TEXT    NOT NULL DEFAULT '',       -- 创建人
+    update_by     TEXT    NOT NULL DEFAULT '',       -- 修改人
+    created       INTEGER NOT NULL,                  -- 创建时间（Unix 毫秒）
+    updated       INTEGER NOT NULL,                  -- 最近修改时间（Unix 毫秒）
+    yn            INTEGER NOT NULL DEFAULT 0         -- 软删除标志（0=正常 1=已删除）
 );

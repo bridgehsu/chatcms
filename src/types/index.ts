@@ -415,20 +415,20 @@ export interface Skill {
 
 export interface AgentProfile {
   id: string;
-  code: string;
   slug: string;
   name: string;
-  description: string;
+  remark: string;
   system_prompt: string;
-  emoji: string;
   enabled: boolean;
-  is_default: boolean;
   /** null = 全部技能；[] = 无；string[] = 白名单 */
   skills: string[] | null;
-  allow_as_subagent: boolean;
+  /** 是否允许被 spawn_agent 调用 */
+  spawnable: boolean;
   /** 域 id → 策略；空对象 = 继承全局 */
-  permission_overrides: Record<string, DomainPolicy>;
+  perms: Record<string, DomainPolicy>;
   workspace_dir: string | null;
+  /** 排序权重（越小越靠前） */
+  sort: number;
   created: number;
   updated: number;
 }

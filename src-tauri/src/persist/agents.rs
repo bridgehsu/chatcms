@@ -12,40 +12,36 @@ fn pool(app: &AppHandle) -> sqlx::SqlitePool {
 pub async fn save_agent(app: &AppHandle, agent: &AgentProfile) {
     let p = pool(app);
     let skills = serde_json::to_string(&agent.skills).unwrap_or_else(|_| "null".into());
-    let overrides = serde_json::to_string(&agent.permission_overrides).unwrap_or_else(|_| "{}".into());
+    let perms = serde_json::to_string(&agent.perms).unwrap_or_else(|_| "{}".into());
     let _ = sqlx::query(
         "INSERT INTO agent
-         (id, code, slug, name, description, system_prompt, emoji, enabled, is_default,
-          skills, allow_as_subagent, permission_overrides, workspace_dir, created, updated)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         (id, slug, name, remark, system_prompt, enabled,
+          skills, spawnable, perms, workspace_dir, sort, created, updated)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
-           code                 = excluded.code,
-           slug                 = excluded.slug,
-           name                 = excluded.name,
-           description          = excluded.description,
-           system_prompt        = excluded.system_prompt,
-           emoji                = excluded.emoji,
-           enabled              = excluded.enabled,
-           is_default           = excluded.is_default,
-           skills               = excluded.skills,
-           allow_as_subagent    = excluded.allow_as_subagent,
-           permission_overrides = excluded.permission_overrides,
-           workspace_dir        = excluded.workspace_dir,
-           updated              = excluded.updated",
+           slug          = excluded.slug,
+           name          = excluded.name,
+           remark        = excluded.remark,
+           system_prompt = excluded.system_prompt,
+           enabled       = excluded.enabled,
+           skills        = excluded.skills,
+           spawnable     = excluded.spawnable,
+           perms         = excluded.perms,
+           workspace_dir = excluded.workspace_dir,
+           sort          = excluded.sort,
+           updated       = excluded.updated",
     )
     .bind(&agent.id)
-    .bind(&agent.code)
     .bind(&agent.slug)
     .bind(&agent.name)
-    .bind(&agent.description)
+    .bind(&agent.remark)
     .bind(&agent.system_prompt)
-    .bind(&agent.emoji)
     .bind(agent.enabled as i64)
-    .bind(agent.is_default as i64)
     .bind(&skills)
-    .bind(agent.allow_as_subagent as i64)
-    .bind(&overrides)
+    .bind(agent.spawnable as i64)
+    .bind(&perms)
     .bind(&agent.workspace_dir)
+    .bind(agent.sort)
     .bind(agent.created)
     .bind(agent.updated)
     .execute(&p)
@@ -65,9 +61,9 @@ pub async fn delete_agent(app: &AppHandle, id: &str) {
 pub async fn load_all_agents(app: &AppHandle) -> Vec<AgentProfile> {
     let p = pool(app);
     let rows = sqlx::query(
-        "SELECT id, code, slug, name, description, system_prompt, emoji, enabled, is_default,
-                skills, allow_as_subagent, permission_overrides, workspace_dir, created, updated
-         FROM agent WHERE yn = 0 ORDER BY is_default DESC, enabled DESC, updated DESC",
+        "SELECT id, slug, name, remark, system_prompt, enabled,
+                skills, spawnable, perms, workspace_dir, sort, created, updated
+         FROM agent WHERE yn = 0 ORDER BY sort ASC, enabled DESC, updated DESC",
     )
     .fetch_all(&p)
     .await
@@ -80,23 +76,21 @@ pub async fn load_all_agents(app: &AppHandle) -> Vec<AgentProfile> {
                 .as_deref()
                 .and_then(|s| serde_json::from_str(s).ok());
 
-            let overrides_str: String = r.get("permission_overrides");
-            let permission_overrides = serde_json::from_str(&overrides_str).unwrap_or_default();
+            let perms_str: String = r.get("perms");
+            let perms = serde_json::from_str(&perms_str).unwrap_or_default();
 
             AgentProfile {
                 id: r.get("id"),
-                code: r.get("code"),
                 slug: r.get("slug"),
                 name: r.get("name"),
-                description: r.get("description"),
+                remark: r.get("remark"),
                 system_prompt: r.get("system_prompt"),
-                emoji: r.get("emoji"),
                 enabled: r.get::<i64, _>("enabled") != 0,
-                is_default: r.get::<i64, _>("is_default") != 0,
                 skills,
-                allow_as_subagent: r.get::<i64, _>("allow_as_subagent") != 0,
-                permission_overrides,
+                spawnable: r.get::<i64, _>("spawnable") != 0,
+                perms,
                 workspace_dir: r.get("workspace_dir"),
+                sort: r.get("sort"),
                 created: r.get("created"),
                 updated: r.get("updated"),
             }

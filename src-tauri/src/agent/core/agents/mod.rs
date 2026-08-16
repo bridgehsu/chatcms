@@ -9,36 +9,32 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentProfile {
     pub id: String,
-    /// 可读编号，如 AGT-001，新增时自动生成
-    #[serde(default)]
-    pub code: String,
-    /// 短 id / slug（spawn_agent 可引用）
+    /// 短标识（spawn_agent 引用用，仅小写字母/数字/连字符/下划线）
     pub slug: String,
     pub name: String,
+    /// 简介 / 备注
     #[serde(default)]
-    pub description: String,
-    /// 人格 / 主题说明，注入 system prompt
+    pub remark: String,
+    /// 人格 / 角色系统提示词
     #[serde(default)]
     pub system_prompt: String,
-    #[serde(default)]
-    pub emoji: String,
     #[serde(default = "default_true")]
     pub enabled: bool,
-    /// 当前主会话使用的默认代理
-    #[serde(default)]
-    pub is_default: bool,
     /// None = 不限制（全部启用技能）；Some([]) = 无技能；Some([names]) = 白名单
     #[serde(default)]
     pub skills: Option<Vec<String>>,
     /// 是否允许被 spawn_agent 调用
     #[serde(default = "default_true")]
-    pub allow_as_subagent: bool,
+    pub spawnable: bool,
     /// 域策略覆盖（domain id → allow|ask|deny）
     #[serde(default)]
-    pub permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
-    /// 独立工作目录，新增时自动创建，路径基于 code
+    pub perms: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    /// 独立工作目录，新增时自动创建，路径基于 slug
     #[serde(default)]
     pub workspace_dir: Option<String>,
+    /// 排序权重（越小越靠前）
+    #[serde(default)]
+    pub sort: i64,
     pub created: i64,
     pub updated: i64,
 }
@@ -69,28 +65,14 @@ fn validate_slug(slug: &str) -> Result<String, String> {
     Ok(slug)
 }
 
-/// 从现有列表中推算下一个 code，格式 AGT-001
-fn next_code(list: &[AgentProfile]) -> String {
-    let max = list
-        .iter()
-        .filter_map(|a| {
-            a.code
-                .strip_prefix("AGT-")
-                .and_then(|n| n.parse::<u32>().ok())
-        })
-        .max()
-        .unwrap_or(0);
-    format!("AGT-{:03}", max + 1)
-}
-
 /// 创建 workspace 目录树，返回根路径字符串
-fn create_workspace(app: &AppHandle, code: &str) -> Result<String, String> {
+fn create_workspace(app: &AppHandle, slug: &str) -> Result<String, String> {
     let base = app
         .path()
         .app_data_dir()
         .map_err(|e| e.to_string())?
         .join("workspaces")
-        .join(code);
+        .join(slug);
     for sub in &["input", "output", "tmp", "memory", "logs"] {
         std::fs::create_dir_all(base.join(sub))
             .map_err(|e| format!("创建 workspace/{sub} 失败: {e}"))?;
@@ -103,52 +85,46 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
     vec![
         AgentProfile {
             id: "agent-main".into(),
-            code: "AGT-001".into(),
             slug: "main".into(),
             name: "默认助手".into(),
-            description: "通用主代理，负责日常对话与工具编排。".into(),
+            remark: "通用主代理，负责日常对话与工具编排。".into(),
             system_prompt: "你是 ChatCMS 的默认助手。简洁、可靠，优先完成用户目标；需要时调用工具与技能。".into(),
-            emoji: "🤖".into(),
             enabled: true,
-            is_default: true,
             skills: None,
-            allow_as_subagent: true,
-            permission_overrides: std::collections::HashMap::new(),
+            spawnable: true,
+            perms: std::collections::HashMap::new(),
             workspace_dir: None,
+            sort: 0,
             created: ts,
             updated: ts,
         },
         AgentProfile {
             id: "agent-writer".into(),
-            code: "AGT-002".into(),
             slug: "writer".into(),
             name: "内容写手".into(),
-            description: "专注多平台文案、标题与发布结构。".into(),
+            remark: "专注多平台文案、标题与发布结构。".into(),
             system_prompt: "你是资深内容写手。输出可直接发布的成稿，关注平台语气、钩子与可读性。优先遵循 content-publish 技能。".into(),
-            emoji: "✍️".into(),
             enabled: true,
-            is_default: false,
             skills: Some(vec!["content-publish".into(), "image-brief".into()]),
-            allow_as_subagent: true,
-            permission_overrides: std::collections::HashMap::new(),
+            spawnable: true,
+            perms: std::collections::HashMap::new(),
             workspace_dir: None,
+            sort: 1,
             created: ts,
             updated: ts,
         },
         AgentProfile {
             id: "agent-researcher".into(),
-            code: "AGT-003".into(),
             slug: "researcher".into(),
             name: "调研助手".into(),
-            description: "拆解问题、检索资料并给出结构化结论。".into(),
+            remark: "拆解问题、检索资料并给出结构化结论。".into(),
             system_prompt: "你是调研助手。先列提纲再收集要点，区分事实与推断，给出可执行的下一步。".into(),
-            emoji: "🔎".into(),
             enabled: true,
-            is_default: false,
             skills: None,
-            allow_as_subagent: true,
-            permission_overrides: std::collections::HashMap::new(),
+            spawnable: true,
+            perms: std::collections::HashMap::new(),
             workspace_dir: None,
+            sort: 2,
             created: ts,
             updated: ts,
         },
@@ -162,14 +138,6 @@ pub async fn ensure_seeded(app: &AppHandle) -> Vec<AgentProfile> {
         for agent in &list {
             crate::persist::save_agent(app, agent).await;
         }
-        return list;
-    }
-
-    if !list.iter().any(|a| a.is_default) {
-        if let Some(first) = list.iter_mut().find(|a| a.enabled) {
-            first.is_default = true;
-            crate::persist::save_agent(app, first).await;
-        }
     }
     list
 }
@@ -177,21 +145,13 @@ pub async fn ensure_seeded(app: &AppHandle) -> Vec<AgentProfile> {
 pub async fn list(app: &AppHandle) -> Vec<AgentProfile> {
     let mut list = ensure_seeded(app).await;
     list.sort_by(|a, b| {
-        b.is_default
-            .cmp(&a.is_default)
+        a.sort
+            .cmp(&b.sort)
             .then(b.enabled.cmp(&a.enabled))
             .then(b.updated.cmp(&a.updated))
             .then(a.name.cmp(&b.name))
     });
     list
-}
-
-pub async fn get_default(app: &AppHandle) -> Option<AgentProfile> {
-    let list = ensure_seeded(app).await;
-    list.iter()
-        .find(|a| a.is_default && a.enabled)
-        .cloned()
-        .or_else(|| list.into_iter().find(|a| a.enabled))
 }
 
 pub async fn find_by_slug_or_id(app: &AppHandle, key: &str) -> Option<AgentProfile> {
@@ -206,13 +166,13 @@ pub async fn add(
     app: &AppHandle,
     slug: String,
     name: String,
-    description: String,
+    remark: String,
     system_prompt: String,
-    emoji: String,
     enabled: bool,
     skills: Option<Vec<String>>,
-    allow_as_subagent: bool,
-    permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    spawnable: bool,
+    perms: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    sort: i64,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -225,25 +185,21 @@ pub async fn add(
         return Err(format!("已存在同 ID 代理「{slug}」"));
     }
 
-    let code = next_code(&list);
-    let workspace_dir = create_workspace(app, &code)?;
+    let workspace_dir = create_workspace(app, &slug)?;
 
     let ts = now_ms();
-    let make_default = !list.iter().any(|a| a.is_default);
     let profile = AgentProfile {
         id: Uuid::new_v4().to_string(),
-        code,
         slug,
         name,
-        description: description.trim().to_string(),
+        remark: remark.trim().to_string(),
         system_prompt: system_prompt.trim().to_string(),
-        emoji: emoji.trim().to_string(),
         enabled,
-        is_default: make_default,
         skills,
-        allow_as_subagent,
-        permission_overrides,
+        spawnable,
+        perms,
         workspace_dir: Some(workspace_dir),
+        sort,
         created: ts,
         updated: ts,
     };
@@ -256,13 +212,13 @@ pub async fn update(
     id: String,
     slug: String,
     name: String,
-    description: String,
+    remark: String,
     system_prompt: String,
-    emoji: String,
     enabled: bool,
     skills: Option<Vec<String>>,
-    allow_as_subagent: bool,
-    permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    spawnable: bool,
+    perms: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    sort: i64,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -281,77 +237,52 @@ pub async fn update(
         .ok_or_else(|| "代理不存在".to_string())?;
     profile.slug = slug;
     profile.name = name;
-    profile.description = description.trim().to_string();
+    profile.remark = remark.trim().to_string();
     profile.system_prompt = system_prompt.trim().to_string();
-    profile.emoji = emoji.trim().to_string();
     profile.enabled = enabled;
     profile.skills = skills;
-    profile.allow_as_subagent = allow_as_subagent;
-    profile.permission_overrides = permission_overrides;
-    // workspace_dir 和 code 不允许修改，保留原值
+    profile.spawnable = spawnable;
+    profile.perms = perms;
+    profile.sort = sort;
+    // workspace_dir 不允许修改，保留原值
     profile.updated = now_ms();
-
-    if !profile.enabled && profile.is_default {
-        profile.is_default = false;
-    }
 
     let out = profile.clone();
     crate::persist::save_agent(app, &out).await;
-
-    // 如果禁用后无 default，找一个启用的代理设为 default
-    if !list.iter().any(|a| a.is_default && a.enabled) {
-        if let Some(first) = list.iter_mut().find(|a| a.enabled) {
-            first.is_default = true;
-            crate::persist::save_agent(app, first).await;
-        }
-    }
-
     Ok(out)
 }
 
 pub async fn activate(app: &AppHandle, id: String) -> Result<AgentProfile, String> {
-    let mut list = ensure_seeded(app).await;
-    let exists = list.iter().any(|a| a.id == id);
-    if !exists {
-        return Err("代理不存在".into());
+    let list = ensure_seeded(app).await;
+    let profile = list
+        .iter()
+        .find(|a| a.id == id && a.enabled)
+        .ok_or_else(|| "代理不存在或未启用".to_string())?
+        .clone();
+
+    if let Some(mut config) = crate::persist::load_config(app) {
+        config.active_agent_id = Some(id);
+        crate::persist::save_config(app, &config);
     }
-    for a in list.iter_mut() {
-        let was_default = a.is_default;
-        a.is_default = a.id == id;
-        if a.is_default {
-            a.enabled = true;
-            a.updated = now_ms();
-        }
-        if a.is_default || was_default {
-            crate::persist::save_agent(app, a).await;
-        }
-    }
-    list.into_iter()
-        .find(|a| a.id == id)
-        .ok_or_else(|| "激活失败".into())
+    Ok(profile)
 }
 
 pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
-    let mut list = ensure_seeded(app).await;
+    let list = ensure_seeded(app).await;
     if list.len() <= 1 {
         return Err("至少保留一个代理".into());
     }
-    let was_default = list.iter().any(|a| a.id == id && a.is_default);
-    let before = list.len();
-    list.retain(|a| a.id != id);
-    if list.len() == before {
+    if !list.iter().any(|a| a.id == id) {
         return Err("代理不存在".into());
     }
     crate::persist::delete_agent(app, &id).await;
 
-    if was_default {
-        if let Some(first) = list.iter_mut().find(|a| a.enabled) {
-            first.is_default = true;
-            crate::persist::save_agent(app, first).await;
-        } else if let Some(first) = list.first_mut() {
-            first.is_default = true;
-            first.enabled = true;
-            crate::persist::save_agent(app, first).await;
+    // 如果被删除的是当前激活代理，重置为第一个启用代理
+    if let Some(mut config) = crate::persist::load_config(app) {
+        if config.active_agent_id.as_deref() == Some(&id) {
+            let new_active = list.iter().find(|a| a.id != id && a.enabled).map(|a| a.id.clone());
+            config.active_agent_id = new_active;
+            crate::persist::save_config(app, &config);
         }
     }
     Ok(())
@@ -360,14 +291,9 @@ pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
 /// 拼进 system prompt 的人格块。
 pub fn format_persona(agent: &AgentProfile) -> String {
     let mut parts = vec!["<agent>".to_string()];
-    let title = if agent.emoji.is_empty() {
-        agent.name.clone()
-    } else {
-        format!("{} {}", agent.emoji, agent.name)
-    };
-    parts.push(format!("You are acting as **{}** (`{}`).", title, agent.slug));
-    if !agent.description.is_empty() {
-        parts.push(agent.description.clone());
+    parts.push(format!("You are acting as **{}** (`{}`).", agent.name, agent.slug));
+    if !agent.remark.is_empty() {
+        parts.push(agent.remark.clone());
     }
     if !agent.system_prompt.is_empty() {
         parts.push(agent.system_prompt.clone());

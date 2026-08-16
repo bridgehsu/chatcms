@@ -17,25 +17,25 @@ pub async fn agent_add(
     state: State<'_, AgentState>,
     slug: String,
     name: String,
-    description: String,
+    remark: String,
     system_prompt: String,
-    emoji: String,
     enabled: bool,
     skills: Option<Vec<String>>,
-    allow_as_subagent: bool,
-    permission_overrides: Option<HashMap<String, DomainPolicy>>,
+    spawnable: bool,
+    perms: Option<HashMap<String, DomainPolicy>>,
+    sort: Option<i64>,
 ) -> Result<AgentProfile, String> {
     let profile = super::add(
         &app,
         slug,
         name,
-        description,
+        remark,
         system_prompt,
-        emoji,
         enabled,
         skills,
-        allow_as_subagent,
-        permission_overrides.unwrap_or_default(),
+        spawnable,
+        perms.unwrap_or_default(),
+        sort.unwrap_or(0),
     )
     .await?;
     *state.agents.lock().unwrap() = super::list(&app).await;
@@ -49,26 +49,26 @@ pub async fn agent_update(
     id: String,
     slug: String,
     name: String,
-    description: String,
+    remark: String,
     system_prompt: String,
-    emoji: String,
     enabled: bool,
     skills: Option<Vec<String>>,
-    allow_as_subagent: bool,
-    permission_overrides: Option<HashMap<String, DomainPolicy>>,
+    spawnable: bool,
+    perms: Option<HashMap<String, DomainPolicy>>,
+    sort: Option<i64>,
 ) -> Result<AgentProfile, String> {
     let profile = super::update(
         &app,
         id,
         slug,
         name,
-        description,
+        remark,
         system_prompt,
-        emoji,
         enabled,
         skills,
-        allow_as_subagent,
-        permission_overrides.unwrap_or_default(),
+        spawnable,
+        perms.unwrap_or_default(),
+        sort.unwrap_or(0),
     )
     .await?;
     *state.agents.lock().unwrap() = super::list(&app).await;
@@ -81,7 +81,8 @@ pub async fn agent_activate(
     state: State<'_, AgentState>,
     id: String,
 ) -> Result<AgentProfile, String> {
-    let profile = super::activate(&app, id).await?;
+    let profile = super::activate(&app, id.clone()).await?;
+    state.config.lock().unwrap().active_agent_id = Some(id);
     *state.agents.lock().unwrap() = super::list(&app).await;
     Ok(profile)
 }
@@ -92,7 +93,14 @@ pub async fn agent_remove(
     state: State<'_, AgentState>,
     id: String,
 ) -> Result<(), String> {
-    super::remove(&app, id).await?;
+    super::remove(&app, id.clone()).await?;
+    // 如果删除的是当前激活代理，清除 state 中的 active_agent_id
+    {
+        let mut config = state.config.lock().unwrap();
+        if config.active_agent_id.as_deref() == Some(&id) {
+            config.active_agent_id = None;
+        }
+    }
     *state.agents.lock().unwrap() = super::list(&app).await;
     Ok(())
 }

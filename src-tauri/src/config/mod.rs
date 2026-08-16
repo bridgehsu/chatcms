@@ -16,6 +16,9 @@ pub struct AppConfig {
     /// 权限：模式 / 域策略 / MCP / 约束
     #[serde(default)]
     pub permission: crate::permission::PermissionConfig,
+    /// 当前激活的代理 ID（None 时取第一个启用代理）
+    #[serde(default)]
+    pub active_agent_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,6 +77,7 @@ impl Default for AppConfig {
             active_profile_id: Some(profile.id.clone()),
             profiles: vec![profile],
             permission: crate::permission::PermissionConfig::default(),
+            active_agent_id: None,
         }
     }
 }

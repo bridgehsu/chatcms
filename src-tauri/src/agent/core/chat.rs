@@ -77,17 +77,19 @@ fn build_system_prompt(
 }
 
 fn resolve_active_agent(state: &State<'_, AgentState>, agent_id: Option<&str>) -> Option<crate::agents::AgentProfile> {
+    let active_id = state.config.lock().unwrap().active_agent_id.clone();
     let agents = state.agents.lock().unwrap();
     if let Some(id) = agent_id {
         if let Some(a) = agents.iter().find(|a| a.id == id && a.enabled) {
             return Some(a.clone());
         }
     }
-    agents
-        .iter()
-        .find(|a| a.is_default && a.enabled)
-        .cloned()
-        .or_else(|| agents.iter().find(|a| a.enabled).cloned())
+    if let Some(id) = &active_id {
+        if let Some(a) = agents.iter().find(|a| &a.id == id && a.enabled) {
+            return Some(a.clone());
+        }
+    }
+    agents.iter().find(|a| a.enabled).cloned()
 }
 
 fn persona_block(agent: Option<&crate::agents::AgentProfile>) -> Option<String> {

@@ -45,45 +45,37 @@ export const AgentsPage = () => {
         return {
             name: record.name,
             slug: record.slug,
-            emoji: record.emoji,
-            description: record.description,
+            remark: record.remark,
             system_prompt: record.system_prompt,
             enabled: record.enabled,
-            allow_as_subagent: record.allow_as_subagent,
+            spawnable: record.spawnable,
+            sort: record.sort,
             skillsConfig: {mode, skills: record.skills ?? []} as SkillsConfig,
-            permissionOverrides: {...(record.permission_overrides ?? {})},
+            permOverrides: {...(record.perms ?? {})},
             workspace_dir: record.workspace_dir ?? '',
         };
     };
 
     const beforeSubmit = (values: any) => {
-        const {skillsConfig, permissionOverrides, system_prompt, allow_as_subagent, workspace_dir: _ws, ...rest} = values;
+        const {skillsConfig, permOverrides, system_prompt, spawnable, workspace_dir: _ws, ...rest} = values;
         let skills: string[] | null = null;
         if (skillsConfig?.mode === 'none') skills = [];
         else if (skillsConfig?.mode === 'allowlist') skills = skillsConfig.skills ?? [];
         return {
             ...rest,
-            systemPrompt: system_prompt,
+            system_prompt,
             skills,
-            allowAsSubagent: allow_as_subagent ?? true,
-            permissionOverrides: permissionOverrides ?? {},
+            spawnable: spawnable ?? true,
+            perms: permOverrides ?? {},
         };
     };
 
     const columns: CabinXColumn<AgentProfile>[] = [
         {
-            title: '编号',
-            dataIndex: 'code',
-            key: 'code',
-            hideInTable: true,
-        },
-        {
             title: '代理名称',
             dataIndex: 'name',
             key: 'name',
             fixed: 'left',
-            render: (_: any, record: AgentProfile) =>
-                `${record.emoji ? record.emoji + ' ' : ''}${record.name}`,
             search: {name: 'name', label: '代理名称', type: 'input', placeholder: '搜索代理名称'},
             editor: {
                 name: 'name',
@@ -106,18 +98,11 @@ export const AgentsPage = () => {
             },
         },
         {
-            title: 'Emoji',
-            dataIndex: 'emoji',
-            key: 'emoji',
-            hideInTable: true,
-            editor: {name: 'emoji', label: 'Emoji', type: 'input', placeholder: '✍️'},
-        },
-        {
             title: '简介',
-            dataIndex: 'description',
-            key: 'description',
+            dataIndex: 'remark',
+            key: 'remark',
             editor: {
-                name: 'description',
+                name: 'remark',
                 label: '简介',
                 type: 'input',
                 placeholder: '一句话说明职责',
@@ -154,16 +139,29 @@ export const AgentsPage = () => {
             },
         },
         {
-            title: '子代理',
-            dataIndex: 'allow_as_subagent',
-            key: 'allow_as_subagent',
+            title: '可被调用',
+            dataIndex: 'spawnable',
+            key: 'spawnable',
             render: (v: boolean) => (v ? '允许' : '禁止'),
             editor: {
-                name: 'allow_as_subagent',
+                name: 'spawnable',
                 label: '允许作为子代理',
                 type: 'switch',
                 valuePropName: 'checked',
                 initialValue: true,
+            },
+        },
+        {
+            title: '排序',
+            dataIndex: 'sort',
+            key: 'sort',
+            hideInTable: true,
+            editor: {
+                name: 'sort',
+                label: '排序权重',
+                type: 'input',
+                initialValue: 0,
+                placeholder: '数字越小越靠前',
             },
         },
         {
@@ -190,11 +188,11 @@ export const AgentsPage = () => {
         },
         {
             title: '权限覆盖',
-            dataIndex: 'permission_overrides',
-            key: 'permission_overrides',
+            dataIndex: 'perms',
+            key: 'perms',
             hideInTable: true,
             editor: {
-                name: 'permissionOverrides',
+                name: 'permOverrides',
                 label: '权限覆盖',
                 type: 'input',
                 initialValue: {},
@@ -238,7 +236,7 @@ export const AgentsPage = () => {
                 formatRecordForEdit={formatRecordForEdit}
                 beforeSubmit={beforeSubmit}
                 formType="D"
-                editorWidth={800}
+                editorWidth={650}
                 actionBtnComponents={(record: AgentProfile) => (
                     <Button type="link" icon={<EyeOutlined/>} onClick={() => setViewRecord(record)}>
                         查看
