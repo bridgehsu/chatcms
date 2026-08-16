@@ -72,7 +72,7 @@ export const AgentsPage = () => {
 
     const columns: CabinXColumn<AgentProfile>[] = [
         {
-            title: '代理名称',
+            title: '名称',
             dataIndex: 'name',
             key: 'name',
             fixed: 'left',
@@ -86,14 +86,14 @@ export const AgentsPage = () => {
             },
         },
         {
-            title: 'ID',
+            title: '短标识',
             dataIndex: 'slug',
             key: 'slug',
             editor: {
                 name: 'slug',
-                label: 'ID（slug）',
+                label: '短标识',
                 type: 'input',
-                rules: [{required: true, message: '请输入 slug'}],
+                rules: [{required: true, message: '请输入短标识'}],
                 placeholder: 'writer',
             },
         },
@@ -104,7 +104,8 @@ export const AgentsPage = () => {
             editor: {
                 name: 'remark',
                 label: '简介',
-                type: 'input',
+                type: 'textarea',
+                rows: 6,
                 placeholder: '一句话说明职责',
             },
         },
