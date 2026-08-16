@@ -205,13 +205,13 @@ export const AgentsPage = () => {
             },
         },
         {
-            title: 'Workspace',
+            title: '工作空间',
             dataIndex: 'workspace_dir',
             key: 'workspace_dir',
             hideInTable: true,
             editor: {
                 name: 'workspace_dir',
-                label: 'Workspace 路径',
+                label: '工作空间路径',
                 type: 'input',
                 hide: [true, true, false],
                 renderFormItem: (form: any) => {
