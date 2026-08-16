@@ -154,7 +154,7 @@ const Editor: React.FC<DformProps> = ({
     // 根据类型渲染不同的容器
     if (type === 'D') {
         return (
-            <Drawer title={title} size={size} onClose={onClose} open={open} extra={submitButton} width={width} closable={false}>
+            <Drawer title={title} onClose={onClose} open={open} extra={submitButton} width={width} closable={false}>
                 {formContent}
             </Drawer>
         );
