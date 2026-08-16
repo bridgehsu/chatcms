@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Switch } from 'antd';
+import { Button, Col, Form, InputNumber, Row, Switch } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import Dform from './components/DForm';
 import { invoke } from '@/hooks/useTauri';
@@ -34,7 +34,7 @@ export const AgentsPage = () => {
             const {id, ...rest} = data;
             return invoke('agent_update', {id, ...rest});
         },
-        del: async (id: string) => invoke('agent_remove', {id}),
+        del: async (id: string | number) => invoke('agent_remove', {id: String(id)}),
     }), [refreshKey]);
 
     const formatRecordForEdit = (record: AgentProfile) => {
@@ -57,15 +57,13 @@ export const AgentsPage = () => {
     };
 
     const beforeSubmit = (values: any) => {
-        const {skillsConfig, permOverrides, system_prompt, spawnable, workspace_dir: _ws, ...rest} = values;
+        const {skillsConfig, permOverrides, workspace_dir: _ws, ...rest} = values;
         let skills: string[] | null = null;
         if (skillsConfig?.mode === 'none') skills = [];
         else if (skillsConfig?.mode === 'allowlist') skills = skillsConfig.skills ?? [];
         return {
             ...rest,
-            system_prompt,
             skills,
-            spawnable: spawnable ?? true,
             perms: permOverrides ?? {},
         };
     };
@@ -97,6 +95,37 @@ export const AgentsPage = () => {
                 placeholder: 'writer',
             },
         },
+        // 允许作为子代理 / 启用此代理 / 排序权重 三字段同行
+        {
+            title: '',
+            dataIndex: '__row_config',
+            key: '__row_config',
+            hideInTable: true,
+            editor: {
+                name: undefined as any,
+                label: undefined as any,
+                type: 'input',
+                renderFormItem: () => (
+                    <Row gutter={16}>
+                        <Col span={8}>
+                            <Form.Item name="spawnable" label="允许作为子代理" valuePropName="checked" initialValue={true} style={{marginBottom: 0}}>
+                                <Switch checkedChildren="允许" unCheckedChildren="禁止" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={8}>
+                            <Form.Item name="enabled" label="启用此代理" valuePropName="checked" initialValue={true} style={{marginBottom: 0}}>
+                                <Switch checkedChildren="启用" unCheckedChildren="停用" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={8}>
+                            <Form.Item name="sort" label="排序权重" initialValue={0} style={{marginBottom: 0}}>
+                                <InputNumber style={{width: '100%'}} min={0} placeholder="数字越小越靠前" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                ),
+            },
+        },
         {
             title: '简介',
             dataIndex: 'remark',
@@ -105,7 +134,7 @@ export const AgentsPage = () => {
                 name: 'remark',
                 label: '简介',
                 type: 'textarea',
-                rows: 6,
+                rows: 3,
                 placeholder: '一句话说明职责',
             },
         },
@@ -144,26 +173,6 @@ export const AgentsPage = () => {
             dataIndex: 'spawnable',
             key: 'spawnable',
             render: (v: boolean) => (v ? '允许' : '禁止'),
-            editor: {
-                name: 'spawnable',
-                label: '允许作为子代理',
-                type: 'switch',
-                valuePropName: 'checked',
-                initialValue: true,
-            },
-        },
-        {
-            title: '排序',
-            dataIndex: 'sort',
-            key: 'sort',
-            hideInTable: true,
-            editor: {
-                name: 'sort',
-                label: '排序权重',
-                type: 'input',
-                initialValue: 0,
-                placeholder: '数字越小越靠前',
-            },
         },
         {
             title: '状态',
@@ -179,13 +188,6 @@ export const AgentsPage = () => {
                     }}
                 />
             ),
-            editor: {
-                name: 'enabled',
-                label: '启用此代理',
-                type: 'switch',
-                valuePropName: 'checked',
-                initialValue: true,
-            },
         },
         {
             title: '权限覆盖',
@@ -244,7 +246,6 @@ export const AgentsPage = () => {
                     </Button>
                 )}
             />
-
             <Dform record={viewRecord} onClose={() => setViewRecord(null)} />
         </div>
     );
