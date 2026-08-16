@@ -140,3 +140,25 @@ CREATE TABLE IF NOT EXISTS videos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created DESC);
+
+-- Agent profiles
+CREATE TABLE IF NOT EXISTS agent (
+    id                   TEXT    PRIMARY KEY,
+    code                 TEXT    NOT NULL DEFAULT '',
+    slug                 TEXT    NOT NULL,
+    name                 TEXT    NOT NULL,
+    description          TEXT    NOT NULL DEFAULT '',
+    system_prompt        TEXT    NOT NULL DEFAULT '',
+    emoji                TEXT    NOT NULL DEFAULT '',
+    enabled              INTEGER NOT NULL DEFAULT 1,
+    is_default           INTEGER NOT NULL DEFAULT 0,
+    skills               TEXT,
+    allow_as_subagent    INTEGER NOT NULL DEFAULT 1,
+    permission_overrides TEXT    NOT NULL DEFAULT '{}',
+    workspace_dir        TEXT,
+    create_by            TEXT    NOT NULL DEFAULT '',
+    update_by            TEXT    NOT NULL DEFAULT '',
+    created              INTEGER NOT NULL,
+    updated              INTEGER NOT NULL,
+    yn                   INTEGER NOT NULL DEFAULT 0
+);

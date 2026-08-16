@@ -4,19 +4,15 @@ use crate::permission::DomainPolicy;
 use std::collections::HashMap;
 use tauri::{AppHandle, State};
 
-fn sync_state(app: &AppHandle, state: &State<'_, AgentState>) {
-    *state.agents.lock().unwrap() = super::list(app);
-}
-
 #[tauri::command]
-pub fn agent_list(app: AppHandle, state: State<'_, AgentState>) -> Vec<AgentProfile> {
-    let list = super::list(&app);
+pub async fn agent_list(app: AppHandle, state: State<'_, AgentState>) -> Result<Vec<AgentProfile>, String> {
+    let list = super::list(&app).await;
     *state.agents.lock().unwrap() = list.clone();
-    list
+    Ok(list)
 }
 
 #[tauri::command]
-pub fn agent_add(
+pub async fn agent_add(
     app: AppHandle,
     state: State<'_, AgentState>,
     slug: String,
@@ -40,13 +36,14 @@ pub fn agent_add(
         skills,
         allow_as_subagent,
         permission_overrides.unwrap_or_default(),
-    )?;
-    sync_state(&app, &state);
+    )
+    .await?;
+    *state.agents.lock().unwrap() = super::list(&app).await;
     Ok(profile)
 }
 
 #[tauri::command]
-pub fn agent_update(
+pub async fn agent_update(
     app: AppHandle,
     state: State<'_, AgentState>,
     id: String,
@@ -72,32 +69,34 @@ pub fn agent_update(
         skills,
         allow_as_subagent,
         permission_overrides.unwrap_or_default(),
-    )?;
-    sync_state(&app, &state);
+    )
+    .await?;
+    *state.agents.lock().unwrap() = super::list(&app).await;
     Ok(profile)
 }
 
 #[tauri::command]
-pub fn agent_activate(
+pub async fn agent_activate(
     app: AppHandle,
     state: State<'_, AgentState>,
     id: String,
 ) -> Result<AgentProfile, String> {
-    let profile = super::activate(&app, id)?;
-    sync_state(&app, &state);
+    let profile = super::activate(&app, id).await?;
+    *state.agents.lock().unwrap() = super::list(&app).await;
     Ok(profile)
 }
 
 #[tauri::command]
-pub fn agent_remove(
+pub async fn agent_remove(
     app: AppHandle,
     state: State<'_, AgentState>,
     id: String,
 ) -> Result<(), String> {
-    super::remove(&app, id)?;
-    sync_state(&app, &state);
+    super::remove(&app, id).await?;
+    *state.agents.lock().unwrap() = super::list(&app).await;
     Ok(())
 }
+
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("agents")
         .invoke_handler(tauri::generate_handler![

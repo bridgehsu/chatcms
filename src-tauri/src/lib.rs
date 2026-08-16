@@ -60,7 +60,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     *state.sessions.lock().unwrap() = rt.block_on(persist::load_all_sessions(&handle));
     *state.knowledge.lock().unwrap() = rt.block_on(persist::load_all_knowledge(&handle));
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
-    *state.agents.lock().unwrap() = agents::ensure_seeded(&handle);
+    *state.agents.lock().unwrap() = rt.block_on(agents::ensure_seeded(&handle));
 
     // MCP — connect all enabled servers
     let mcp_configs = persist::load_mcp_configs(&handle);

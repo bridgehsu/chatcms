@@ -57,7 +57,8 @@ pub use accounts::*;
 pub use media_platforms::*;
 pub use nav::*;
 pub use schedules::*;
-pub use agents::*;
+// Agents (SQLite)
+pub use agents::{save_agent, delete_agent, load_all_agents};
 pub use business_map::*;
 pub use bridge::*;
 pub use crawler::*;

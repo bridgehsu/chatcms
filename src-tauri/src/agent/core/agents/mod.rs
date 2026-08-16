@@ -155,25 +155,27 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
     ]
 }
 
-pub fn ensure_seeded(app: &AppHandle) -> Vec<AgentProfile> {
-    let mut list = crate::persist::load_agent_profiles(app);
+pub async fn ensure_seeded(app: &AppHandle) -> Vec<AgentProfile> {
+    let mut list = crate::persist::load_all_agents(app).await;
     if list.is_empty() {
         list = bundled_agents();
-        crate::persist::save_agent_profiles(app, &list);
+        for agent in &list {
+            crate::persist::save_agent(app, agent).await;
+        }
         return list;
     }
 
     if !list.iter().any(|a| a.is_default) {
         if let Some(first) = list.iter_mut().find(|a| a.enabled) {
             first.is_default = true;
-            crate::persist::save_agent_profiles(app, &list);
+            crate::persist::save_agent(app, first).await;
         }
     }
     list
 }
 
-pub fn list(app: &AppHandle) -> Vec<AgentProfile> {
-    let mut list = ensure_seeded(app);
+pub async fn list(app: &AppHandle) -> Vec<AgentProfile> {
+    let mut list = ensure_seeded(app).await;
     list.sort_by(|a, b| {
         b.is_default
             .cmp(&a.is_default)
@@ -184,22 +186,23 @@ pub fn list(app: &AppHandle) -> Vec<AgentProfile> {
     list
 }
 
-pub fn get_default(app: &AppHandle) -> Option<AgentProfile> {
-    let list = ensure_seeded(app);
+pub async fn get_default(app: &AppHandle) -> Option<AgentProfile> {
+    let list = ensure_seeded(app).await;
     list.iter()
         .find(|a| a.is_default && a.enabled)
         .cloned()
         .or_else(|| list.into_iter().find(|a| a.enabled))
 }
 
-pub fn find_by_slug_or_id(app: &AppHandle, key: &str) -> Option<AgentProfile> {
+pub async fn find_by_slug_or_id(app: &AppHandle, key: &str) -> Option<AgentProfile> {
     let key = key.trim();
     ensure_seeded(app)
+        .await
         .into_iter()
         .find(|a| a.id == key || a.slug == key)
 }
 
-pub fn add(
+pub async fn add(
     app: &AppHandle,
     slug: String,
     name: String,
@@ -217,7 +220,7 @@ pub fn add(
         return Err("名称不能为空".into());
     }
 
-    let mut list = ensure_seeded(app);
+    let list = ensure_seeded(app).await;
     if list.iter().any(|a| a.slug == slug) {
         return Err(format!("已存在同 ID 代理「{slug}」"));
     }
@@ -244,12 +247,11 @@ pub fn add(
         created: ts,
         updated: ts,
     };
-    list.push(profile.clone());
-    crate::persist::save_agent_profiles(app, &list);
+    crate::persist::save_agent(app, &profile).await;
     Ok(profile)
 }
 
-pub fn update(
+pub async fn update(
     app: &AppHandle,
     id: String,
     slug: String,
@@ -268,7 +270,7 @@ pub fn update(
         return Err("名称不能为空".into());
     }
 
-    let mut list = ensure_seeded(app);
+    let mut list = ensure_seeded(app).await;
     if list.iter().any(|a| a.slug == slug && a.id != id) {
         return Err(format!("已存在同 ID 代理「{slug}」"));
     }
@@ -294,38 +296,43 @@ pub fn update(
     }
 
     let out = profile.clone();
+    crate::persist::save_agent(app, &out).await;
 
+    // 如果禁用后无 default，找一个启用的代理设为 default
     if !list.iter().any(|a| a.is_default && a.enabled) {
         if let Some(first) = list.iter_mut().find(|a| a.enabled) {
             first.is_default = true;
+            crate::persist::save_agent(app, first).await;
         }
     }
 
-    crate::persist::save_agent_profiles(app, &list);
     Ok(out)
 }
 
-pub fn activate(app: &AppHandle, id: String) -> Result<AgentProfile, String> {
-    let mut list = ensure_seeded(app);
+pub async fn activate(app: &AppHandle, id: String) -> Result<AgentProfile, String> {
+    let mut list = ensure_seeded(app).await;
     let exists = list.iter().any(|a| a.id == id);
     if !exists {
         return Err("代理不存在".into());
     }
     for a in list.iter_mut() {
+        let was_default = a.is_default;
         a.is_default = a.id == id;
         if a.is_default {
             a.enabled = true;
             a.updated = now_ms();
         }
+        if a.is_default || was_default {
+            crate::persist::save_agent(app, a).await;
+        }
     }
-    crate::persist::save_agent_profiles(app, &list);
     list.into_iter()
         .find(|a| a.id == id)
         .ok_or_else(|| "激活失败".into())
 }
 
-pub fn remove(app: &AppHandle, id: String) -> Result<(), String> {
-    let mut list = ensure_seeded(app);
+pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
+    let mut list = ensure_seeded(app).await;
     if list.len() <= 1 {
         return Err("至少保留一个代理".into());
     }
@@ -335,15 +342,18 @@ pub fn remove(app: &AppHandle, id: String) -> Result<(), String> {
     if list.len() == before {
         return Err("代理不存在".into());
     }
+    crate::persist::delete_agent(app, &id).await;
+
     if was_default {
         if let Some(first) = list.iter_mut().find(|a| a.enabled) {
             first.is_default = true;
+            crate::persist::save_agent(app, first).await;
         } else if let Some(first) = list.first_mut() {
             first.is_default = true;
             first.enabled = true;
+            crate::persist::save_agent(app, first).await;
         }
     }
-    crate::persist::save_agent_profiles(app, &list);
     Ok(())
 }
 
