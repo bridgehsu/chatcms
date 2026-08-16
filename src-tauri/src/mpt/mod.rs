@@ -568,7 +568,7 @@ pub async fn import_video_url(
     .await?;
     if let Some(tid) = task_id {
         record.remote_id = Some(tid.to_string());
-        record.updated_at = record.created_at;
+        record.updated = record.created;
         persist::save_video(app, &record).await;
     }
     Ok(record)

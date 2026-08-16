@@ -45,7 +45,7 @@ pub fn search(entries: &[KnowledgeEntry], query: &str, max: usize) -> Vec<Knowle
     let tokens = tokenize(query);
     if tokens.is_empty() {
         let mut sorted = entries.to_vec();
-        sorted.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        sorted.sort_by(|a, b| b.created.cmp(&a.created));
         return sorted.into_iter().take(max).collect();
     }
 

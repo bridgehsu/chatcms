@@ -6,7 +6,7 @@ pub fn list_public(entries: &[KnowledgeEntry]) -> Vec<KnowledgeEntry> {
         .filter(|e| e.visibility == "public")
         .cloned()
         .collect();
-    list.sort_by(|a, b| b.updated_at.cmp(&a.updated_at).then(b.created_at.cmp(&a.created_at)));
+    list.sort_by(|a, b| b.updated.cmp(&a.updated).then(b.created.cmp(&a.created)));
     list
 }
 
@@ -27,21 +27,21 @@ pub fn build_feed(profile: &KnowledgeSiteProfile, entries: &[KnowledgeEntry]) ->
                 slug: slug.clone(),
                 kind: e.kind.clone(),
                 tags: e.tags.clone(),
-                updated_at: if e.updated_at > 0 {
-                    e.updated_at
+                updated: if e.updated > 0 {
+                    e.updated
                 } else {
-                    e.created_at
+                    e.created
                 },
                 path: format!("/u/{}/{slug}", profile.handle),
             }
         })
         .collect::<Vec<_>>();
-    let updated_at = items.iter().map(|i| i.updated_at).max().unwrap_or(now_secs());
+    let updated = items.iter().map(|i| i.updated).max().unwrap_or(now_secs());
     PublicFeed {
         handle: profile.handle.clone(),
         display_name: profile.display_name.clone(),
         bio: profile.bio.clone(),
-        updated_at,
+        updated,
         items,
     }
 }

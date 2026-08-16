@@ -10,7 +10,7 @@ pub struct KnowledgeEntry {
     pub content: String,
     #[serde(default)]
     pub tags: Vec<String>,
-    pub created_at: u64,
+    pub created: u64,
     /// private | public（默认私有；公开条目可导出到 chatcms.org）
     #[serde(default = "default_visibility")]
     pub visibility: String,
@@ -21,7 +21,7 @@ pub struct KnowledgeEntry {
     #[serde(default)]
     pub slug: String,
     #[serde(default)]
-    pub updated_at: u64,
+    pub updated: u64,
 }
 
 fn default_visibility() -> String {
@@ -116,11 +116,11 @@ impl KnowledgeEntry {
             description,
             content,
             tags,
-            created_at: now,
+            created: now,
             visibility,
             kind,
             slug,
-            updated_at: now,
+            updated: now,
         }
     }
 }
@@ -162,7 +162,7 @@ pub struct PublicFeedItem {
     pub slug: String,
     pub kind: String,
     pub tags: Vec<String>,
-    pub updated_at: u64,
+    pub updated: u64,
     pub path: String,
 }
 
@@ -171,7 +171,7 @@ pub struct PublicFeed {
     pub handle: String,
     pub display_name: String,
     pub bio: String,
-    pub updated_at: u64,
+    pub updated: u64,
     pub items: Vec<PublicFeedItem>,
 }
 

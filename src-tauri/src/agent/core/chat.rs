@@ -8,7 +8,7 @@ use crate::config::{AppConfig, ProviderKind};
 use crate::kbase as knowledge;
 use crate::memory::{Role, Session};
 use crate::provider::{self, ProviderOutput};
-use crate::skills;
+use crate::scripts;
 use crate::tools;
 
 use super::dispatch::dispatch_tool;
@@ -112,7 +112,7 @@ fn skills_block(
 ) -> Option<String> {
     let skill_list = state.skills.lock().unwrap().clone();
     let allowlist = active_agent.and_then(|a| a.skills.as_ref().map(|v| v.as_slice()));
-    let skill_prompt = skills::format_for_prompt(&skill_list, content, allowlist);
+    let skill_prompt = scripts::format_for_prompt(&skill_list, content, allowlist);
     if skill_prompt.is_empty() {
         None
     } else {

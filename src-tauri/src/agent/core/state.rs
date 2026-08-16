@@ -12,7 +12,7 @@ use crate::kbase::KnowledgeEntry;
 use crate::mcp::McpManager;
 use crate::memory::Session;
 use crate::permission::{RememberScope, SessionGrantStore};
-use crate::skills::Skill;
+use crate::scripts::Skill;
 
 /// 前端权限回执
 #[derive(Debug, Clone)]

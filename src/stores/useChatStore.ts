@@ -85,7 +85,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       id: `tool-call-${id}`,
       role: "tool",
       content: display,
-      created_at: Date.now(),
+      created: Date.now(),
     };
     set((s) => {
       const session = s.activeSession
@@ -135,7 +135,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       id: `subagent-${task_id}`,
       role: "tool",
       content: `[sub-agent starting]\n${prompt}`,
-      created_at: Date.now(),
+      created: Date.now(),
     };
     set((s) => {
       const session = s.activeSession
@@ -203,7 +203,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         id: crypto.randomUUID(),
         role: "user",
         content,
-        created_at: now,
+        created: now,
       };
 
       // 乐观更新：新会话也要立刻显示用户消息（之前 activeSession=null 导致界面空白）
@@ -214,8 +214,8 @@ export const useChatStore = create<ChatState>((set, get) => {
               id: "pending",
               title: "New Chat",
               messages: [userMsg],
-              created_at: now,
-              updated_at: now,
+              created: now,
+              updated: now,
             },
         streamingContent: "",
         isStreaming: true,

@@ -5,10 +5,10 @@ export type GeneratedVideo = {
   size: string;
   seconds: string;
   path: string;
-  created_at: number;
+  created: number;
   remote_id?: string | null;
-  note?: string;
-  updated_at?: number;
+  remark?: string;
+  updated?: number;
 };
 
 export {

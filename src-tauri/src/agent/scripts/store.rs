@@ -69,8 +69,8 @@ pub async fn add(
         disable_model_invocation,
         homepage: homepage.filter(|s| !s.trim().is_empty()),
         metadata,
-        created_at: ts,
-        updated_at: ts,
+        created: ts,
+        updated: ts,
     };
 
     let file_path = write_skill_file(app, &skill);
@@ -130,7 +130,7 @@ pub async fn update(
     if let Some(m) = metadata {
         skill.metadata = Some(m);
     }
-    skill.updated_at = now_ms();
+    skill.updated = now_ms();
 
     let file_path = write_skill_file(app, skill);
     let meta = skill.metadata.get_or_insert_with(|| serde_json::json!({}));
@@ -238,8 +238,8 @@ pub fn parse_skill_md(content: &str, file_path: &str, pkg_name: &str) -> Option<
             disable_model_invocation: false,
             homepage: None,
             metadata: None,
-            created_at: ts,
-            updated_at: ts,
+            created: ts,
+            updated: ts,
         });
     }
 
@@ -300,7 +300,7 @@ pub fn parse_skill_md(content: &str, file_path: &str, pkg_name: &str) -> Option<
         disable_model_invocation,
         homepage,
         metadata,
-        created_at: ts,
-        updated_at: ts,
+        created: ts,
+        updated: ts,
     })
 }

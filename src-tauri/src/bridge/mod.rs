@@ -255,7 +255,7 @@ async fn set_model_config(
     .into_response()
 }
 
-/// 与桌面 `session_list` 同源：置顶优先，再按 updated_at 降序。
+/// 与桌面 `session_list` 同源：置顶优先，再按 updated 降序。
 async fn list_sessions(State(bridge): State<PublishBridge>) -> Response {
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
@@ -266,7 +266,7 @@ async fn list_sessions(State(bridge): State<PublishBridge>) -> Response {
     list.sort_by(|a, b| match (a.pinned, b.pinned) {
         (true, false) => std::cmp::Ordering::Less,
         (false, true) => std::cmp::Ordering::Greater,
-        _ => b.updated_at.cmp(&a.updated_at),
+        _ => b.updated.cmp(&a.updated),
     });
     let payload: Vec<serde_json::Value> = list
         .iter()
@@ -274,7 +274,7 @@ async fn list_sessions(State(bridge): State<PublishBridge>) -> Response {
             json!({
                 "id": s.id,
                 "title": s.title,
-                "updated_at": s.updated_at,
+                "updated": s.updated,
                 "message_count": s.messages.len(),
                 "pinned": s.pinned,
             })
@@ -327,7 +327,7 @@ async fn rename_session(
             return (StatusCode::NOT_FOUND, "会话不存在").into_response();
         };
         session.title = trimmed;
-        session.updated_at = std::time::SystemTime::now()
+        session.updated = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);

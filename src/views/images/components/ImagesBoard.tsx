@@ -174,7 +174,7 @@ export const ImagesBoard = () => {
       {editing && (
         <MediaEditModal
           title={editing.prompt}
-          note={editing.note || ""}
+          note={editing.remark || ""}
           onClose={() => setEditing(null)}
           onSave={async (title, note) => {
             await updateMeta(editing.id, title, note);
@@ -207,8 +207,8 @@ export const ImagesBoard = () => {
                 <p>无法加载预览</p>
               )}
               <p className="images-preview__prompt">{preview.prompt}</p>
-              {preview.note?.trim() ? (
-                <p className="images-preview__prompt">{preview.note}</p>
+              {preview.remark?.trim() ? (
+                <p className="images-preview__prompt">{preview.remark}</p>
               ) : null}
               <p className="images-preview__path">{preview.path}</p>
               <div className="images-card__actions" style={{ marginTop: 12 }}>

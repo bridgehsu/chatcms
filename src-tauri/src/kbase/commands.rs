@@ -94,7 +94,7 @@ pub async fn knowledge_update(
                 super::normalize_slug(s)
             };
         }
-        entry.updated_at = std::time::SystemTime::now()
+        entry.updated = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);

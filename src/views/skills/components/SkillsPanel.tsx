@@ -311,7 +311,7 @@ export const SkillsPanel = () => {
                       <span className="model-status-idle">停用</span>
                     )}
                   </td>
-                  <td className="model-table__mono">{formatTime(s.updated_at)}</td>
+                  <td className="model-table__mono">{formatTime(s.updated)}</td>
                   <td>
                     <div
                       className="model-table__actions"

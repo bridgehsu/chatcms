@@ -24,15 +24,15 @@ pub struct GeneratedVideo {
     pub seconds: String,
     /// 绝对路径（mp4）
     pub path: String,
-    pub created_at: i64,
+    pub created: i64,
     /// 远端 job id（若有）
     pub remote_id: Option<String>,
     /// 备注
     #[serde(default)]
-    pub note: String,
+    pub remark: String,
     /// 最近修改时间；旧数据缺省时为 0
     #[serde(default)]
-    pub updated_at: i64,
+    pub updated: i64,
 }
 
 #[derive(Deserialize)]
@@ -280,10 +280,10 @@ async fn save_bytes(
         size,
         seconds,
         path: path.to_string_lossy().to_string(),
-        created_at: ts,
+        created: ts,
         remote_id,
-        note: String::new(),
-        updated_at: ts,
+        remark: String::new(),
+        updated: ts,
     };
 
     crate::persist::save_video(app, &record).await;
@@ -393,10 +393,10 @@ pub async fn import_bytes(
         size: "imported".into(),
         seconds: "".into(),
         path: path.to_string_lossy().to_string(),
-        created_at: ts,
+        created: ts,
         remote_id: None,
-        note: String::new(),
-        updated_at: ts,
+        remark: String::new(),
+        updated: ts,
     };
 
     crate::persist::save_video(app, &record).await;
@@ -426,20 +426,20 @@ pub async fn update(
     app: &AppHandle,
     id: String,
     title: String,
-    note: String,
+    remark: String,
 ) -> Result<GeneratedVideo> {
     let title = title.trim().to_string();
     if title.is_empty() {
         bail!("名称不能为空");
     }
-    let note = note.chars().take(500).collect::<String>();
+    let remark = remark.chars().take(500).collect::<String>();
     let mut videos = crate::persist::load_all_videos(app).await;
     let Some(item) = videos.iter_mut().find(|i| i.id == id) else {
         bail!("视频不存在");
     };
     item.prompt = title.chars().take(200).collect();
-    item.note = note;
-    item.updated_at = now_ms();
+    item.remark = remark;
+    item.updated = now_ms();
     let updated = item.clone();
     crate::persist::save_video(app, &updated).await;
     Ok(updated)

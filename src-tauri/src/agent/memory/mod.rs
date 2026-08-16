@@ -6,8 +6,8 @@ pub struct Session {
     pub id: String,
     pub title: String,
     pub messages: Vec<Message>,
-    pub created_at: u64,
-    pub updated_at: u64,
+    pub created: u64,
+    pub updated: u64,
     #[serde(default)]
     pub pinned: bool,
     #[serde(default)]
@@ -19,7 +19,7 @@ pub struct Message {
     pub id: String,
     pub role: Role,
     pub content: String,
-    pub created_at: u64,
+    pub created: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -41,8 +41,8 @@ impl Session {
             id: Uuid::new_v4().to_string(),
             title: title.into(),
             messages: vec![],
-            created_at: now,
-            updated_at: now,
+            created: now,
+            updated: now,
             pinned: false,
             agent_id: None,
         }
@@ -63,8 +63,8 @@ impl Session {
             id: Uuid::new_v4().to_string(),
             role,
             content: content.into(),
-            created_at: now,
+            created: now,
         });
-        self.updated_at = now;
+        self.updated = now;
     }
 }

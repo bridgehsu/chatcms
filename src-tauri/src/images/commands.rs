@@ -43,9 +43,9 @@ pub async fn image_update(
     app: AppHandle,
     id: String,
     title: String,
-    note: String,
+    remark: String,
 ) -> Result<GeneratedImage, String> {
-    super::update(&app, id, title, note).await.map_err(|e| e.to_string())
+    super::update(&app, id, title, remark).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

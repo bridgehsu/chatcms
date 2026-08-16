@@ -44,9 +44,9 @@ pub async fn video_update(
     app: AppHandle,
     id: String,
     title: String,
-    note: String,
+    remark: String,
 ) -> Result<GeneratedVideo, String> {
-    super::update(&app, id, title, note).await.map_err(|e| e.to_string())
+    super::update(&app, id, title, remark).await.map_err(|e| e.to_string())
 }
 
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {

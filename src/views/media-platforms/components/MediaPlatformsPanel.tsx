@@ -43,7 +43,7 @@ const toPlatform = (row: MediaPlatformPageItem): MediaPlatform => ({
   home_url: row.home_url,
   enabled: row.enabled,
   notes: row.notes,
-  updated_at: row.updated_at,
+  updated: row.updated,
 });
 
 export const MediaPlatformsPanel = () => {
@@ -278,7 +278,7 @@ export const MediaPlatformsPanel = () => {
                       )}
                     </td>
                     <td className="model-table__mono">
-                      {formatTime(p.updated_at)}
+                      {formatTime(p.updated)}
                     </td>
                     <td>
                       <div

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Switch } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
-import Dform from './components/Dform';
+import Dform from './components/DForm';
 import { invoke } from '@/hooks/useTauri';
 import type { AgentProfile, Skill } from '@/types';
 import CabinX, { type CabinXColumn } from '@/components/CabinX';
@@ -222,8 +222,8 @@ export const AgentsPage = () => {
         },
         {
             title: '更新',
-            dataIndex: 'updated_at',
-            key: 'updated_at',
+            dataIndex: 'updated',
+            key: 'updated',
             render: (ms: number) => formatTime(ms),
         },
     ];

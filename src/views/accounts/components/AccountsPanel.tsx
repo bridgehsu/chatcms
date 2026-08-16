@@ -328,7 +328,7 @@ export const AccountsPanel = () => {
                       <span className="model-status-idle">停用</span>
                     )}
                   </td>
-                  <td className="model-table__mono">{formatTime(a.updated_at)}</td>
+                  <td className="model-table__mono">{formatTime(a.updated)}</td>
                   <td>
                     <div
                       className="model-table__actions"

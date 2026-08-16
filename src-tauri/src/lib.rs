@@ -6,7 +6,7 @@ pub use agent::mcp;
 pub use agent::memory;
 pub use agent::permission;
 pub use agent::provider;
-pub use agent::skills;
+pub use agent::scripts;
 pub use agent::tools;
 mod accounts;
 mod business_map;
@@ -59,7 +59,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     }
     *state.sessions.lock().unwrap() = rt.block_on(persist::load_all_sessions(&handle));
     *state.knowledge.lock().unwrap() = rt.block_on(persist::load_all_knowledge(&handle));
-    *state.skills.lock().unwrap() = rt.block_on(skills::ensure_seeded(&handle));
+    *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = agents::ensure_seeded(&handle);
 
     // MCP — connect all enabled servers
@@ -236,12 +236,12 @@ pub fn run() {
             crawler::commands::crawler_logs,
             crawler::commands::crawler_list_data,
             // skills
-            skills::commands::skill_list,
-            skills::commands::skill_add,
-            skills::commands::skill_update,
-            skills::commands::skill_remove,
-            skills::commands::skill_install_npx,
-            skills::commands::skill_export_md,
+            scripts::commands::skill_list,
+            scripts::commands::skill_add,
+            scripts::commands::skill_update,
+            scripts::commands::skill_remove,
+            scripts::commands::skill_install_npx,
+            scripts::commands::skill_export_md,
             // agents
             agents::commands::agent_list,
             agents::commands::agent_add,

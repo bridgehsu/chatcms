@@ -1,7 +1,7 @@
 use sqlx::Row;
 use tauri::{AppHandle, Manager};
 
-use crate::agent::skills::Skill;
+use crate::agent::scripts::Skill;
 use crate::db::DbPool;
 
 fn pool(app: &AppHandle) -> sqlx::SqlitePool {
@@ -15,7 +15,7 @@ pub async fn save_skill(app: &AppHandle, skill: &Skill) {
     let _ = sqlx::query(
         "INSERT INTO skill_pkg
          (id, name, description, emoji, body, file_path, source, pkg_name, homepage,
-          enabled, user_invocable, disable_model_invocation, created_at, updated_at)
+          enabled, user_invocable, disable_model_invocation, created, updated)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            name                     = excluded.name,
@@ -29,7 +29,7 @@ pub async fn save_skill(app: &AppHandle, skill: &Skill) {
            enabled                  = excluded.enabled,
            user_invocable           = excluded.user_invocable,
            disable_model_invocation = excluded.disable_model_invocation,
-           updated_at               = excluded.updated_at",
+           updated                  = excluded.updated",
     )
     .bind(&skill.id)
     .bind(&skill.name)
@@ -51,8 +51,8 @@ pub async fn save_skill(app: &AppHandle, skill: &Skill) {
     .bind(skill.enabled as i64)
     .bind(skill.user_invocable as i64)
     .bind(skill.disable_model_invocation as i64)
-    .bind(skill.created_at)
-    .bind(skill.updated_at)
+    .bind(skill.created)
+    .bind(skill.updated)
     .execute(&p)
     .await;
 }
@@ -72,8 +72,8 @@ pub async fn load_all_skills(app: &AppHandle) -> Vec<Skill> {
     let rows = sqlx::query(
         "SELECT id, name, description, emoji, body, file_path, source, pkg_name,
                 homepage, enabled, user_invocable, disable_model_invocation,
-                created_at, updated_at
-         FROM skill_pkg ORDER BY updated_at DESC",
+                created, updated
+         FROM skill_pkg ORDER BY updated DESC",
     )
     .fetch_all(&p)
     .await
@@ -83,9 +83,9 @@ pub async fn load_all_skills(app: &AppHandle) -> Vec<Skill> {
         .map(|r| {
             let source_str: String = r.get("source");
             let source = match source_str.as_str() {
-                "bundled" => crate::agent::skills::SkillSource::Bundled,
-                "npx" => crate::agent::skills::SkillSource::Managed,
-                _ => crate::agent::skills::SkillSource::Workspace,
+                "bundled" => crate::agent::scripts::SkillSource::Bundled,
+                "npx" => crate::agent::scripts::SkillSource::Managed,
+                _ => crate::agent::scripts::SkillSource::Workspace,
             };
             let emoji: String = r.get("emoji");
             let file_path: String = r.get("file_path");
@@ -116,8 +116,8 @@ pub async fn load_all_skills(app: &AppHandle) -> Vec<Skill> {
                 disable_model_invocation: r.get::<i64, _>("disable_model_invocation") != 0,
                 homepage: r.get("homepage"),
                 metadata,
-                created_at: r.get("created_at"),
-                updated_at: r.get("updated_at"),
+                created: r.get("created"),
+                updated: r.get("updated"),
             }
         })
         .collect()

@@ -23,13 +23,13 @@ pub struct GeneratedImage {
     pub size: String,
     /// 绝对路径
     pub path: String,
-    pub created_at: i64,
+    pub created: i64,
     /// 备注
     #[serde(default)]
-    pub note: String,
-    /// 最近修改时间；旧数据缺省时为 0，前端回退 created_at
+    pub remark: String,
+    /// 最近修改时间；旧数据缺省时为 0，前端回退 created
     #[serde(default)]
-    pub updated_at: i64,
+    pub updated: i64,
 }
 
 #[derive(Deserialize)]
@@ -181,9 +181,9 @@ pub async fn generate(
         model,
         size,
         path: path.to_string_lossy().to_string(),
-        created_at: ts,
-        note: String::new(),
-        updated_at: ts,
+        created: ts,
+        remark: String::new(),
+        updated: ts,
     };
 
     crate::persist::save_image(app, &record).await;
@@ -291,9 +291,9 @@ pub async fn import_bytes(
         model,
         size: "imported".into(),
         path: path.to_string_lossy().to_string(),
-        created_at: ts,
-        note: String::new(),
-        updated_at: ts,
+        created: ts,
+        remark: String::new(),
+        updated: ts,
     };
 
     crate::persist::save_image(app, &record).await;
@@ -323,20 +323,20 @@ pub async fn update(
     app: &AppHandle,
     id: String,
     title: String,
-    note: String,
+    remark: String,
 ) -> Result<GeneratedImage> {
     let title = title.trim().to_string();
     if title.is_empty() {
         bail!("名称不能为空");
     }
-    let note = note.chars().take(500).collect::<String>();
+    let remark = remark.chars().take(500).collect::<String>();
     let mut images = crate::persist::load_all_images(app).await;
     let Some(item) = images.iter_mut().find(|i| i.id == id) else {
         bail!("图片不存在");
     };
     item.prompt = title.chars().take(200).collect();
-    item.note = note;
-    item.updated_at = now_ms();
+    item.remark = remark;
+    item.updated = now_ms();
     let updated = item.clone();
     crate::persist::save_image(app, &updated).await;
     Ok(updated)

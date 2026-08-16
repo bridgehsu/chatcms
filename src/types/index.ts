@@ -4,15 +4,15 @@ export interface Message {
   id: string;
   role: Role;
   content: string;
-  created_at: number;
+  created: number;
 }
 
 export interface Session {
   id: string;
   title: string;
   messages: Message[];
-  created_at: number;
-  updated_at: number;
+  created: number;
+  updated: number;
   pinned?: boolean;
   agent_id?: string | null;
 }
@@ -20,7 +20,7 @@ export interface Session {
 export interface SessionSummary {
   id: string;
   title: string;
-  updated_at: number;
+  updated: number;
   message_count: number;
   pinned?: boolean;
   agent_id?: string | null;
@@ -160,13 +160,13 @@ export interface KnowledgeEntry {
   description: string;
   content: string;
   tags: string[];
-  created_at: number;
+  created: number;
   /** private | public */
   visibility?: string;
   /** note | doc | faq */
   kind?: string;
   slug?: string;
-  updated_at?: number;
+  updated?: number;
 }
 
 export interface KnowledgeSiteProfile {
@@ -278,7 +278,7 @@ export interface PlatformAccount {
   secrets_encrypted?: boolean;
   enabled: boolean;
   notes: string;
-  updated_at: number;
+  updated: number;
 }
 
 export interface VaultStatus {
@@ -305,7 +305,7 @@ export interface MediaPlatform {
   home_url: string;
   enabled: boolean;
   notes: string;
-  updated_at: number;
+  updated: number;
 }
 
 export interface MediaPlatformPageItem extends MediaPlatform {
@@ -333,7 +333,7 @@ export interface PublishScriptView {
   published_version: number;
   match_url: string;
   changelog: string;
-  updated_at: number;
+  updated: number;
   has_unpublished_draft: boolean;
   is_published: boolean;
 }
@@ -346,7 +346,7 @@ export interface NavBookmark {
   url: string;
   note: string;
   sort_order: number;
-  updated_at: number;
+  updated: number;
 }
 
 // ── Schedule / workflow ───────────────────────────────────────────────────────
@@ -388,8 +388,8 @@ export interface ScheduleProject {
   description: string;
   enabled: boolean;
   workflow: WorkflowGraph;
-  updated_at: number;
-  created_at: number;
+  updated: number;
+  created: number;
 }
 
 // ── Skills (OpenClaw SKILL.md) ─────────────────────────────────────────────────
@@ -407,8 +407,8 @@ export interface Skill {
   disable_model_invocation: boolean;
   homepage: string | null;
   metadata: Record<string, unknown> | null;
-  created_at: number;
-  updated_at: number;
+  created: number;
+  updated: number;
 }
 
 // ── Agent profiles ────────────────────────────────────────────────────────────
@@ -429,7 +429,7 @@ export interface AgentProfile {
   /** 域 id → 策略；空对象 = 继承全局 */
   permission_overrides: Record<string, DomainPolicy>;
   workspace_dir: string | null;
-  created_at: number;
-  updated_at: number;
+  created: number;
+  updated: number;
 }
 

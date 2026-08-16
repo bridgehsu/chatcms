@@ -188,7 +188,7 @@ async fn dispatch_spawn_agent(
                 };
                 let allowlist = profile.skills.as_ref().map(|v| v.as_slice());
                 let skill_prompt =
-                    crate::skills::format_for_prompt(&skills, &prompt, allowlist);
+                    crate::scripts::format_for_prompt(&skills, &prompt, allowlist);
                 if !skill_prompt.is_empty() {
                     blocks.push(skill_prompt);
                 }

@@ -18,20 +18,20 @@ pub async fn save_session(app: &AppHandle, session: &Session) {
 
 async fn upsert_session(pool: &sqlx::SqlitePool, session: &Session) -> anyhow::Result<()> {
     sqlx::query(
-        "INSERT INTO sessions (id, title, pinned, agent_id, created_at, updated_at)
+        "INSERT INTO sessions (id, title, pinned, agent_id, created, updated)
          VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
-           title      = excluded.title,
-           pinned     = excluded.pinned,
-           agent_id   = excluded.agent_id,
-           updated_at = excluded.updated_at",
+           title    = excluded.title,
+           pinned   = excluded.pinned,
+           agent_id = excluded.agent_id,
+           updated  = excluded.updated",
     )
     .bind(&session.id)
     .bind(&session.title)
     .bind(session.pinned as i64)
     .bind(&session.agent_id)
-    .bind(session.created_at as i64)
-    .bind(session.updated_at as i64)
+    .bind(session.created as i64)
+    .bind(session.updated as i64)
     .execute(pool)
     .await?;
 
@@ -49,14 +49,14 @@ async fn upsert_session(pool: &sqlx::SqlitePool, session: &Session) -> anyhow::R
             Role::Tool => "tool",
         };
         sqlx::query(
-            "INSERT OR IGNORE INTO messages (id, session_id, role, content, created_at)
+            "INSERT OR IGNORE INTO messages (id, session_id, role, content, created)
              VALUES (?, ?, ?, ?, ?)",
         )
         .bind(&msg.id)
         .bind(&session.id)
         .bind(role_str)
         .bind(&msg.content)
-        .bind(msg.created_at as i64)
+        .bind(msg.created as i64)
         .execute(pool)
         .await?;
     }
@@ -81,7 +81,7 @@ pub async fn load_all_sessions(app: &AppHandle) -> HashMap<String, Session> {
 
 async fn load_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<HashMap<String, Session>> {
     let rows =
-        sqlx::query("SELECT id, title, pinned, agent_id, created_at, updated_at FROM sessions")
+        sqlx::query("SELECT id, title, pinned, agent_id, created, updated FROM sessions")
             .fetch_all(pool)
             .await?;
 
@@ -91,12 +91,12 @@ async fn load_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<HashMap<Strin
         let title: String = row.get("title");
         let pinned: i64 = row.get("pinned");
         let agent_id: Option<String> = row.get("agent_id");
-        let created_at: i64 = row.get("created_at");
-        let updated_at: i64 = row.get("updated_at");
+        let created: i64 = row.get("created");
+        let updated: i64 = row.get("updated");
 
         let msg_rows = sqlx::query(
-            "SELECT id, role, content, created_at FROM messages
-             WHERE session_id = ? ORDER BY created_at ASC",
+            "SELECT id, role, content, created FROM messages
+             WHERE session_id = ? ORDER BY created ASC",
         )
         .bind(&id)
         .fetch_all(pool)
@@ -116,7 +116,7 @@ async fn load_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<HashMap<Strin
                     id: r.get("id"),
                     role,
                     content: r.get("content"),
-                    created_at: r.get::<i64, _>("created_at") as u64,
+                    created: r.get::<i64, _>("created") as u64,
                 }
             })
             .collect();
@@ -129,8 +129,8 @@ async fn load_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<HashMap<Strin
                 messages,
                 pinned: pinned != 0,
                 agent_id,
-                created_at: created_at as u64,
-                updated_at: updated_at as u64,
+                created: created as u64,
+                updated: updated as u64,
             },
         );
     }

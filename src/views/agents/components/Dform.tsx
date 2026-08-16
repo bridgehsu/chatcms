@@ -39,8 +39,8 @@ const Dform: React.FC<Props> = ({ record, onClose }) => (
                         {record.workspace_dir || '未生成'}
                     </span>
                 </Descriptions.Item>
-                <Descriptions.Item label="创建时间">{formatTime(record.created_at)}</Descriptions.Item>
-                <Descriptions.Item label="更新时间">{formatTime(record.updated_at)}</Descriptions.Item>
+                <Descriptions.Item label="创建时间">{formatTime(record.created)}</Descriptions.Item>
+                <Descriptions.Item label="更新时间">{formatTime(record.updated)}</Descriptions.Item>
             </Descriptions>
         )}
     </Drawer>

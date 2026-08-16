@@ -63,10 +63,10 @@ pub fn export_public_site(
     }
 
     for (e, slug) in public.iter().zip(assigned.iter()) {
-        let updated = if e.updated_at > 0 {
-            e.updated_at
+        let updated = if e.updated > 0 {
+            e.updated
         } else {
-            e.created_at
+            e.created
         };
         let tags = if e.tags.is_empty() {
             String::new()
@@ -106,10 +106,10 @@ pub fn export_public_site(
             slug: slug.clone(),
             kind: e.kind.clone(),
             tags: e.tags.clone(),
-            updated_at: if e.updated_at > 0 {
-                e.updated_at
+            updated: if e.updated > 0 {
+                e.updated
             } else {
-                e.created_at
+                e.created
             },
             path: format!("/u/{handle}/{slug}"),
         })
@@ -118,9 +118,9 @@ pub fn export_public_site(
         handle: handle.into(),
         display_name: profile.display_name.clone(),
         bio: profile.bio.clone(),
-        updated_at: items
+        updated: items
             .iter()
-            .map(|i| i.updated_at)
+            .map(|i| i.updated)
             .max()
             .unwrap_or(now_secs()),
         items,

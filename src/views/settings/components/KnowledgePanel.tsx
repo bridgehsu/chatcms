@@ -307,7 +307,7 @@ export const KnowledgePanel = () => {
                     )}
                   </td>
                   <td className="model-table__mono">
-                    {formatTime(e.created_at)}
+                    {formatTime(e.created)}
                   </td>
                   <td>
                     <div

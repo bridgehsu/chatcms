@@ -143,7 +143,7 @@ export const NavBookmarksPanel = () => {
                     </td>
                     <td>{b.note?.trim() ? b.note : "—"}</td>
                     <td className="model-table__mono">
-                      {formatTime(b.updated_at)}
+                      {formatTime(b.updated)}
                     </td>
                     <td>
                       <div

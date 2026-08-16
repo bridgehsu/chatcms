@@ -145,7 +145,7 @@ export const SchedulesPanel = () => {
                       <span className="model-status-idle">停用</span>
                     )}
                   </td>
-                  <td className="model-table__mono">{formatTime(p.updated_at)}</td>
+                  <td className="model-table__mono">{formatTime(p.updated)}</td>
                   <td>
                     <div
                       className="model-table__actions"

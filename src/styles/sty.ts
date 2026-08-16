@@ -1,0 +1,1 @@
+export const titleSty = "border-stroke dark:border-strokedark [&>.ant-card-head]:border-stroke [&>.ant-card-head]:dark:border-strokedark dark:bg-boxdark [&>.ant-card-body]:!p-0"

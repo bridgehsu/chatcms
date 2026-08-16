@@ -13,7 +13,7 @@ pub async fn save_knowledge_entry(app: &AppHandle, entry: &KnowledgeEntry) {
     let p = pool(app);
     let tags = serde_json::to_string(&entry.tags).unwrap_or_else(|_| "[]".into());
     let _ = sqlx::query(
-        "INSERT INTO knowledge (id, title, description, content, tags, visibility, kind, slug, created_at, updated_at)
+        "INSERT INTO knowledge (id, title, description, content, tags, visibility, kind, slug, created, updated)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            title       = excluded.title,
@@ -23,7 +23,7 @@ pub async fn save_knowledge_entry(app: &AppHandle, entry: &KnowledgeEntry) {
            visibility  = excluded.visibility,
            kind        = excluded.kind,
            slug        = excluded.slug,
-           updated_at  = excluded.updated_at",
+           updated     = excluded.updated",
     )
     .bind(&entry.id)
     .bind(&entry.title)
@@ -33,8 +33,8 @@ pub async fn save_knowledge_entry(app: &AppHandle, entry: &KnowledgeEntry) {
     .bind(&entry.visibility)
     .bind(&entry.kind)
     .bind(&entry.slug)
-    .bind(entry.created_at as i64)
-    .bind(entry.updated_at as i64)
+    .bind(entry.created as i64)
+    .bind(entry.updated as i64)
     .execute(&p)
     .await;
 }
@@ -56,8 +56,8 @@ pub async fn load_all_knowledge(app: &AppHandle) -> Vec<KnowledgeEntry> {
 
 async fn load_knowledge_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<Vec<KnowledgeEntry>> {
     let rows = sqlx::query(
-        "SELECT id, title, description, content, tags, visibility, kind, slug, created_at, updated_at
-         FROM knowledge ORDER BY updated_at DESC",
+        "SELECT id, title, description, content, tags, visibility, kind, slug, created, updated
+         FROM knowledge ORDER BY updated DESC",
     )
     .fetch_all(pool)
     .await?;
@@ -77,8 +77,8 @@ async fn load_knowledge_from_pool(pool: &sqlx::SqlitePool) -> anyhow::Result<Vec
                 visibility: r.get("visibility"),
                 kind: r.get("kind"),
                 slug: r.get("slug"),
-                created_at: r.get::<i64, _>("created_at") as u64,
-                updated_at: r.get::<i64, _>("updated_at") as u64,
+                created: r.get::<i64, _>("created") as u64,
+                updated: r.get::<i64, _>("updated") as u64,
             }
         })
         .collect();

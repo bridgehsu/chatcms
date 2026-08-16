@@ -51,10 +51,10 @@ export const ImageTable = ({
     return images.filter((img) => {
       if (source !== "all" && mediaSourceOf(img.model) !== source) return false;
       if (!q) return true;
-      const note = (img.note || "").toLowerCase();
+      const remark = (img.remark || "").toLowerCase();
       return (
         img.prompt.toLowerCase().includes(q) ||
-        note.includes(q) ||
+        remark.includes(q) ||
         img.model.toLowerCase().includes(q)
       );
     });
@@ -142,8 +142,8 @@ export const ImageTable = ({
                       {img.prompt || "(未命名)"}
                     </span>
                   </td>
-                  <td className="media-lib__note" title={img.note || ""}>
-                    {img.note?.trim() ? img.note : "—"}
+                  <td className="media-lib__note" title={img.remark || ""}>
+                    {img.remark?.trim() ? img.remark : "—"}
                   </td>
                   <td>
                     <span

@@ -4,9 +4,9 @@ export type GeneratedImage = {
   model: string;
   size: string;
   path: string;
-  created_at: number;
-  note?: string;
-  updated_at?: number;
+  created: number;
+  remark?: string;
+  updated?: number;
 };
 
 export type MediaSourceKind = "ai" | "upload" | "web";
@@ -30,9 +30,9 @@ export const mediaSourceLabel = (model: string): string => {
 };
 
 export const mediaUpdatedAt = (item: {
-  created_at: number;
-  updated_at?: number;
-}): number => (item.updated_at && item.updated_at > 0 ? item.updated_at : item.created_at);
+  created: number;
+  updated?: number;
+}): number => (item.updated && item.updated > 0 ? item.updated : item.created);
 
 export const IMAGE_MODELS = [
   { value: "dall-e-3", label: "DALL·E 3" },

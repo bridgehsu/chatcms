@@ -50,10 +50,10 @@ export const VideoTable = ({
     return videos.filter((v) => {
       if (source !== "all" && mediaSourceOf(v.model) !== source) return false;
       if (!q) return true;
-      const note = (v.note || "").toLowerCase();
+      const remark = (v.remark || "").toLowerCase();
       return (
         v.prompt.toLowerCase().includes(q) ||
-        note.includes(q) ||
+        remark.includes(q) ||
         v.model.toLowerCase().includes(q)
       );
     });
@@ -141,8 +141,8 @@ export const VideoTable = ({
                       {v.prompt || "(未命名)"}
                     </span>
                   </td>
-                  <td className="media-lib__note" title={v.note || ""}>
-                    {v.note?.trim() ? v.note : "—"}
+                  <td className="media-lib__note" title={v.remark || ""}>
+                    {v.remark?.trim() ? v.remark : "—"}
                   </td>
                   <td>
                     <span

@@ -31,14 +31,14 @@ pub fn session_list(state: State<'_, AgentState>, agent_id: Option<String>) -> V
     list.sort_by(|a, b| match (a.pinned, b.pinned) {
         (true, false) => std::cmp::Ordering::Less,
         (false, true) => std::cmp::Ordering::Greater,
-        _ => b.updated_at.cmp(&a.updated_at),
+        _ => b.updated.cmp(&a.updated),
     });
     list.iter()
         .map(|s| {
             json!({
                 "id": s.id,
                 "title": s.title,
-                "updated_at": s.updated_at,
+                "updated": s.updated,
                 "message_count": s.messages.len(),
                 "pinned": s.pinned,
                 "agent_id": s.agent_id,
@@ -85,7 +85,7 @@ pub async fn session_rename(
             .get_mut(&session_id)
             .ok_or_else(|| "会话不存在".to_string())?;
         session.title = trimmed;
-        session.updated_at = std::time::SystemTime::now()
+        session.updated = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();

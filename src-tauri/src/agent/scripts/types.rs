@@ -39,8 +39,8 @@ pub struct Skill {
     /// OpenClaw `metadata.openclaw` JSON（gating 等）
     #[serde(default)]
     pub metadata: Option<Value>,
-    pub created_at: i64,
-    pub updated_at: i64,
+    pub created: i64,
+    pub updated: i64,
 }
 
 pub fn default_true() -> bool {

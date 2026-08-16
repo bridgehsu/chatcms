@@ -11,17 +11,17 @@ fn pool(app: &AppHandle) -> sqlx::SqlitePool {
 pub async fn save_video(app: &AppHandle, video: &GeneratedVideo) {
     let p = pool(app);
     let _ = sqlx::query(
-        "INSERT INTO videos (id, prompt, model, size, seconds, path, remote_id, note, created_at, updated_at)
+        "INSERT INTO videos (id, prompt, model, size, seconds, path, remote_id, remark, created, updated)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
-           prompt     = excluded.prompt,
-           model      = excluded.model,
-           size       = excluded.size,
-           seconds    = excluded.seconds,
-           path       = excluded.path,
-           remote_id  = excluded.remote_id,
-           note       = excluded.note,
-           updated_at = excluded.updated_at",
+           prompt    = excluded.prompt,
+           model     = excluded.model,
+           size      = excluded.size,
+           seconds   = excluded.seconds,
+           path      = excluded.path,
+           remote_id = excluded.remote_id,
+           remark    = excluded.remark,
+           updated   = excluded.updated",
     )
     .bind(&video.id)
     .bind(&video.prompt)
@@ -30,9 +30,9 @@ pub async fn save_video(app: &AppHandle, video: &GeneratedVideo) {
     .bind(&video.seconds)
     .bind(&video.path)
     .bind(&video.remote_id)
-    .bind(&video.note)
-    .bind(video.created_at)
-    .bind(video.updated_at)
+    .bind(&video.remark)
+    .bind(video.created)
+    .bind(video.updated)
     .execute(&p)
     .await;
 }
@@ -48,8 +48,8 @@ pub async fn delete_video(app: &AppHandle, id: &str) {
 pub async fn load_all_videos(app: &AppHandle) -> Vec<GeneratedVideo> {
     let p = pool(app);
     sqlx::query(
-        "SELECT id, prompt, model, size, seconds, path, remote_id, note, created_at, updated_at
-         FROM videos ORDER BY created_at DESC",
+        "SELECT id, prompt, model, size, seconds, path, remote_id, remark, created, updated
+         FROM videos ORDER BY created DESC",
     )
     .fetch_all(&p)
     .await
@@ -63,9 +63,9 @@ pub async fn load_all_videos(app: &AppHandle) -> Vec<GeneratedVideo> {
         seconds: r.get("seconds"),
         path: r.get("path"),
         remote_id: r.get("remote_id"),
-        note: r.get("note"),
-        created_at: r.get("created_at"),
-        updated_at: r.get("updated_at"),
+        remark: r.get("remark"),
+        created: r.get("created"),
+        updated: r.get("updated"),
     })
     .collect()
 }

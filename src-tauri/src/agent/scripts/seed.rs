@@ -5,9 +5,9 @@ use super::types::{Skill, SkillSource};
 
 /// 内置技能的 .md 内容，编译期嵌入。
 const BUNDLED: &[(&str, &str)] = &[
-    ("content-publish", include_str!("../../../../skills/content-publish.md")),
-    ("image-brief", include_str!("../../../../skills/image-brief.md")),
-    ("skill-creator", include_str!("../../../../skills/skill-creator.md")),
+    ("content-publish", include_str!("../../../../scripts/skills/content-publish.md")),
+    ("image-brief", include_str!("../../../../scripts/skills/image-brief.md")),
+    ("skill-creator", include_str!("../../../../scripts/skills/skill-creator.md")),
 ];
 
 /// 首次启动时写出内置 .md 文件并入库；已存在则跳过。

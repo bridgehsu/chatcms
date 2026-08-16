@@ -46,8 +46,8 @@ pub struct ScheduleProject {
     pub enabled: bool,
     #[serde(default)]
     pub workflow: WorkflowGraph,
-    pub updated_at: i64,
-    pub created_at: i64,
+    pub updated: i64,
+    pub created: i64,
 }
 
 fn default_true() -> bool {
@@ -82,7 +82,7 @@ fn default_workflow() -> WorkflowGraph {
 
 pub fn list(app: &AppHandle) -> Vec<ScheduleProject> {
     let mut list = crate::persist::load_schedule_projects(app);
-    list.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    list.sort_by(|a, b| b.updated.cmp(&a.updated));
     list
 }
 
@@ -116,8 +116,8 @@ pub fn add(
         description: description.trim().to_string(),
         enabled,
         workflow: default_workflow(),
-        updated_at: ts,
-        created_at: ts,
+        updated: ts,
+        created: ts,
     };
     list.push(project.clone());
     crate::persist::save_schedule_projects(app, &list);
@@ -148,7 +148,7 @@ pub fn update_meta(
     project.name = name;
     project.description = description.trim().to_string();
     project.enabled = enabled;
-    project.updated_at = now_ms();
+    project.updated = now_ms();
     let out = project.clone();
     crate::persist::save_schedule_projects(app, &list);
     Ok(out)
@@ -165,7 +165,7 @@ pub fn save_workflow(
         .find(|p| p.id == id)
         .ok_or_else(|| "项目不存在".to_string())?;
     project.workflow = workflow;
-    project.updated_at = now_ms();
+    project.updated = now_ms();
     let out = project.clone();
     crate::persist::save_schedule_projects(app, &list);
     Ok(out)

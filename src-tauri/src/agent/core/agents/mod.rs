@@ -39,8 +39,8 @@ pub struct AgentProfile {
     /// 独立工作目录，新增时自动创建，路径基于 code
     #[serde(default)]
     pub workspace_dir: Option<String>,
-    pub created_at: i64,
-    pub updated_at: i64,
+    pub created: i64,
+    pub updated: i64,
 }
 
 fn default_true() -> bool {
@@ -115,8 +115,8 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             allow_as_subagent: true,
             permission_overrides: std::collections::HashMap::new(),
             workspace_dir: None,
-            created_at: ts,
-            updated_at: ts,
+            created: ts,
+            updated: ts,
         },
         AgentProfile {
             id: "agent-writer".into(),
@@ -132,8 +132,8 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             allow_as_subagent: true,
             permission_overrides: std::collections::HashMap::new(),
             workspace_dir: None,
-            created_at: ts,
-            updated_at: ts,
+            created: ts,
+            updated: ts,
         },
         AgentProfile {
             id: "agent-researcher".into(),
@@ -149,8 +149,8 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             allow_as_subagent: true,
             permission_overrides: std::collections::HashMap::new(),
             workspace_dir: None,
-            created_at: ts,
-            updated_at: ts,
+            created: ts,
+            updated: ts,
         },
     ]
 }
@@ -178,7 +178,7 @@ pub fn list(app: &AppHandle) -> Vec<AgentProfile> {
         b.is_default
             .cmp(&a.is_default)
             .then(b.enabled.cmp(&a.enabled))
-            .then(b.updated_at.cmp(&a.updated_at))
+            .then(b.updated.cmp(&a.updated))
             .then(a.name.cmp(&b.name))
     });
     list
@@ -241,8 +241,8 @@ pub fn add(
         allow_as_subagent,
         permission_overrides,
         workspace_dir: Some(workspace_dir),
-        created_at: ts,
-        updated_at: ts,
+        created: ts,
+        updated: ts,
     };
     list.push(profile.clone());
     crate::persist::save_agent_profiles(app, &list);
@@ -287,7 +287,7 @@ pub fn update(
     profile.allow_as_subagent = allow_as_subagent;
     profile.permission_overrides = permission_overrides;
     // workspace_dir 和 code 不允许修改，保留原值
-    profile.updated_at = now_ms();
+    profile.updated = now_ms();
 
     if !profile.enabled && profile.is_default {
         profile.is_default = false;
@@ -315,7 +315,7 @@ pub fn activate(app: &AppHandle, id: String) -> Result<AgentProfile, String> {
         a.is_default = a.id == id;
         if a.is_default {
             a.enabled = true;
-            a.updated_at = now_ms();
+            a.updated = now_ms();
         }
     }
     crate::persist::save_agent_profiles(app, &list);

@@ -5,7 +5,7 @@ pub mod mcp;
 pub mod memory;
 pub mod permission;
 pub mod provider;
-pub mod skills;
+pub mod scripts;
 pub mod tools;
 
 pub use core::agents;
