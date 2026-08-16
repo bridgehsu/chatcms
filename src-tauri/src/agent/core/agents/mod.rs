@@ -3,12 +3,15 @@
 pub mod commands;
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentProfile {
     pub id: String,
+    /// 可读编号，如 AGT-001，新增时自动生成
+    #[serde(default)]
+    pub code: String,
     /// 短 id / slug（spawn_agent 可引用）
     pub slug: String,
     pub name: String,
@@ -33,7 +36,7 @@ pub struct AgentProfile {
     /// 域策略覆盖（domain id → allow|ask|deny）
     #[serde(default)]
     pub permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
-    /// 独立工作目录：read_file / write_file 受限于此路径，bash 以此为 cwd。None = 不限制。
+    /// 独立工作目录，新增时自动创建，路径基于 code
     #[serde(default)]
     pub workspace_dir: Option<String>,
     pub created_at: i64,
@@ -66,11 +69,41 @@ fn validate_slug(slug: &str) -> Result<String, String> {
     Ok(slug)
 }
 
+/// 从现有列表中推算下一个 code，格式 AGT-001
+fn next_code(list: &[AgentProfile]) -> String {
+    let max = list
+        .iter()
+        .filter_map(|a| {
+            a.code
+                .strip_prefix("AGT-")
+                .and_then(|n| n.parse::<u32>().ok())
+        })
+        .max()
+        .unwrap_or(0);
+    format!("AGT-{:03}", max + 1)
+}
+
+/// 创建 workspace 目录树，返回根路径字符串
+fn create_workspace(app: &AppHandle, code: &str) -> Result<String, String> {
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("workspaces")
+        .join(code);
+    for sub in &["input", "output", "tmp", "memory", "logs"] {
+        std::fs::create_dir_all(base.join(sub))
+            .map_err(|e| format!("创建 workspace/{sub} 失败: {e}"))?;
+    }
+    Ok(base.to_string_lossy().to_string())
+}
+
 pub fn bundled_agents() -> Vec<AgentProfile> {
     let ts = now_ms();
     vec![
         AgentProfile {
             id: "agent-main".into(),
+            code: "AGT-001".into(),
             slug: "main".into(),
             name: "默认助手".into(),
             description: "通用主代理，负责日常对话与工具编排。".into(),
@@ -87,6 +120,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
         },
         AgentProfile {
             id: "agent-writer".into(),
+            code: "AGT-002".into(),
             slug: "writer".into(),
             name: "内容写手".into(),
             description: "专注多平台文案、标题与发布结构。".into(),
@@ -103,6 +137,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
         },
         AgentProfile {
             id: "agent-researcher".into(),
+            code: "AGT-003".into(),
             slug: "researcher".into(),
             name: "调研助手".into(),
             description: "拆解问题、检索资料并给出结构化结论。".into(),
@@ -175,7 +210,6 @@ pub fn add(
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
     permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
-    workspace_dir: Option<String>,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -188,10 +222,14 @@ pub fn add(
         return Err(format!("已存在同 ID 代理「{slug}」"));
     }
 
+    let code = next_code(&list);
+    let workspace_dir = create_workspace(app, &code)?;
+
     let ts = now_ms();
     let make_default = !list.iter().any(|a| a.is_default);
     let profile = AgentProfile {
         id: Uuid::new_v4().to_string(),
+        code,
         slug,
         name,
         description: description.trim().to_string(),
@@ -202,7 +240,7 @@ pub fn add(
         skills,
         allow_as_subagent,
         permission_overrides,
-        workspace_dir: workspace_dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
+        workspace_dir: Some(workspace_dir),
         created_at: ts,
         updated_at: ts,
     };
@@ -223,7 +261,6 @@ pub fn update(
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
     permission_overrides: std::collections::HashMap<String, crate::permission::DomainPolicy>,
-    workspace_dir: Option<String>,
 ) -> Result<AgentProfile, String> {
     let slug = validate_slug(&slug)?;
     let name = name.trim().to_string();
@@ -249,7 +286,7 @@ pub fn update(
     profile.skills = skills;
     profile.allow_as_subagent = allow_as_subagent;
     profile.permission_overrides = permission_overrides;
-    profile.workspace_dir = workspace_dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    // workspace_dir 和 code 不允许修改，保留原值
     profile.updated_at = now_ms();
 
     if !profile.enabled && profile.is_default {

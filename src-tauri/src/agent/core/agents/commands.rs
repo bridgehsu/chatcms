@@ -28,7 +28,6 @@ pub fn agent_add(
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
     permission_overrides: Option<HashMap<String, DomainPolicy>>,
-    workspace_dir: Option<String>,
 ) -> Result<AgentProfile, String> {
     let profile = super::add(
         &app,
@@ -41,7 +40,6 @@ pub fn agent_add(
         skills,
         allow_as_subagent,
         permission_overrides.unwrap_or_default(),
-        workspace_dir,
     )?;
     sync_state(&app, &state);
     Ok(profile)
@@ -61,7 +59,6 @@ pub fn agent_update(
     skills: Option<Vec<String>>,
     allow_as_subagent: bool,
     permission_overrides: Option<HashMap<String, DomainPolicy>>,
-    workspace_dir: Option<String>,
 ) -> Result<AgentProfile, String> {
     let profile = super::update(
         &app,
@@ -75,7 +72,6 @@ pub fn agent_update(
         skills,
         allow_as_subagent,
         permission_overrides.unwrap_or_default(),
-        workspace_dir,
     )?;
     sync_state(&app, &state);
     Ok(profile)

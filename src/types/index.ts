@@ -415,6 +415,7 @@ export interface Skill {
 
 export interface AgentProfile {
   id: string;
+  code: string;
   slug: string;
   name: string;
   description: string;
@@ -427,6 +428,7 @@ export interface AgentProfile {
   allow_as_subagent: boolean;
   /** 域 id → 策略；空对象 = 继承全局 */
   permission_overrides: Record<string, DomainPolicy>;
+  workspace_dir: string | null;
   created_at: number;
   updated_at: number;
 }
