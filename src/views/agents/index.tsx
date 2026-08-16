@@ -213,6 +213,7 @@ export const AgentsPage = () => {
                 name: 'workspace_dir',
                 label: 'Workspace 路径',
                 type: 'input',
+                hide: [true, true, false],
                 renderFormItem: (form: any) => {
                     const dir = form.getFieldValue('workspace_dir');
                     return (
@@ -242,7 +243,8 @@ export const AgentsPage = () => {
                     name: editor.name ?? (col.dataIndex as string),
                     label: editor.label ?? (col.title as string),
                 };
-            }),
+            })
+            .filter(f => !f.hide?.[2]),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [skillOptions],
     );

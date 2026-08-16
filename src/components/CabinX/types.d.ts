@@ -32,6 +32,8 @@ export interface FormField {
   unCheckedChildren?: React.ReactNode;
   order?: number; // 排序属性，用于 search 和 editor 对象内
   rows?: number; // textarea 行数，默认为 6
+  /** 按模式隐藏：[新增, 编辑, 查看]，如 [true,true,false] 表示新增/编辑时隐藏、查看时显示 */
+  hide?: [boolean, boolean, boolean];
 }
 
 // CabinX 编辑器（Drawer/Tmodal）组件的 props 类型（独立导出）

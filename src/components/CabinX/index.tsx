@@ -495,7 +495,11 @@ const CabinX: React.FC<CabinXProps> = ({
     ]);
 
     const resolvedEditorFormFields = useMemo(() => {
-        return filterEditorFields ? filterEditorFields(editorFormFields, currentItem) : editorFormFields;
+        const isAdd = currentItem === null;
+        const base = editorFormFields.filter(f =>
+            isAdd ? !f.hide?.[0] : !f.hide?.[1]
+        );
+        return filterEditorFields ? filterEditorFields(base, currentItem) : base;
     }, [editorFormFields, filterEditorFields, currentItem]);
 
     return (
