@@ -46,6 +46,7 @@ export interface DformProps {
   form: any;
   type?: 'D' | 'M';
   width?: number; // 自定义宽度，默认500px
+  readOnly?: boolean; // 只读模式：禁用所有字段，隐藏提交按钮
 }
 
 export interface CabinXColumn<T = any> extends ColumnType<T> {

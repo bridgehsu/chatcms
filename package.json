@@ -14,10 +14,12 @@
     "package:win:ps": "powershell -ExecutionPolicy Bypass -File bin/package-windows.ps1"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.2",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-store": "^2.4.4",
     "@xyflow/react": "^12.11.2",
+    "antd": "^6.6.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

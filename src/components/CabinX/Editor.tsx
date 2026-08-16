@@ -119,13 +119,12 @@ const Editor: React.FC<DformProps> = ({
                                           formFields,
                                           loading,
                                           form,
-                                          type = 'D', // 默认为 Drawer
-                                          width = 500 // 默认宽度 500px
+                                          type = 'D',
+                                          width = 500,
+                                          readOnly = false,
                                       }) => {
-    // 添加表单验证失败处理
     const handleFinishFailed = (errorInfo: any) => {
         console.log('表单校验失败:', errorInfo);
-        // 检查是否有roleIds字段的错误
         const roleIdsError = errorInfo.errorFields.find((field: any) => field.name.includes('roleIds'));
         if (roleIdsError) {
             console.log('roleIds字段验证错误:', roleIdsError.errors);
@@ -139,19 +138,18 @@ const Editor: React.FC<DformProps> = ({
             onFinish={onSubmit}
             onFinishFailed={handleFinishFailed}
             autoComplete="off"
+            disabled={readOnly}
         >
             {formFields.map((field) => renderFormField(field, form))}
         </Form>
     );
 
-    // 提交按钮
-    const submitButton = (
+    const submitButton = !readOnly && (
         <Button type="primary" onClick={form.submit} loading={loading}>
             提交
         </Button>
     );
 
-    // 根据类型渲染不同的容器
     if (type === 'D') {
         return (
             <Drawer title={title} onClose={onClose} open={open} extra={submitButton} width={width} closable={false}>
@@ -160,14 +158,16 @@ const Editor: React.FC<DformProps> = ({
         );
     } else {
         return (
-            <Modal title={title} open={open} onCancel={onClose} closable={false}
-                   footer={[
-                       <Button key="cancel" onClick={onClose}>
-                           取消
-                       </Button>,
-                       submitButton
-                   ]}
-                   width={width} // 使用自定义宽度
+            <Modal
+                title={title}
+                open={open}
+                onCancel={onClose}
+                closable={false}
+                footer={readOnly
+                    ? [<Button key="close" onClick={onClose}>关闭</Button>]
+                    : [<Button key="cancel" onClick={onClose}>取消</Button>, submitButton]
+                }
+                width={width}
             >
                 {formContent}
             </Modal>

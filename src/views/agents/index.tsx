@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Col, Form, InputNumber, Row, Switch } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
-import Dform from './components/DForm';
 import { invoke } from '@/hooks/useTauri';
 import type { AgentProfile, Skill } from '@/types';
-import CabinX, { type CabinXColumn } from '@/components/CabinX';
+import CabinX, { type CabinXColumn, type FormField } from '@/components/CabinX';
+import Editor from '@/components/CabinX/Editor';
 import { formatTime } from '@/utils/time';
 import SkillsField, { type SkillsConfig } from './components/SkillsField';
 import PermField from './components/PermField';
@@ -13,7 +13,9 @@ import PermField from './components/PermField';
 export const AgentsPage = () => {
     const [skillOptions, setSkillOptions] = useState<Skill[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
-    const [viewRecord, setViewRecord] = useState<AgentProfile | null>(null);
+    const [viewForm] = Form.useForm();
+    const [viewOpen, setViewOpen] = useState(false);
+    const [viewTitle, setViewTitle] = useState('');
 
     useEffect(() => {
         void invoke<Skill[]>('skill_list').then(setSkillOptions).catch(console.error);
@@ -215,7 +217,7 @@ export const AgentsPage = () => {
                     const dir = form.getFieldValue('workspace_dir');
                     return (
                         <span style={{fontSize: 12, color: '#888', wordBreak: 'break-all'}}>
-                            {dir || '新增后自动生成'}
+                            {dir || '未生成'}
                         </span>
                     );
                 },
@@ -229,6 +231,28 @@ export const AgentsPage = () => {
         },
     ];
 
+    // 从 columns 中提取编辑器字段，供只读查看 Drawer 复用
+    const editorFormFields = useMemo<FormField[]>(() =>
+        columns
+            .filter(col => col.editor && typeof col.editor === 'object')
+            .map(col => {
+                const editor = col.editor as FormField;
+                return {
+                    ...editor,
+                    name: editor.name ?? (col.dataIndex as string),
+                    label: editor.label ?? (col.title as string),
+                };
+            }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [skillOptions],
+    );
+
+    const handleView = (record: AgentProfile) => {
+        setViewTitle(record.name);
+        viewForm.setFieldsValue(formatRecordForEdit(record));
+        setViewOpen(true);
+    };
+
     return (
         <div className="page page-scroll">
             <CabinX
@@ -241,12 +265,24 @@ export const AgentsPage = () => {
                 formType="D"
                 editorWidth={650}
                 actionBtnComponents={(record: AgentProfile) => (
-                    <Button type="link" icon={<EyeOutlined/>} onClick={() => setViewRecord(record)}>
+                    <Button type="link" icon={<EyeOutlined/>} onClick={() => handleView(record)}>
                         查看
                     </Button>
                 )}
             />
-            <Dform record={viewRecord} onClose={() => setViewRecord(null)} />
+
+            <Editor
+                title={viewTitle}
+                open={viewOpen}
+                onClose={() => setViewOpen(false)}
+                onSubmit={async () => {}}
+                formFields={editorFormFields}
+                loading={false}
+                form={viewForm}
+                type="D"
+                width={650}
+                readOnly
+            />
         </div>
     );
 };
