@@ -101,16 +101,15 @@ src-tauri/src/
 ├── db.rs                # SQLite 连接池；include_str! 加载 scripts/database/schema.sql
 │
 ├── agent/               # Agent 运行时（单一职责拆分）
-│   ├── mod.rs           # 再导出：AgentState / send_message / commands / …
+│   ├── mod.rs           # 再导出：AgentState / send_message / …
 │   ├── core/            # 核心会话循环
 │   │   ├── mod.rs       # 再导出 core 内各项
-│   │   ├── state.rs     # AgentState（含 session_grants / skills / agents）
-│   │   ├── chat.rs      # 主会话 + agent loop，组装 system prompt
+│   │   ├── state.rs     # AgentState（含 session_grants / skills / agents / sessions）
+│   │   ├── chat.rs      # 主会话 + agent loop，组装 system prompt；workspace 从 session 读
 │   │   ├── dispatch.rs  # 工具路由前 authorize（spawn / MCP / 内置）
-│   │   ├── subagent.rs  # 子 agent loop
+│   │   ├── subagent.rs  # 子 agent loop（workspace 直接取 AgentProfile.workspace_dir）
 │   │   ├── permission.rs# 权限请求弹窗与 resolve（含 remember）
-│   │   ├── turns.rs     # turn 组装、tool 事件 emit
-│   │   └── commands.rs  # chat_send / session_* Tauri commands
+│   │   └── turns.rs     # tool 事件 emit（emit_tool_call / emit_tool_result）
 │   ├── mcp/             # MCP stdio 子进程管理
 │   │   ├── mod.rs
 │   │   ├── manager.rs   # McpManager：connect / disconnect / reconnect
@@ -118,8 +117,6 @@ src-tauri/src/
 │   │   ├── config.rs    # McpServerConfig
 │   │   ├── types.rs
 │   │   └── commands.rs  # mcp_* Tauri commands
-│   ├── memory/          # Session / Message 读写（SQLite via persist）
-│   │   └── mod.rs
 │   ├── permission/      # 权限内核
 │   │   ├── mod.rs       # 再导出
 │   │   ├── types.rs     # PermissionMode / DomainPolicy / Decision
@@ -148,6 +145,11 @@ src-tauri/src/
 │       ├── write_file.rs
 │       └── spawn_agent.rs
 │
+├── chat/                # 智能会话（标准四层：mod/repository/service/commands）
+│   ├── mod.rs           # Session / Message / Role 类型；Session.workspace_dir 创建时锁定
+│   ├── repository.rs    # SQLite sessions + messages 读写
+│   ├── service.rs       # ensure_session（锁定 workspace）/ push_user_message / save_snapshot / list / get / delete / rename / pin
+│   └── commands.rs      # chat_send + session_* Tauri commands
 ├── accounts/            # 多平台账号 CRUD + 主密码保险柜
 │   ├── mod.rs
 │   ├── vault.rs         # Argon2id + AES-256-GCM
@@ -190,9 +192,8 @@ src-tauri/src/
 ├── mpt/                 # MoneyPrinterTurbo 客户端
 │   ├── mod.rs
 │   └── commands.rs      # mpt_* Tauri commands
-├── persist/             # 持久化层（SQLite + tauri-plugin-store）
+├── persist/             # 持久化层（SQLite + tauri-plugin-store）；有独立 repository 的域不在此处
 │   ├── mod.rs           # 统一导出所有 save_* / load_* / delete_*
-│   ├── sessions.rs      # SQLite
 │   ├── knowledge.rs     # SQLite
 │   ├── permission.rs    # SQLite（审计日志）
 │   ├── skills.rs        # SQLite（skill_pkg 表）
@@ -223,13 +224,25 @@ src-tauri/src/
 ## 关键数据流
 
 ```text
-ChatWindow → 权限下拉 set_active → PermissionConfig.active_mode_id
-ChatWindow → invoke chat_send
-  → agent::core::send_message (chat.rs)
-  → provider::stream_chat (+ tools schema)
-  → dispatch authorize（当前模式 domains）→ ask → emit permission-request
-  → emit stream-chunk / tool-call / tool-result
+ChatWindow（前端已选 agent） → invoke chat_send { agent_id, session_id?, content }
+  → chat::commands::chat_send
+  → agent::core::chat::send_message
+      → chat::service::ensure_session   # 新建时从 AgentProfile 锁定 workspace_dir 写入 session
+      → chat::service::push_user_message
+      → build_system_prompt（persona + knowledge + skills）
+      → run_agent_loop
+          → provider::stream_chat → emit stream-chunk
+          → [tool] dispatch_tool(session.workspace_dir)
+              → 权限裁决 → ask → emit permission-request
+              → spawn_agent / MCP / 内置工具（bash/read_file/write_file）
+                  └─ check_workspace(session.workspace_dir, path)  # 文件操作沙箱
+          → emit tool-call / tool-result
   → store/chat.ts → UI
+
+workspace 绑定规则：
+  每个 Agent 有且仅有一个 workspace（~/…/workspaces/<slug>/）
+  会话创建时从 AgentProfile.workspace_dir 快照写入 Session.workspace_dir
+  整个会话生命周期内路径不变，切换 Agent 不影响历史会话的 workspace
 ```
 
 工具分流见 `agent/core/dispatch.rs`；原理文档：`doc/how-it-works.md`。
