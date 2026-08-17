@@ -10,7 +10,7 @@ use crate::channels::ChannelState;
 use crate::config::AppConfig;
 use crate::kbase::KnowledgeEntry;
 use crate::mcp::McpManager;
-use crate::memory::Session;
+use crate::chat::Session;
 use crate::permission::{RememberScope, SessionGrantStore};
 use crate::scripts::Skill;
 

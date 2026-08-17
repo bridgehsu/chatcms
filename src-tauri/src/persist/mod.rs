@@ -3,7 +3,6 @@ use std::sync::Arc;
 use tauri::AppHandle;
 use tauri_plugin_store::{Store, StoreBuilder};
 
-mod sessions;
 mod config;
 mod mcp;
 mod knowledge;
@@ -26,9 +25,6 @@ const STORE_FILE: &str = "chatcms.json";
 pub(super) fn open(app: &AppHandle) -> Option<Arc<Store<tauri::Wry>>> {
     StoreBuilder::new(app, STORE_FILE).build().ok()
 }
-
-// Sessions (SQLite)
-pub use sessions::{save_session, delete_session, load_all_sessions};
 
 // Knowledge (SQLite)
 pub use knowledge::{

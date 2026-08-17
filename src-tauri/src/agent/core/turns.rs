@@ -1,6 +1,6 @@
-//! Agent 回合辅助：推送 UI 事件、工具展示文案、持久化会话快照。
+//! Agent 回合辅助：推送 UI 事件、工具展示文案。
 
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter};
 
 use crate::tools;
 
@@ -41,16 +41,4 @@ pub fn emit_tool_result(app: &AppHandle, session_id: &str, result: &tools::ToolR
             is_error: result.is_error,
         },
     );
-}
-
-/// 内存会话变更后写入 SQLite（仅保存指定会话）。
-pub async fn save_sessions_snapshot(
-    app: &AppHandle,
-    state: &State<'_, super::state::AgentState>,
-    sid: &str,
-) {
-    let session = state.sessions.lock().unwrap().get(sid).cloned();
-    if let Some(s) = session {
-        crate::persist::save_session(app, &s).await;
-    }
 }

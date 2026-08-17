@@ -1,7 +1,7 @@
 mod agent;
 mod agents;
+mod chat;
 pub use agent::mcp;
-pub use agent::memory;
 pub use agent::permission;
 pub use agent::provider;
 pub use agent::scripts;
@@ -55,7 +55,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         persist::save_config(&handle, &config);
         *state.config.lock().unwrap() = config;
     }
-    *state.sessions.lock().unwrap() = rt.block_on(persist::load_all_sessions(&handle));
+    *state.sessions.lock().unwrap() = rt.block_on(chat::repository::load_all(&handle));
     *state.knowledge.lock().unwrap() = rt.block_on(persist::load_all_knowledge(&handle));
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = rt.block_on(agents::service::ensure_seeded(&handle));
@@ -93,13 +93,13 @@ pub fn run() {
         .manage(PublishBridge::new())
         .manage(accounts::vault::VaultState::new())
         .invoke_handler(tauri::generate_handler![
-            // agent / session
-            agent::commands::chat_send,
-            agent::commands::session_list,
-            agent::commands::session_get,
-            agent::commands::session_delete,
-            agent::commands::session_rename,
-            agent::commands::session_pin,
+            // chat / session
+            chat::commands::chat_send,
+            chat::commands::session_list,
+            chat::commands::session_get,
+            chat::commands::session_delete,
+            chat::commands::session_rename,
+            chat::commands::session_pin,
             // config / provider
             config::commands::config_get,
             config::commands::config_set,

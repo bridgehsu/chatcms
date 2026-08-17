@@ -473,7 +473,7 @@ async fn route_to_agent(
 
 fn get_last_reply(app: &AppHandle, session_id: &str) -> Option<String> {
     use crate::agent::AgentState;
-    use crate::memory::Role;
+    use crate::chat::Role;
     use tauri::Manager;
 
     let state = app.state::<AgentState>();

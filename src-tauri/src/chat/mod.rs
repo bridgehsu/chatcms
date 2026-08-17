@@ -1,3 +1,7 @@
+pub mod commands;
+pub mod repository;
+pub mod service;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -33,10 +37,7 @@ pub enum Role {
 
 impl Session {
     pub fn new(title: impl Into<String>) -> Self {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let now = now_secs();
         Self {
             id: Uuid::new_v4().to_string(),
             title: title.into(),
@@ -55,10 +56,7 @@ impl Session {
     }
 
     pub fn push(&mut self, role: Role, content: impl Into<String>) {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let now = now_secs();
         self.messages.push(Message {
             id: Uuid::new_v4().to_string(),
             role,
@@ -67,4 +65,11 @@ impl Session {
         });
         self.updated = now;
     }
+}
+
+pub(super) fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
 }

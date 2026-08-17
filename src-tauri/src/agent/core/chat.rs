@@ -4,16 +4,16 @@ use anyhow::Result;
 use serde_json::Value;
 use tauri::{AppHandle, State};
 
+use crate::chat::{Role, Session};
 use crate::config::{AppConfig, ProviderKind};
 use crate::kbase as knowledge;
-use crate::memory::{Role, Session};
 use crate::provider::{self, ProviderOutput};
 use crate::scripts;
 use crate::tools;
 
 use super::dispatch::dispatch_tool;
 use super::state::AgentState;
-use super::turns::{emit_tool_call, emit_tool_result, save_sessions_snapshot, tool_display};
+use super::turns::{emit_tool_call, emit_tool_result, tool_display};
 
 /// 主聊天入口：准备上下文 → Agent Loop → 返回 session_id。
 pub async fn send_message(
@@ -24,10 +24,9 @@ pub async fn send_message(
     content: String,
 ) -> Result<String> {
     let config = state.config.lock().unwrap().clone();
-    let sid = ensure_session(&app, &state, session_id, agent_id.clone()).await;
-    push_user_message(&app, &state, &sid, &content).await;
+    let sid = crate::chat::service::ensure_session(&app, &state, session_id, agent_id.clone()).await;
+    crate::chat::service::push_user_message(&app, &state, &sid, &content).await;
 
-    // 优先用 session 绑定的 agent，否则按 agent_id 参数找，最后 fallback 到默认
     let resolved_agent_id = agent_id.or_else(|| {
         state.sessions.lock().unwrap().get(&sid).and_then(|s| s.agent_id.clone())
     });
@@ -100,11 +99,7 @@ fn knowledge_block(state: &State<'_, AgentState>, content: &str) -> Option<Strin
     let entries = state.knowledge.lock().unwrap().clone();
     let relevant = knowledge::search(&entries, content, 3);
     let memory = knowledge::format_for_prompt(&relevant);
-    if memory.is_empty() {
-        None
-    } else {
-        Some(memory)
-    }
+    if memory.is_empty() { None } else { Some(memory) }
 }
 
 fn skills_block(
@@ -115,19 +110,12 @@ fn skills_block(
     let skill_list = state.skills.lock().unwrap().clone();
     let allowlist = active_agent.and_then(|a| a.skills.as_ref().map(|v| v.as_slice()));
     let skill_prompt = scripts::format_for_prompt(&skill_list, content, allowlist);
-    if skill_prompt.is_empty() {
-        None
-    } else {
-        Some(skill_prompt)
-    }
+    if skill_prompt.is_empty() { None } else { Some(skill_prompt) }
 }
 
 fn build_api_messages(state: &State<'_, AgentState>, sid: &str, config: &AppConfig) -> Vec<Value> {
     let sessions = state.sessions.lock().unwrap();
-    let msgs = sessions
-        .get(sid)
-        .map(|s| s.messages.as_slice())
-        .unwrap_or(&[]);
+    let msgs = sessions.get(sid).map(|s| s.messages.as_slice()).unwrap_or(&[]);
     match config.provider.kind {
         ProviderKind::Anthropic => provider::messages_to_anthropic(msgs),
         ProviderKind::OpenAI => provider::messages_to_openai(msgs),
@@ -169,16 +157,7 @@ async fn run_agent_loop(
             break;
         }
 
-        append_tool_turn(
-            app,
-            state,
-            &config.provider.kind,
-            sid,
-            api_messages,
-            &output,
-            workspace_dir,
-        )
-        .await;
+        append_tool_turn(app, state, &config.provider.kind, sid, api_messages, &output, workspace_dir).await;
     }
     Ok(())
 }
@@ -201,7 +180,7 @@ async fn finalize_assistant_turn(
             }
         }
     }
-    save_sessions_snapshot(app, state, sid).await;
+    crate::chat::service::save_snapshot(app, &state, sid).await;
 }
 
 async fn append_tool_turn(
@@ -238,50 +217,7 @@ async fn execute_one_tool(
             session.push(Role::Tool, &display);
         }
     }
-    save_sessions_snapshot(app, state, sid).await;
+    crate::chat::service::save_snapshot(app, &state, sid).await;
 
     result
-}
-
-// ── 会话辅助 ──────────────────────────────────────────────────────────────────
-
-async fn ensure_session(
-    app: &AppHandle,
-    state: &State<'_, AgentState>,
-    session_id: Option<String>,
-    agent_id: Option<String>,
-) -> String {
-    let (sid, new_session) = {
-        let mut sessions = state.sessions.lock().unwrap();
-        if let Some(id) = session_id {
-            if sessions.contains_key(&id) {
-                return id;
-            }
-        }
-        let s = match agent_id {
-            Some(aid) => Session::new_with_agent("New Chat", aid),
-            None => Session::new("New Chat"),
-        };
-        let sid = s.id.clone();
-        let clone = s.clone();
-        sessions.insert(sid.clone(), s);
-        (sid, clone)
-    };
-    crate::persist::save_session(app, &new_session).await;
-    sid
-}
-
-async fn push_user_message(
-    app: &AppHandle,
-    state: &State<'_, AgentState>,
-    sid: &str,
-    content: &str,
-) {
-    {
-        let mut sessions = state.sessions.lock().unwrap();
-        if let Some(session) = sessions.get_mut(sid) {
-            session.push(Role::User, content);
-        }
-    }
-    save_sessions_snapshot(app, state, sid).await;
 }

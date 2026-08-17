@@ -15,7 +15,7 @@ use tauri::{Emitter, Listener, Manager};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::agent::{send_message, AgentState};
-use crate::memory::Session;
+use crate::chat::Session;
 use crate::persist;
 use crate::provider::StreamChunk;
 use crate::publish::PublishBridge;
@@ -297,7 +297,7 @@ async fn delete_session(
             return (StatusCode::NOT_FOUND, "会话不存在").into_response();
         }
     }
-    persist::delete_session(&app, &id).await;
+    crate::chat::repository::delete(&app, &id).await;
     bridge.clear_bindings_for_session(&id);
     let map = bridge.page_bindings_snapshot();
     persist::save_page_bindings(&app, &map);
@@ -333,7 +333,7 @@ async fn rename_session(
             .unwrap_or(0);
         session.clone()
     };
-    persist::save_session(&app, &session).await;
+    crate::chat::repository::save(&app, &session).await;
     let _ = app.emit(
         "sessions-changed",
         json!({ "source": "extension", "session_id": id }),
@@ -358,7 +358,7 @@ async fn pin_session(
         session.pinned = body.pinned;
         session.clone()
     };
-    persist::save_session(&app, &session).await;
+    crate::chat::repository::save(&app, &session).await;
     let _ = app.emit(
         "sessions-changed",
         json!({ "source": "extension", "session_id": id }),
@@ -400,7 +400,7 @@ async fn ensure_session(
 
     let session = Session::new(title);
     let sid = session.id.clone();
-    persist::save_session(&app, &session).await;
+    crate::chat::repository::save(&app, &session).await;
     {
         let state = app.state::<AgentState>();
         let mut sessions = state.sessions.lock().unwrap();
@@ -437,7 +437,7 @@ async fn reset_session(
 
     let session = Session::new(title);
     let sid = session.id.clone();
-    persist::save_session(&app, &session).await;
+    crate::chat::repository::save(&app, &session).await;
     {
         let state = app.state::<AgentState>();
         let mut sessions = state.sessions.lock().unwrap();
@@ -508,7 +508,7 @@ async fn chat_send_sse(
         let title = "New Chat".to_string();
         let session = Session::new(title);
         let sid = session.id.clone();
-        persist::save_session(&app, &session).await;
+        crate::chat::repository::save(&app, &session).await;
         {
             let state = app.state::<AgentState>();
             let mut sessions = state.sessions.lock().unwrap();

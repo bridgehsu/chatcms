@@ -1,5 +1,4 @@
 pub mod chat;
-pub mod commands;
 pub mod dispatch;
 pub mod permission;
 pub mod state;

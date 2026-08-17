@@ -2,13 +2,11 @@
 
 pub mod core;
 pub mod mcp;
-pub mod memory;
 pub mod permission;
 pub mod provider;
 pub mod scripts;
 pub mod tools;
 
-pub use core::commands;
 pub use core::send_message;
 pub use core::resolve_permission;
 pub use core::AgentState;
