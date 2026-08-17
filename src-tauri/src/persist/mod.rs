@@ -17,7 +17,6 @@ mod nav;
 mod schedules;
 mod skills;
 mod permission;
-mod agents;
 mod business_map;
 mod bridge;
 mod crawler;
@@ -57,8 +56,6 @@ pub use accounts::*;
 pub use media_platforms::*;
 pub use nav::*;
 pub use schedules::*;
-// Agents (SQLite)
-pub use agents::{save_agent, delete_agent, load_all_agents};
 pub use business_map::*;
 pub use bridge::*;
 pub use crawler::*;
