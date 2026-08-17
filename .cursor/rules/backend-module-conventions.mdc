@@ -1,0 +1,71 @@
+---
+description: Rust 后端模块分层规范（repository / service / commands）；新增域模块时必须遵守
+alwaysApply: true
+---
+
+# 后端模块分层规范
+
+适用范围：`src-tauri/src/<domain>/` 下所有拥有持久化需求的域模块。
+
+## 标准四层结构
+
+```text
+src-tauri/src/<domain>/
+├── mod.rs          # 数据结构 + 纯辅助函数
+├── repository.rs   # 持久层：直接持有 SQL / store 读写
+├── service.rs      # 业务逻辑：调用 repository，执行校验、编排
+└── commands.rs     # Tauri 命令层：调用 service，同步内存 State
+```
+
+### mod.rs
+- 定义域数据结构（struct / enum）
+- 包含无副作用的纯辅助函数（验证、格式化、种子数据等）
+- **不**包含 IO、数据库操作、业务规则
+
+### repository.rs
+- **直接**持有 SQL 语句（sqlx query）或 store 读写逻辑
+- **不**通过 `crate::persist` 转发——persist 层是尚未拥有独立 repository 的模块的临时家
+- 若需读写 AppConfig（跨域共享配置），可委托给 `crate::persist::load_config / save_config`
+- 函数命名：`load_all`、`save`、`delete`、`load_config`、`save_config`
+
+### service.rs
+- 调用 `super::repository as repo` 进行数据读写
+- 持有业务规则：唯一性校验、状态机、级联操作等
+- 函数签名与 commands 层解耦（不依赖 Tauri State / AppHandle 以外的 Tauri 类型）
+
+### commands.rs
+- 每个函数加 `#[tauri::command]`
+- 仅做：调用 service → 同步内存 `State` → 返回结果
+- **不**包含业务逻辑，不直接调用 repository
+
+## 调用方向（单向，禁止反向）
+
+```
+commands  →  service  →  repository  →  SQLite / store
+```
+
+## 何时使用 persist/ 而非独立 repository
+
+| 场景 | 做法 |
+|------|------|
+| 域模块有独立 CRUD（list/add/update/remove） | 在域目录下建 `repository.rs`，SQL 写在此处 |
+| 简单键值、无 CRUD、无业务规则 | 继续使用 `crate::persist` |
+| 跨域共享配置（AppConfig） | repository 中委托 `crate::persist::load_config / save_config` |
+
+## 示例：agents 模块
+
+```text
+src/agents/
+├── mod.rs          # AgentProfile、bundled_agents、validate_slug、format_persona
+├── repository.rs   # INSERT / SELECT / DELETE agent 表；load/save AppConfig
+├── service.rs      # ensure_seeded、list、add、update、activate、remove
+└── commands.rs     # agent_list / agent_add / agent_update / agent_activate / agent_remove
+```
+
+调用链：
+
+```
+agent_add (commands)
+  → service::add          # 校验 slug 唯一、创建 workspace 目录、构造 AgentProfile
+    → repo::save          # INSERT OR REPLACE INTO agent ...
+```

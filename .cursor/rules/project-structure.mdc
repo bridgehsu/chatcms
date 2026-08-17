@@ -110,10 +110,7 @@ src-tauri/src/
 │   │   ├── subagent.rs  # 子 agent loop
 │   │   ├── permission.rs# 权限请求弹窗与 resolve（含 remember）
 │   │   ├── turns.rs     # turn 组装、tool 事件 emit
-│   │   ├── commands.rs  # chat_send / session_* Tauri commands
-│   │   └── agents/      # 多代理档案
-│   │       ├── mod.rs   # Agent 类型 / 默认代理 / ensure_seeded
-│   │       └── commands.rs # agent_* Tauri commands
+│   │   └── commands.rs  # chat_send / session_* Tauri commands
 │   ├── mcp/             # MCP stdio 子进程管理
 │   │   ├── mod.rs
 │   │   ├── manager.rs   # McpManager：connect / disconnect / reconnect
@@ -155,8 +152,11 @@ src-tauri/src/
 │   ├── mod.rs
 │   ├── vault.rs         # Argon2id + AES-256-GCM
 │   └── commands.rs      # account_* / vault_* commands
-├── agents/              # 代理档案（旧路径别名，实体在 agent/core/agents）
-│   └── commands.rs
+├── agents/              # 多代理档案（标准四层：mod/repository/service/commands）
+│   ├── mod.rs           # AgentProfile / bundled_agents / validate_slug / format_persona
+│   ├── repository.rs    # SQLite agent 表读写 + AppConfig 委托
+│   ├── service.rs       # ensure_seeded / list / add / update / activate / remove
+│   └── commands.rs      # agent_* Tauri commands
 ├── bmarks/              # 导航书签 CRUD
 │   ├── mod.rs
 │   └── commands.rs
@@ -206,7 +206,6 @@ src-tauri/src/
 │   ├── media_platforms.rs # store JSON
 │   ├── nav.rs           # store JSON
 │   ├── schedules.rs     # store JSON
-│   ├── agents.rs        # store JSON
 │   ├── business_map.rs  # store JSON
 │   ├── bridge.rs        # store JSON
 │   └── crawler.rs       # store JSON
