@@ -27,11 +27,15 @@ pub async fn send_message(
     let sid = crate::chat::service::ensure_session(&app, &state, session_id, agent_id.clone()).await;
     crate::chat::service::push_user_message(&app, &state, &sid, &content).await;
 
+    // workspace 从 session 创建时锁定的值读取，保证整个会话内路径不变
+    let workspace_dir = state.sessions.lock().unwrap()
+        .get(&sid)
+        .and_then(|s| s.workspace_dir.clone());
+
     let resolved_agent_id = agent_id.or_else(|| {
         state.sessions.lock().unwrap().get(&sid).and_then(|s| s.agent_id.clone())
     });
     let active_agent = resolve_active_agent(&state, resolved_agent_id.as_deref());
-    let workspace_dir = active_agent.as_ref().and_then(|a| a.workspace_dir.clone());
     let system_prompt = build_system_prompt(&state, &content, active_agent);
     let mut api_messages = build_api_messages(&state, &sid, &config);
 

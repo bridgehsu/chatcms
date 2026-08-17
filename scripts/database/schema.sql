@@ -3,16 +3,19 @@ PRAGMA foreign_keys = ON;
 
 -- Sessions
 CREATE TABLE IF NOT EXISTS sessions (
-    id         TEXT    PRIMARY KEY,                  -- 会话唯一标识（UUID）
-    title      TEXT    NOT NULL DEFAULT 'New Chat',  -- 会话标题
-    pinned     INTEGER NOT NULL DEFAULT 0,           -- 是否置顶（0=否 1=是）
-    agent_id   TEXT,                                 -- 绑定的代理 ID（可为空）
-    yn         INTEGER NOT NULL DEFAULT 0,           -- 软删除标志（0=正常 1=已删除）
-    create_by  TEXT    NOT NULL DEFAULT '',          -- 创建人
-    update_by  TEXT    NOT NULL DEFAULT '',          -- 修改人
-    created    INTEGER NOT NULL,                     -- 创建时间（Unix 毫秒）
-    updated    INTEGER NOT NULL                      -- 最近修改时间（Unix 毫秒）
+    id            TEXT    PRIMARY KEY,                  -- 会话唯一标识（UUID）
+    title         TEXT    NOT NULL DEFAULT 'New Chat',  -- 会话标题
+    pinned        INTEGER NOT NULL DEFAULT 0,           -- 是否置顶（0=否 1=是）
+    agent_id      TEXT,                                 -- 绑定的代理 ID（可为空）
+    workspace_dir TEXT,                                 -- 创建时锁定的 Agent workspace 路径
+    yn            INTEGER NOT NULL DEFAULT 0,           -- 软删除标志（0=正常 1=已删除）
+    create_by     TEXT    NOT NULL DEFAULT '',          -- 创建人
+    update_by     TEXT    NOT NULL DEFAULT '',          -- 修改人
+    created       INTEGER NOT NULL,                     -- 创建时间（Unix 毫秒）
+    updated       INTEGER NOT NULL                      -- 最近修改时间（Unix 毫秒）
 );
+-- 为已有数据库补列（幂等）
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS workspace_dir TEXT;
 
 -- Messages (belongs to session)
 CREATE TABLE IF NOT EXISTS messages (

@@ -9,10 +9,27 @@ use crate::permission::DomainPolicy;
 pub async fn ensure_seeded(app: &AppHandle) -> Vec<AgentProfile> {
     let mut list = repo::load_all(app).await;
     if list.is_empty() {
+        // 首次启动：写入内置 agent 并创建各自的 workspace
         list = bundled_agents();
-        for agent in &list {
+        for agent in list.iter_mut() {
+            if let Ok(ws) = create_workspace(app, &agent.slug) {
+                agent.workspace_dir = Some(ws);
+            }
             repo::save(app, agent).await;
         }
+    } else {
+        // 迁移：为存量 workspace_dir 为空的 agent 补建目录
+        let mut changed = false;
+        for agent in list.iter_mut() {
+            if agent.workspace_dir.is_none() {
+                if let Ok(ws) = create_workspace(app, &agent.slug) {
+                    agent.workspace_dir = Some(ws);
+                    repo::save(app, agent).await;
+                    changed = true;
+                }
+            }
+        }
+        let _ = changed; // 保留占位，便于日后加日志
     }
     list
 }

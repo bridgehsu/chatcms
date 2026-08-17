@@ -3,7 +3,7 @@ use tauri::AppHandle;
 use super::{now_secs, repository as repo, Role, Session};
 use crate::agent::core::state::AgentState;
 
-/// 确保会话存在，不存在则新建并持久化。
+/// 确保会话存在，不存在则新建（锁定当前 agent 的 workspace）并持久化。
 pub async fn ensure_session(
     app: &AppHandle,
     state: &AgentState,
@@ -17,9 +17,29 @@ pub async fn ensure_session(
                 return id;
             }
         }
+        // 解析 workspace_dir：优先用指定 agent_id，其次 active_agent_id，最后第一个启用 agent
+        let active_agent_id = state.config.lock().unwrap().active_agent_id.clone();
+        let workspace_dir = {
+            let agents = state.agents.lock().unwrap();
+            agents.iter()
+                .find(|a| {
+                    agent_id.as_deref().map_or(false, |id| a.id == id) && a.enabled
+                })
+                .or_else(|| {
+                    agents.iter().find(|a| {
+                        active_agent_id.as_deref().map_or(false, |id| a.id == id) && a.enabled
+                    })
+                })
+                .or_else(|| agents.iter().find(|a| a.enabled))
+                .and_then(|a| a.workspace_dir.clone())
+        };
         let s = match agent_id {
-            Some(aid) => Session::new_with_agent("New Chat", aid),
-            None => Session::new("New Chat"),
+            Some(aid) => Session::new_with_agent("New Chat", aid, workspace_dir),
+            None => {
+                let mut s = Session::new("New Chat");
+                s.workspace_dir = workspace_dir;
+                s
+            }
         };
         let sid = s.id.clone();
         let clone = s.clone();

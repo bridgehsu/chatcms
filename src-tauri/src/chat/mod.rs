@@ -16,6 +16,9 @@ pub struct Session {
     pub pinned: bool,
     #[serde(default)]
     pub agent_id: Option<String>,
+    /// 创建时从 AgentProfile 锁定的 workspace 路径，整个会话生命周期内不变
+    #[serde(default)]
+    pub workspace_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,12 +49,14 @@ impl Session {
             updated: now,
             pinned: false,
             agent_id: None,
+            workspace_dir: None,
         }
     }
 
-    pub fn new_with_agent(title: impl Into<String>, agent_id: String) -> Self {
+    pub fn new_with_agent(title: impl Into<String>, agent_id: String, workspace_dir: Option<String>) -> Self {
         let mut s = Self::new(title);
         s.agent_id = Some(agent_id);
+        s.workspace_dir = workspace_dir;
         s
     }
 
