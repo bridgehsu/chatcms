@@ -1,7 +1,7 @@
 use super::{
     AuditEvent, DomainInfo, DomainPolicy, PermissionConfig, PermissionMode, RememberScope,
 };
-use crate::agent::{self, AgentState};
+use crate::agent::AgentState;
 use crate::persist;
 use std::collections::HashMap;
 use tauri::{AppHandle, State};
@@ -18,7 +18,7 @@ pub fn permission_respond(
         Some("session_deny") => RememberScope::SessionDeny,
         _ => RememberScope::Once,
     };
-    agent::resolve_permission(&state, &request_id, allowed, remember);
+    super::resolve_permission(&state, &request_id, allowed, remember);
 }
 
 #[tauri::command]

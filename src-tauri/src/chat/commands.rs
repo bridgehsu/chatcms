@@ -1,5 +1,5 @@
 use super::Session;
-use crate::agent::core::state::AgentState;
+use crate::agent::AgentState;
 use tauri::{AppHandle, State};
 
 #[tauri::command]

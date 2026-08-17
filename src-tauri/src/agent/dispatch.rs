@@ -8,7 +8,7 @@ use crate::permission::{
 };
 use crate::tools;
 
-use super::permission::request_permission;
+use crate::permission::request_permission;
 use super::state::AgentState;
 use super::subagent::run_sub_agent;
 

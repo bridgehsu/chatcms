@@ -6,9 +6,7 @@ use tokio::sync::oneshot;
 
 use crate::permission::{Domain, RememberScope};
 use crate::tools;
-use crate::agent::state::PermissionUserReply;
-
-use super::state::AgentState;
+use crate::agent::{AgentState, PermissionUserReply};
 
 /// 发给前端的权限请求载荷（对应事件 `permission-request`）。
 #[derive(serde::Serialize, Clone)]

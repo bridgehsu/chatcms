@@ -3,8 +3,8 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter, State};
 
 use super::{now_secs, repository as repo, Role, Session};
-use crate::agent::core::dispatch::dispatch_tool;
-use crate::agent::core::state::AgentState;
+use crate::agent::dispatch::dispatch_tool;
+use crate::agent::AgentState;
 use crate::config::{AppConfig, ProviderKind};
 use crate::kbase as knowledge;
 use crate::provider::{self, ProviderOutput};

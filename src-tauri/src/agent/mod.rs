@@ -1,12 +1,7 @@
-//! Agent 运行时：会话状态、主循环、工具分发、子 Agent、权限审批。
+//! Agent 运行时：全局状态、工具分发、子 Agent。
 
-pub mod core;
-pub mod mcp;
-pub mod permission;
-pub mod provider;
-pub mod scripts;
-pub mod tools;
+pub mod state;
+pub mod dispatch;
+pub mod subagent;
 
-pub use core::resolve_permission;
-pub use core::AgentState;
-pub use core::state;
+pub use state::{AgentState, PermissionUserReply};

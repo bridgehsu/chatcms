@@ -1,11 +1,11 @@
 mod agent;
 mod agents;
 mod chat;
-pub use agent::mcp;
-pub use agent::permission;
-pub use agent::provider;
-pub use agent::scripts;
-pub use agent::tools;
+mod mcp;
+mod permission;
+mod provider;
+mod scripts;
+mod tools;
 mod accounts;
 mod business_map;
 mod channels;

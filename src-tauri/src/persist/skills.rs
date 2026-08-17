@@ -1,7 +1,7 @@
 use sqlx::Row;
 use tauri::{AppHandle, Manager};
 
-use crate::agent::scripts::Skill;
+use crate::scripts::Skill;
 use crate::db::DbPool;
 
 fn pool(app: &AppHandle) -> sqlx::SqlitePool {
@@ -83,9 +83,9 @@ pub async fn load_all_skills(app: &AppHandle) -> Vec<Skill> {
         .map(|r| {
             let source_str: String = r.get("source");
             let source = match source_str.as_str() {
-                "bundled" => crate::agent::scripts::SkillSource::Bundled,
-                "npx" => crate::agent::scripts::SkillSource::Managed,
-                _ => crate::agent::scripts::SkillSource::Workspace,
+                "bundled" => crate::scripts::SkillSource::Bundled,
+                "npx" => crate::scripts::SkillSource::Managed,
+                _ => crate::scripts::SkillSource::Workspace,
             };
             let emoji: String = r.get("emoji");
             let file_path: String = r.get("file_path");
