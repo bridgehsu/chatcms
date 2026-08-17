@@ -1,4 +1,3 @@
-pub mod agents;
 pub mod chat;
 pub mod commands;
 pub mod dispatch;

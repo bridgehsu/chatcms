@@ -8,7 +8,6 @@ pub mod provider;
 pub mod scripts;
 pub mod tools;
 
-pub use core::agents;
 pub use core::commands;
 pub use core::send_message;
 pub use core::resolve_permission;

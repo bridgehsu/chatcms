@@ -1,7 +1,5 @@
 mod agent;
-
-// 迁移到 agent/ 下，保留 crate 根路径别名，存量引用零修改
-pub use agent::agents;
+mod agents;
 pub use agent::mcp;
 pub use agent::memory;
 pub use agent::permission;
