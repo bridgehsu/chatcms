@@ -1,10 +1,11 @@
 //! 导航书签：扩展「导航」Tab 与桌面同源。
 
 pub mod commands;
+pub mod repository;
+
+mod service;
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NavBookmark {
@@ -17,10 +18,10 @@ pub struct NavBookmark {
     pub sort_order: i32,
     pub updated_at: i64,
     #[serde(default)]
-    pub section: Option<String>, // Some("custom") 表示自定义侧栏分类
+    pub section: Option<String>,
 }
 
-fn now_ms() -> i64 {
+pub(crate) fn now_ms() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -28,7 +29,7 @@ fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
-fn normalize_url(raw: &str) -> Result<String, String> {
+pub(crate) fn normalize_url(raw: &str) -> Result<String, String> {
     let s = raw.trim();
     if s.is_empty() {
         return Err("链接不能为空".into());
@@ -38,7 +39,6 @@ fn normalize_url(raw: &str) -> Result<String, String> {
     } else {
         format!("https://{s}")
     };
-    // 轻量校验，避免引入额外依赖
     if !(with_scheme.starts_with("http://") || with_scheme.starts_with("https://")) {
         return Err("仅支持 http/https 链接".into());
     }
@@ -51,125 +51,4 @@ fn normalize_url(raw: &str) -> Result<String, String> {
     Ok(with_scheme)
 }
 
-pub fn list(app: &AppHandle) -> Vec<NavBookmark> {
-    let mut list = crate::persist::load_nav_bookmarks(app);
-    list.sort_by(|a, b| {
-        a.sort_order
-            .cmp(&b.sort_order)
-            .then_with(|| b.updated_at.cmp(&a.updated_at))
-            .then_with(|| a.title.cmp(&b.title))
-    });
-    list
-}
-
-pub fn upsert_raw(
-    app: &AppHandle,
-    id: Option<String>,
-    title: String,
-    url: String,
-    note: String,
-    sort_order: Option<i32>,
-    section: Option<String>,
-) -> Result<NavBookmark, String> {
-    let title = title.trim().to_string();
-    if title.is_empty() {
-        return Err("名称不能为空".into());
-    }
-    let url = url.trim().to_string();
-    if url.is_empty() {
-        return Err("路径不能为空".into());
-    }
-    upsert_inner(app, id, title, url, note, sort_order, section)
-}
-
-pub fn upsert(
-    app: &AppHandle,
-    id: Option<String>,
-    title: String,
-    url: String,
-    note: String,
-    sort_order: Option<i32>,
-    section: Option<String>,
-) -> Result<NavBookmark, String> {
-    let title = title.trim().to_string();
-    if title.is_empty() {
-        return Err("名称不能为空".into());
-    }
-    let url = normalize_url(&url)?;
-    upsert_inner(app, id, title, url, note, sort_order, section)
-}
-
-fn upsert_inner(
-    app: &AppHandle,
-    id: Option<String>,
-    title: String,
-    url: String,
-    note: String,
-    sort_order: Option<i32>,
-    section: Option<String>,
-) -> Result<NavBookmark, String> {
-    let note = note.trim().to_string();
-    let mut list = crate::persist::load_nav_bookmarks(app);
-    let ts = now_ms();
-
-    if let Some(bid) = id.filter(|s| !s.trim().is_empty()) {
-        let Some(item) = list.iter_mut().find(|b| b.id == bid) else {
-            return Err("导航项不存在".into());
-        };
-        item.title = title;
-        item.url = url;
-        item.note = note;
-        if let Some(ord) = sort_order {
-            item.sort_order = ord;
-        }
-        if section.is_some() {
-            item.section = section;
-        }
-        item.updated_at = ts;
-        let updated = item.clone();
-        crate::persist::save_nav_bookmarks(app, &list);
-        Ok(updated)
-    } else {
-        let ord = sort_order.unwrap_or_else(|| {
-            list.iter()
-                .map(|b| b.sort_order)
-                .max()
-                .map(|m| m + 1)
-                .unwrap_or(0)
-        });
-        let bookmark = NavBookmark {
-            id: Uuid::new_v4().to_string(),
-            title,
-            url,
-            note,
-            sort_order: ord,
-            updated_at: ts,
-            section,
-        };
-        list.push(bookmark.clone());
-        crate::persist::save_nav_bookmarks(app, &list);
-        Ok(bookmark)
-    }
-}
-
-pub fn list_by_section(app: &AppHandle, section: Option<String>) -> Vec<NavBookmark> {
-    let mut list = crate::persist::load_nav_bookmarks(app);
-    list.retain(|b| b.section == section);
-    list.sort_by(|a, b| {
-        a.sort_order
-            .cmp(&b.sort_order)
-            .then_with(|| b.updated_at.cmp(&a.updated_at))
-    });
-    list
-}
-
-pub fn remove(app: &AppHandle, id: String) -> Result<(), String> {
-    let mut list = crate::persist::load_nav_bookmarks(app);
-    let before = list.len();
-    list.retain(|b| b.id != id);
-    if list.len() == before {
-        return Err("导航项不存在".into());
-    }
-    crate::persist::save_nav_bookmarks(app, &list);
-    Ok(())
-}
+pub use service::{list, upsert, upsert_raw, list_by_section, remove};

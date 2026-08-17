@@ -1,12 +1,13 @@
 use super::{McpServerConfig, McpServerInfo, McpToolDef};
 use crate::agent::AgentState;
-use crate::persist;
 use std::collections::HashMap;
 use tauri::{AppHandle, State};
 
+use super::service;
+
 #[tauri::command]
 pub async fn mcp_list(state: State<'_, AgentState>) -> Result<Vec<McpServerInfo>, String> {
-    Ok(state.mcp.lock().await.server_infos())
+    Ok(service::list(&state).await)
 }
 
 #[tauri::command]
@@ -29,13 +30,7 @@ pub async fn mcp_add(
         description,
         enabled,
     };
-    let mut mcp = state.mcp.lock().await;
-    mcp.add_server(name.clone(), config).await?;
-    persist::save_mcp_configs(&app, &mcp.configs);
-    mcp.server_infos()
-        .into_iter()
-        .find(|s| s.name == name)
-        .ok_or_else(|| "添加失败".into())
+    service::add(&app, &state, name, config).await
 }
 
 #[tauri::command]
@@ -58,13 +53,7 @@ pub async fn mcp_update(
         description,
         enabled,
     };
-    let mut mcp = state.mcp.lock().await;
-    mcp.update_server(&name, config).await?;
-    persist::save_mcp_configs(&app, &mcp.configs);
-    mcp.server_infos()
-        .into_iter()
-        .find(|s| s.name == name)
-        .ok_or_else(|| "更新失败".into())
+    service::update(&app, &state, name, config).await
 }
 
 #[tauri::command]
@@ -73,9 +62,7 @@ pub async fn mcp_remove(
     state: State<'_, AgentState>,
     name: String,
 ) -> Result<(), String> {
-    let mut mcp = state.mcp.lock().await;
-    mcp.remove_server(&name);
-    persist::save_mcp_configs(&app, &mcp.configs);
+    service::remove(&app, &state, name).await;
     Ok(())
 }
 
@@ -84,12 +71,7 @@ pub async fn mcp_reconnect(
     state: State<'_, AgentState>,
     name: String,
 ) -> Result<McpServerInfo, String> {
-    let mut mcp = state.mcp.lock().await;
-    mcp.reconnect(&name).await;
-    mcp.server_infos()
-        .into_iter()
-        .find(|s| s.name == name)
-        .ok_or_else(|| format!("Server {name} not found"))
+    service::reconnect(&state, name).await
 }
 
 #[tauri::command]
@@ -97,12 +79,7 @@ pub async fn mcp_disconnect(
     state: State<'_, AgentState>,
     name: String,
 ) -> Result<McpServerInfo, String> {
-    let mut mcp = state.mcp.lock().await;
-    mcp.disconnect(&name);
-    mcp.server_infos()
-        .into_iter()
-        .find(|s| s.name == name)
-        .ok_or_else(|| format!("Server {name} not found"))
+    service::disconnect(&state, name).await
 }
 
 #[tauri::command]
@@ -110,8 +87,9 @@ pub async fn mcp_tools(
     state: State<'_, AgentState>,
     name: String,
 ) -> Result<Vec<McpToolDef>, String> {
-    Ok(state.mcp.lock().await.tools_for(&name))
+    Ok(service::tools(&state, name).await)
 }
+
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("mcp")
         .invoke_handler(tauri::generate_handler![

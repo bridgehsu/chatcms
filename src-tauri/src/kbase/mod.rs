@@ -1,9 +1,11 @@
 pub mod commands;
+pub mod repository;
 
 mod types;
 mod search;
 mod feed;
 mod export;
+mod service;
 
 pub use types::{
     ExportResult, KnowledgeEntry, KnowledgeSiteProfile, PublicFeed, normalize_slug,

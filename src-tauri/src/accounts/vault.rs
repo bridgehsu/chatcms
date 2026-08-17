@@ -203,9 +203,9 @@ fn decrypt(key: &[u8; 32], stored: &str) -> Result<Vec<u8>, String> {
 }
 
 fn load_meta(app: &AppHandle) -> VaultMeta {
-    crate::persist::load_vault_meta(app)
+    crate::accounts::repository::load_vault_meta(app)
 }
 
 fn save_meta(app: &AppHandle, meta: &VaultMeta) {
-    crate::persist::save_vault_meta(app, meta);
+    crate::accounts::repository::save_vault_meta(app, meta);
 }

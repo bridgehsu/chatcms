@@ -56,12 +56,12 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         *state.config.lock().unwrap() = config;
     }
     *state.sessions.lock().unwrap() = rt.block_on(chat::repository::load_all(&handle));
-    *state.knowledge.lock().unwrap() = rt.block_on(persist::load_all_knowledge(&handle));
+    *state.knowledge.lock().unwrap() = rt.block_on(kbase::repository::load_all(&handle));
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = rt.block_on(agents::service::ensure_seeded(&handle));
 
     // MCP — connect all enabled servers
-    let mcp_configs = persist::load_mcp_configs(&handle);
+    let mcp_configs = mcp::repository::load_configs(&handle);
     if !mcp_configs.is_empty() {
         let h = handle.clone();
         tauri::async_runtime::spawn(async move {

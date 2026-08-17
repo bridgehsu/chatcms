@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Manager};
 
-use super::store::parse_skill_md;
+use super::service::parse_skill_md;
 use super::types::{Skill, SkillSource};
 
 /// 内置技能的 .md 内容，编译期嵌入。
@@ -12,7 +12,7 @@ const BUNDLED: &[(&str, &str)] = &[
 
 /// 首次启动时写出内置 .md 文件并入库；已存在则跳过。
 pub async fn ensure_seeded(app: &AppHandle) -> Vec<Skill> {
-    let existing = crate::persist::load_all_skills(app).await;
+    let existing = super::repository::load_all(app).await;
     let existing_names: std::collections::HashSet<_> = existing.iter().map(|s| s.name.clone()).collect();
 
     for (name, content) in BUNDLED {
@@ -35,9 +35,9 @@ pub async fn ensure_seeded(app: &AppHandle) -> Vec<Skill> {
                     file_path.to_string_lossy().to_string()
                 ));
             }
-            crate::persist::save_skill(app, &skill).await;
+            super::repository::save(app, &skill).await;
         }
     }
 
-    crate::persist::load_all_skills(app).await
+    super::repository::load_all(app).await
 }

@@ -569,7 +569,7 @@ pub async fn import_video_url(
     if let Some(tid) = task_id {
         record.remote_id = Some(tid.to_string());
         record.updated = record.created;
-        persist::save_video(app, &record).await;
+        crate::videos::repository::save(app, &record).await;
     }
     Ok(record)
 }

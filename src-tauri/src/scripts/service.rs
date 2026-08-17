@@ -3,14 +3,19 @@ use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
 use super::types::{now_ms, validate_name, Skill, SkillSource};
+use super::repository as repo;
 
 fn skills_dir(app: &AppHandle, source: &str) -> std::path::PathBuf {
-    let base = app.path().app_data_dir().unwrap_or_default().join("skills").join(source);
+    let base = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_default()
+        .join("skills")
+        .join(source);
     let _ = std::fs::create_dir_all(&base);
     base
 }
 
-/// 把 Skill 写到磁盘 .md 文件，返回写入的路径。
 fn write_skill_file(app: &AppHandle, skill: &Skill) -> String {
     let source_dir = match skill.source {
         SkillSource::Bundled => "bundled",
@@ -24,7 +29,6 @@ fn write_skill_file(app: &AppHandle, skill: &Skill) -> String {
     path.to_string_lossy().to_string()
 }
 
-/// 从磁盘删除 .md 文件。
 fn delete_skill_file(file_path: &str) {
     if !file_path.is_empty() {
         let _ = std::fs::remove_file(file_path);
@@ -32,7 +36,7 @@ fn delete_skill_file(file_path: &str) {
 }
 
 pub async fn list(app: &AppHandle) -> Vec<Skill> {
-    crate::persist::load_all_skills(app).await
+    repo::load_all(app).await
 }
 
 pub async fn add(
@@ -52,7 +56,7 @@ pub async fn add(
         return Err("描述不能为空".into());
     }
 
-    let existing = crate::persist::load_all_skills(app).await;
+    let existing = repo::load_all(app).await;
     if existing.iter().any(|s| s.name == name) {
         return Err(format!("已存在同名技能「{name}」"));
     }
@@ -74,13 +78,12 @@ pub async fn add(
     };
 
     let file_path = write_skill_file(app, &skill);
-    // store file_path in metadata
     let meta = skill.metadata.get_or_insert_with(|| serde_json::json!({}));
     if let Some(obj) = meta.as_object_mut() {
         obj.insert("file_path".into(), serde_json::Value::String(file_path));
     }
 
-    crate::persist::save_skill(app, &skill).await;
+    repo::save(app, &skill).await;
     Ok(skill)
 }
 
@@ -102,16 +105,19 @@ pub async fn update(
         return Err("描述不能为空".into());
     }
 
-    let mut list = crate::persist::load_all_skills(app).await;
+    let mut list = repo::load_all(app).await;
     if list.iter().any(|s| s.name == name && s.id != id) {
         return Err(format!("已存在同名技能「{name}」"));
     }
 
-    let skill = list.iter_mut().find(|s| s.id == id)
+    let skill = list
+        .iter_mut()
+        .find(|s| s.id == id)
         .ok_or_else(|| "技能不存在".to_string())?;
 
-    // Delete old file if name changed
-    let old_file = skill.metadata.as_ref()
+    let old_file = skill
+        .metadata
+        .as_ref()
         .and_then(|m| m.get("file_path"))
         .and_then(|v| v.as_str())
         .unwrap_or("")
@@ -139,37 +145,38 @@ pub async fn update(
     }
 
     let out = skill.clone();
-    crate::persist::save_skill(app, &out).await;
+    repo::save(app, &out).await;
     Ok(out)
 }
 
 pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
-    let list = crate::persist::load_all_skills(app).await;
-    let skill = list.iter().find(|s| s.id == id)
+    let list = repo::load_all(app).await;
+    let skill = list
+        .iter()
+        .find(|s| s.id == id)
         .ok_or_else(|| "技能不存在".to_string())?;
 
     if skill.source == SkillSource::Bundled {
         return Err("内置技能不能删除，可停用".into());
     }
 
-    let file_path = skill.metadata.as_ref()
+    let file_path = skill
+        .metadata
+        .as_ref()
         .and_then(|m| m.get("file_path"))
         .and_then(|v| v.as_str())
         .unwrap_or("")
         .to_string();
     delete_skill_file(&file_path);
 
-    crate::persist::delete_skill(app, &id).await;
+    repo::delete(app, &id).await;
     Ok(())
 }
 
-/// npx 安装：执行 shell 命令，扫描写入的 .md 文件，入库。
-/// pkg_name 形如 "@chatcms/skill-seo"
 pub async fn install_npx(app: &AppHandle, pkg_name: String) -> Result<Vec<Skill>, String> {
     let npx_dir = skills_dir(app, "npx");
     let npx_dir_str = npx_dir.to_string_lossy().to_string();
 
-    // 执行 npx，传入安装目标目录环境变量
     let output = tokio::process::Command::new("npx")
         .arg("--yes")
         .arg(&pkg_name)
@@ -185,9 +192,9 @@ pub async fn install_npx(app: &AppHandle, pkg_name: String) -> Result<Vec<Skill>
         return Err(format!("npx 安装失败: {stderr}"));
     }
 
-    // 扫描 npx 目录下新增的 .md 文件
-    let existing = crate::persist::load_all_skills(app).await;
-    let existing_names: std::collections::HashSet<_> = existing.iter().map(|s| s.name.clone()).collect();
+    let existing = repo::load_all(app).await;
+    let existing_names: std::collections::HashSet<_> =
+        existing.iter().map(|s| s.name.clone()).collect();
 
     let mut installed = Vec::new();
     let read_dir = std::fs::read_dir(&npx_dir).map_err(|e| e.to_string())?;
@@ -201,14 +208,20 @@ pub async fn install_npx(app: &AppHandle, pkg_name: String) -> Result<Vec<Skill>
         let skill = parse_skill_md(&content, &path.to_string_lossy(), &pkg_name);
         if let Some(mut skill) = skill {
             if existing_names.contains(&skill.name) {
-                continue; // 已存在跳过
+                continue;
             }
             let meta = skill.metadata.get_or_insert_with(|| serde_json::json!({}));
             if let Some(obj) = meta.as_object_mut() {
-                obj.insert("pkg_name".into(), serde_json::Value::String(pkg_name.clone()));
-                obj.insert("file_path".into(), serde_json::Value::String(path.to_string_lossy().to_string()));
+                obj.insert(
+                    "pkg_name".into(),
+                    serde_json::Value::String(pkg_name.clone()),
+                );
+                obj.insert(
+                    "file_path".into(),
+                    serde_json::Value::String(path.to_string_lossy().to_string()),
+                );
             }
-            crate::persist::save_skill(app, &skill).await;
+            repo::save(app, &skill).await;
             installed.push(skill);
         }
     }
@@ -216,11 +229,9 @@ pub async fn install_npx(app: &AppHandle, pkg_name: String) -> Result<Vec<Skill>
     Ok(installed)
 }
 
-/// 解析 SKILL.md frontmatter + body → Skill struct。
 pub fn parse_skill_md(content: &str, file_path: &str, pkg_name: &str) -> Option<Skill> {
     let content = content.trim();
     if !content.starts_with("---") {
-        // 无 frontmatter：用文件名作为 name
         let name = std::path::Path::new(file_path)
             .file_stem()
             .and_then(|s| s.to_str())
@@ -232,7 +243,11 @@ pub fn parse_skill_md(content: &str, file_path: &str, pkg_name: &str) -> Option<
             name,
             description: String::new(),
             body: content.to_string(),
-            source: if pkg_name.is_empty() { SkillSource::Workspace } else { SkillSource::Managed },
+            source: if pkg_name.is_empty() {
+                SkillSource::Workspace
+            } else {
+                SkillSource::Managed
+            },
             enabled: true,
             user_invocable: true,
             disable_model_invocation: false,
@@ -282,8 +297,12 @@ pub fn parse_skill_md(content: &str, file_path: &str, pkg_name: &str) -> Option<
     let ts = now_ms();
     let metadata = if !emoji.is_empty() || !pkg_name.is_empty() {
         let mut m = serde_json::json!({});
-        if !emoji.is_empty() { m["emoji"] = serde_json::Value::String(emoji); }
-        if !pkg_name.is_empty() { m["pkg_name"] = serde_json::Value::String(pkg_name.to_string()); }
+        if !emoji.is_empty() {
+            m["emoji"] = serde_json::Value::String(emoji);
+        }
+        if !pkg_name.is_empty() {
+            m["pkg_name"] = serde_json::Value::String(pkg_name.to_string());
+        }
         Some(m)
     } else {
         None
@@ -294,7 +313,11 @@ pub fn parse_skill_md(content: &str, file_path: &str, pkg_name: &str) -> Option<
         name,
         description,
         body,
-        source: if pkg_name.is_empty() { SkillSource::Workspace } else { SkillSource::Managed },
+        source: if pkg_name.is_empty() {
+            SkillSource::Workspace
+        } else {
+            SkillSource::Managed
+        },
         enabled: true,
         user_invocable,
         disable_model_invocation,

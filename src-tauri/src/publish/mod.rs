@@ -140,11 +140,11 @@ impl PublishBridge {
         tokio::task::block_in_place(|| {
             let handle = tokio::runtime::Handle::current();
             match kind {
-                "image" => handle.block_on(persist::load_all_images(&app))
+                "image" => handle.block_on(crate::images::repository::load_all(&app))
                     .into_iter()
                     .find(|i| i.id == id)
                     .map(|i| PathBuf::from(i.path)),
-                "video" => handle.block_on(persist::load_all_videos(&app))
+                "video" => handle.block_on(crate::videos::repository::load_all(&app))
                     .into_iter()
                     .find(|v| v.id == id)
                     .map(|v| PathBuf::from(v.path)),
