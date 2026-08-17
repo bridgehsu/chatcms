@@ -10,7 +10,7 @@ pub async fn chat_send(
     agent_id: Option<String>,
     content: String,
 ) -> Result<String, String> {
-    crate::agent::core::chat::send_message(app, state, session_id, agent_id, content)
+    super::service::send_message(app, state, session_id, agent_id, content)
         .await
         .map_err(|e| e.to_string())
 }

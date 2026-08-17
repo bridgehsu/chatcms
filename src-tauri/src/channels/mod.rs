@@ -458,7 +458,8 @@ async fn route_to_agent(
     session_id: Option<String>,
     content: String,
 ) -> Option<String> {
-    use crate::agent::{send_message, AgentState};
+    use crate::agent::AgentState;
+    use crate::chat::service::send_message;
     use tauri::Manager;
 
     let state = app.state::<AgentState>();

@@ -7,7 +7,6 @@ pub mod provider;
 pub mod scripts;
 pub mod tools;
 
-pub use core::send_message;
 pub use core::resolve_permission;
 pub use core::AgentState;
 pub use core::state;
