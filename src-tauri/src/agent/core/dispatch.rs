@@ -181,7 +181,7 @@ async fn dispatch_spawn_agent(
     let override_sys = tc.input["system_prompt"].as_str().map(String::from);
 
     let (sys, label, sub_workspace) = if let Some(key) = agent_key {
-        match crate::agents::find_by_slug_or_id(app, key).await {
+        match crate::agents::service::find_by_slug_or_id(app, key).await {
             Some(profile) if profile.enabled && profile.spawnable => {
                 let mut blocks = vec![crate::agents::format_persona(&profile)];
                 let skills = {

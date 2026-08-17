@@ -1,10 +1,11 @@
 //! OpenClaw 风格多 Agent：角色人格、技能白名单、默认启用。
 
 pub mod commands;
+pub mod repository;
+pub mod service;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentProfile {
@@ -43,7 +44,7 @@ fn default_true() -> bool {
     true
 }
 
-fn now_ms() -> i64 {
+pub(super) fn now_ms() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -51,7 +52,7 @@ fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
-fn validate_slug(slug: &str) -> Result<String, String> {
+pub(super) fn validate_slug(slug: &str) -> Result<String, String> {
     let slug = slug.trim().to_lowercase();
     if slug.is_empty() {
         return Err("代理 ID 不能为空".into());
@@ -66,7 +67,7 @@ fn validate_slug(slug: &str) -> Result<String, String> {
 }
 
 /// 创建 workspace 目录树，返回根路径字符串
-fn create_workspace(app: &AppHandle, slug: &str) -> Result<String, String> {
+pub(super) fn create_workspace(app: &AppHandle, slug: &str) -> Result<String, String> {
     let base = app
         .path()
         .app_data_dir()
@@ -129,163 +130,6 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             updated: ts,
         },
     ]
-}
-
-pub async fn ensure_seeded(app: &AppHandle) -> Vec<AgentProfile> {
-    let mut list = crate::persist::load_all_agents(app).await;
-    if list.is_empty() {
-        list = bundled_agents();
-        for agent in &list {
-            crate::persist::save_agent(app, agent).await;
-        }
-    }
-    list
-}
-
-pub async fn list(app: &AppHandle) -> Vec<AgentProfile> {
-    let mut list = ensure_seeded(app).await;
-    list.sort_by(|a, b| {
-        a.sort
-            .cmp(&b.sort)
-            .then(b.enabled.cmp(&a.enabled))
-            .then(b.updated.cmp(&a.updated))
-            .then(a.name.cmp(&b.name))
-    });
-    list
-}
-
-pub async fn find_by_slug_or_id(app: &AppHandle, key: &str) -> Option<AgentProfile> {
-    let key = key.trim();
-    ensure_seeded(app)
-        .await
-        .into_iter()
-        .find(|a| a.id == key || a.slug == key)
-}
-
-pub async fn add(
-    app: &AppHandle,
-    slug: String,
-    name: String,
-    remark: String,
-    system_prompt: String,
-    enabled: bool,
-    skills: Option<Vec<String>>,
-    spawnable: bool,
-    perms: std::collections::HashMap<String, crate::permission::DomainPolicy>,
-    sort: i64,
-) -> Result<AgentProfile, String> {
-    let slug = validate_slug(&slug)?;
-    let name = name.trim().to_string();
-    if name.is_empty() {
-        return Err("名称不能为空".into());
-    }
-
-    let list = ensure_seeded(app).await;
-    if list.iter().any(|a| a.slug == slug) {
-        return Err(format!("已存在同 ID 代理「{slug}」"));
-    }
-
-    let workspace_dir = create_workspace(app, &slug)?;
-
-    let ts = now_ms();
-    let profile = AgentProfile {
-        id: Uuid::new_v4().to_string(),
-        slug,
-        name,
-        remark: remark.trim().to_string(),
-        system_prompt: system_prompt.trim().to_string(),
-        enabled,
-        skills,
-        spawnable,
-        perms,
-        workspace_dir: Some(workspace_dir),
-        sort,
-        created: ts,
-        updated: ts,
-    };
-    crate::persist::save_agent(app, &profile).await;
-    Ok(profile)
-}
-
-pub async fn update(
-    app: &AppHandle,
-    id: String,
-    slug: String,
-    name: String,
-    remark: String,
-    system_prompt: String,
-    enabled: bool,
-    skills: Option<Vec<String>>,
-    spawnable: bool,
-    perms: std::collections::HashMap<String, crate::permission::DomainPolicy>,
-    sort: i64,
-) -> Result<AgentProfile, String> {
-    let slug = validate_slug(&slug)?;
-    let name = name.trim().to_string();
-    if name.is_empty() {
-        return Err("名称不能为空".into());
-    }
-
-    let mut list = ensure_seeded(app).await;
-    if list.iter().any(|a| a.slug == slug && a.id != id) {
-        return Err(format!("已存在同 ID 代理「{slug}」"));
-    }
-
-    let profile = list
-        .iter_mut()
-        .find(|a| a.id == id)
-        .ok_or_else(|| "代理不存在".to_string())?;
-    profile.slug = slug;
-    profile.name = name;
-    profile.remark = remark.trim().to_string();
-    profile.system_prompt = system_prompt.trim().to_string();
-    profile.enabled = enabled;
-    profile.skills = skills;
-    profile.spawnable = spawnable;
-    profile.perms = perms;
-    profile.sort = sort;
-    // workspace_dir 不允许修改，保留原值
-    profile.updated = now_ms();
-
-    let out = profile.clone();
-    crate::persist::save_agent(app, &out).await;
-    Ok(out)
-}
-
-pub async fn activate(app: &AppHandle, id: String) -> Result<AgentProfile, String> {
-    let list = ensure_seeded(app).await;
-    let profile = list
-        .iter()
-        .find(|a| a.id == id && a.enabled)
-        .ok_or_else(|| "代理不存在或未启用".to_string())?
-        .clone();
-
-    if let Some(mut config) = crate::persist::load_config(app) {
-        config.active_agent_id = Some(id);
-        crate::persist::save_config(app, &config);
-    }
-    Ok(profile)
-}
-
-pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
-    let list = ensure_seeded(app).await;
-    if list.len() <= 1 {
-        return Err("至少保留一个代理".into());
-    }
-    if !list.iter().any(|a| a.id == id) {
-        return Err("代理不存在".into());
-    }
-    crate::persist::delete_agent(app, &id).await;
-
-    // 如果被删除的是当前激活代理，重置为第一个启用代理
-    if let Some(mut config) = crate::persist::load_config(app) {
-        if config.active_agent_id.as_deref() == Some(&id) {
-            let new_active = list.iter().find(|a| a.id != id && a.enabled).map(|a| a.id.clone());
-            config.active_agent_id = new_active;
-            crate::persist::save_config(app, &config);
-        }
-    }
-    Ok(())
 }
 
 /// 拼进 system prompt 的人格块。

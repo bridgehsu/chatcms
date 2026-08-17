@@ -6,7 +6,7 @@ use tauri::{AppHandle, State};
 
 #[tauri::command]
 pub async fn agent_list(app: AppHandle, state: State<'_, AgentState>) -> Result<Vec<AgentProfile>, String> {
-    let list = super::list(&app).await;
+    let list = super::service::list(&app).await;
     *state.agents.lock().unwrap() = list.clone();
     Ok(list)
 }
@@ -25,7 +25,7 @@ pub async fn agent_add(
     perms: Option<HashMap<String, DomainPolicy>>,
     sort: Option<i64>,
 ) -> Result<AgentProfile, String> {
-    let profile = super::add(
+    let profile = super::service::add(
         &app,
         slug,
         name,
@@ -38,7 +38,7 @@ pub async fn agent_add(
         sort.unwrap_or(0),
     )
     .await?;
-    *state.agents.lock().unwrap() = super::list(&app).await;
+    *state.agents.lock().unwrap() = super::service::list(&app).await;
     Ok(profile)
 }
 
@@ -57,7 +57,7 @@ pub async fn agent_update(
     perms: Option<HashMap<String, DomainPolicy>>,
     sort: Option<i64>,
 ) -> Result<AgentProfile, String> {
-    let profile = super::update(
+    let profile = super::service::update(
         &app,
         id,
         slug,
@@ -71,7 +71,7 @@ pub async fn agent_update(
         sort.unwrap_or(0),
     )
     .await?;
-    *state.agents.lock().unwrap() = super::list(&app).await;
+    *state.agents.lock().unwrap() = super::service::list(&app).await;
     Ok(profile)
 }
 
@@ -81,9 +81,9 @@ pub async fn agent_activate(
     state: State<'_, AgentState>,
     id: String,
 ) -> Result<AgentProfile, String> {
-    let profile = super::activate(&app, id.clone()).await?;
+    let profile = super::service::activate(&app, id.clone()).await?;
     state.config.lock().unwrap().active_agent_id = Some(id);
-    *state.agents.lock().unwrap() = super::list(&app).await;
+    *state.agents.lock().unwrap() = super::service::list(&app).await;
     Ok(profile)
 }
 
@@ -93,7 +93,7 @@ pub async fn agent_remove(
     state: State<'_, AgentState>,
     id: String,
 ) -> Result<(), String> {
-    super::remove(&app, id.clone()).await?;
+    super::service::remove(&app, id.clone()).await?;
     // 如果删除的是当前激活代理，清除 state 中的 active_agent_id
     {
         let mut config = state.config.lock().unwrap();
@@ -101,7 +101,7 @@ pub async fn agent_remove(
             config.active_agent_id = None;
         }
     }
-    *state.agents.lock().unwrap() = super::list(&app).await;
+    *state.agents.lock().unwrap() = super::service::list(&app).await;
     Ok(())
 }
 
