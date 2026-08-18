@@ -131,7 +131,7 @@ pub(crate) fn script_view(s: PublishScript) -> PublishScriptView {
 }
 
 pub use service::{
-    ensure_seeded, list_platforms, list_platforms_page, get_platform, upsert_platform,
+    list_platforms, list_platforms_page, get_platform, upsert_platform,
     set_platform_enabled, remove_platform, list_scripts, get_or_create_script, save_script_draft,
     publish_script, discard_script_draft, bridge_list_platforms, bridge_get_script,
     bridge_get_collect_script, list_collect_scripts, get_or_create_collect_script,

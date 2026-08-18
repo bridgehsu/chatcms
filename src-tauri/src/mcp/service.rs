@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use tauri::AppHandle;
 
 use super::{McpServerConfig, McpServerInfo, McpToolDef};

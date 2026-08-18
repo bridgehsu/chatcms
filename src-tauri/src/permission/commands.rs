@@ -147,6 +147,7 @@ pub fn permission_clear_session_grants(state: State<'_, AgentState>, session_id:
         .unwrap()
         .clear_session(&session_id);
 }
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("permission")
         .invoke_handler(tauri::generate_handler![

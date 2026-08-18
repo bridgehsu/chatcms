@@ -127,6 +127,7 @@ pub fn collect_script_discard_draft(
 ) -> Result<PublishScriptView, String> {
     super::discard_collect_script_draft(&app, platform_id)
 }
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("media_platforms")
         .invoke_handler(tauri::generate_handler![

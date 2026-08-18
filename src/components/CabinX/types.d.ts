@@ -75,6 +75,8 @@ export interface CabinXProps<T = any> {
   };
   // 自定义标题区按钮：undefined=默认新增按钮，null=不显示，ReactNode=自定义
   headerActions?: React.ReactNode | null;
+  // 在默认新增按钮之前插入的额外按钮
+  extraHeaderActions?: React.ReactNode;
   columns: CabinXColumn<T>[];
   pageTitle: string;
   editorTitle?: string; // 编辑器标题，默认为'编辑'或'新增'
@@ -106,6 +108,7 @@ export type CabinXParameters<T = any> = {
     execute?: (id: number | string) => Promise<any>;
   };
   headerActions?: React.ReactNode | null;
+  extraHeaderActions?: React.ReactNode;
   columns: CabinXColumn<T>[];
   pageTitle?: string; // default: '数据管理'
   rowKey?: string; // default: 'id'

@@ -87,6 +87,7 @@ pub fn skill_export_md(app: AppHandle, id: String) -> Result<String, String> {
     Ok(super::to_skill_md(&skill))
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("skills")
         .invoke_handler(tauri::generate_handler![

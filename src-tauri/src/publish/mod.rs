@@ -13,7 +13,7 @@ use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
-use axum::routing::{delete, get, post, put};
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -710,10 +710,12 @@ pub async fn prepare_and_open(
     Ok(url)
 }
 
+#[allow(dead_code)]
 pub fn media_url(kind: &str, id: &str) -> String {
     format!("{}/media/{kind}/{id}", PublishBridge::base_url())
 }
 
+#[allow(dead_code)]
 pub fn placeholder_cover_url() -> String {
     format!(
         "{}/media/placeholder/cover.png",

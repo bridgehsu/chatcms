@@ -49,6 +49,7 @@ pub async fn video_update(
     super::update(&app, id, title, remark).await.map_err(|e| e.to_string())
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("videos")
         .invoke_handler(tauri::generate_handler![

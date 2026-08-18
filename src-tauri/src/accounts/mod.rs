@@ -112,6 +112,4 @@ pub(crate) fn encrypt_fields(
     ))
 }
 
-pub use service::{vault_status, vault_setup, vault_unlock, vault_lock, list, reveal, add, update, remove};
-
-pub type Vault<'a> = tauri::State<'a, VaultState>;
+pub use service::{vault_status, vault_setup, vault_unlock, list, reveal, add, update, remove};

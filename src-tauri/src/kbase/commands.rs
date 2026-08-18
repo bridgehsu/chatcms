@@ -104,6 +104,7 @@ pub fn knowledge_export_public(
     super::export_public_site(&profile, &entries, output_dir)
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("knowledge")
         .invoke_handler(tauri::generate_handler![

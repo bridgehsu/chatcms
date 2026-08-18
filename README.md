@@ -42,3 +42,8 @@ powershell -ExecutionPolicy Bypass -File bin/package-windows.ps1 -Msi
 ## Recommended IDE Setup
 
 - [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+
+
+帮我将当前前端的model-config改名为models 后端工程src-taur中提取一个models文件夹 还是安装项目的规范mod commands service repository三层结构来    
+                                                                                                                                                 
+同时model 配置表需要夹一个权重1，2，3，4 等先不要写代码 理解我的需求          

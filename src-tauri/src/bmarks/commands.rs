@@ -44,6 +44,7 @@ pub fn nav_custom_remove(app: AppHandle, id: String) -> Result<(), String> {
     super::remove(&app, id)
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("nav_bookmarks")
         .invoke_handler(tauri::generate_handler![

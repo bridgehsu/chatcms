@@ -188,6 +188,7 @@ impl ChannelState {
 }
 
 /// 停掉所有已实现渠道的运行时，并清空启用列表。
+#[allow(dead_code)]
 pub async fn disable_all(state: &mut ChannelState) {
     stop_telegram_poller(state).await;
     state.config.enabled_kinds.clear();

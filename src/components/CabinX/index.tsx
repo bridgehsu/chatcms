@@ -150,6 +150,7 @@ const CabinX: React.FC<CabinXProps> = ({
                                            actionBtnComponents,
                                            formType = 'D',
                                            headerActions,
+                                           extraHeaderActions,
                                            initialSearchValues,
                                        }) => {
     const {message} = AntdApp.useApp();
@@ -510,6 +511,7 @@ const CabinX: React.FC<CabinXProps> = ({
                     <h1 className="topbar-title">{pageTitle}</h1>
                 </div>
                 <div className="topbar-actions">
+                    {extraHeaderActions}
                     {headerActions === undefined ? (
                         <Button type="primary" onClick={handleAdd}>新增</Button>
                     ) : headerActions}

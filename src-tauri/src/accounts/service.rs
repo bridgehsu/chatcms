@@ -23,7 +23,8 @@ pub fn vault_unlock(app: &AppHandle, vault: &VaultState, password: String) -> Re
     Ok(vault_status(app, vault))
 }
 
-pub fn vault_lock(app: &AppHandle, vault: &VaultState) -> VaultStatus {
+#[allow(dead_code)]
+pub fn vault_lock(_app: &AppHandle, vault: &VaultState) -> VaultStatus {
     vault.lock();
     VaultStatus {
         configured: true,

@@ -7,6 +7,7 @@ pub mod write_file;
 pub use types::{ToolCall, ToolDef, ToolResult};
 
 /// Tools that require explicit user permission before execution.
+#[allow(dead_code)]
 pub fn requires_permission(tool_name: &str) -> bool {
     matches!(tool_name, "bash" | "write_file")
 }

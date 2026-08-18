@@ -12,6 +12,7 @@ pub fn map_state_save(app: AppHandle, state: BusinessMapState) -> Result<(), Str
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("business_map")
         .invoke_handler(tauri::generate_handler![map_state_get, map_state_save])

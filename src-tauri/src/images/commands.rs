@@ -53,6 +53,7 @@ pub fn image_data_url(path: String) -> Result<String, String> {
     super::read_data_url(path).map_err(|e| e.to_string())
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("images")
         .invoke_handler(tauri::generate_handler![

@@ -105,6 +105,7 @@ pub async fn agent_remove(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("agents")
         .invoke_handler(tauri::generate_handler![

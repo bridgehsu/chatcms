@@ -58,6 +58,7 @@ impl SessionGrantStore {
         })
     }
 
+    #[allow(dead_code)]
     pub fn list_for_session(&self, session_id: &str) -> Vec<SessionGrant> {
         self.grants
             .iter()

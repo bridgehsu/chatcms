@@ -111,6 +111,7 @@ pub struct AuthzContext<'a> {
     pub cfg: &'a PermissionConfig,
     pub grants: &'a SessionGrantStore,
     pub session_id: &'a str,
+    #[allow(dead_code)]
     pub agent_id: Option<&'a str>,
     pub agent_overrides: Option<&'a HashMap<String, DomainPolicy>>,
 }

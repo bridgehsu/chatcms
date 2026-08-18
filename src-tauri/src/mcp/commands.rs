@@ -90,6 +90,7 @@ pub async fn mcp_tools(
     Ok(service::tools(&state, name).await)
 }
 
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("mcp")
         .invoke_handler(tauri::generate_handler![

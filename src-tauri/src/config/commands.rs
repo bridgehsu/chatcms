@@ -174,6 +174,7 @@ pub fn provider_activate(
         .find(|p| p.id == id)
         .ok_or_else(|| "激活失败".into())
 }
+#[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("config")
         .invoke_handler(tauri::generate_handler![
