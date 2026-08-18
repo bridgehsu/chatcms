@@ -17,7 +17,7 @@ import { SchedulesPage, WorkflowEditorPage } from "@/views/schedules";
 import { SkillsPage } from "@/views/skills";
 import { AgentsPage } from "@/views/agents";
 import { McpPage } from "@/views/mcp";
-import { ModelConfigPage } from "@/views/model-config";
+import { ModelsPage } from "@/views/models";
 import { ChannelsPage } from "@/views/settings/ChannelsPage";
 import { KnowledgePage } from "@/views/settings/KnowledgePage";
 import {
@@ -56,7 +56,7 @@ const App = () => (
         <Route path="skills" element={<SkillsPage />} />
         <Route path="agents" element={<AgentsPage />} />
         <Route path="mcp" element={<McpPage />} />
-        <Route path="models" element={<ModelConfigPage />} />
+        <Route path="models" element={<ModelsPage />} />
         <Route path="settings/permissions" element={<SettingsPermissionsPage />} />
         <Route path="settings/knowledge" element={<KnowledgePage />} />
         <Route path="settings/channels" element={<ChannelsPage />} />

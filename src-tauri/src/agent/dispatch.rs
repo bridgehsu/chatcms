@@ -161,7 +161,7 @@ pub async fn dispatch_tool(
     }
 
     if tc.name == "spawn_agent" {
-        return dispatch_spawn_agent(tc, app, session_id).await;
+        return dispatch_spawn_agent(tc, app, session_id, workspace_dir).await;
     }
 
     if state.mcp.lock().await.is_mcp_tool(&tc.name) {
@@ -175,6 +175,7 @@ async fn dispatch_spawn_agent(
     tc: &tools::ToolCall,
     app: &AppHandle,
     session_id: &str,
+    parent_workspace: Option<&str>,
 ) -> tools::ToolResult {
     let prompt = tc.input["prompt"].as_str().unwrap_or("").to_string();
     let agent_key = tc.input["agent"].as_str().map(str::trim).filter(|s| !s.is_empty());
@@ -223,7 +224,7 @@ async fn dispatch_spawn_agent(
         }),
     );
 
-    let result_text = match run_sub_agent(app.clone(), sys, prompt, sub_workspace).await {
+    let result_text = match run_sub_agent(app.clone(), sys, prompt, parent_workspace.map(String::from), sub_workspace).await {
         Ok(text) => text,
         Err(e) => format!("[sub-agent error] {e}"),
     };

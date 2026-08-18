@@ -1,7 +1,7 @@
 //! Agent 全局状态：由 Tauri `manage` 注入，各命令与循环共享。
 
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use tokio::sync::oneshot;
 
@@ -32,6 +32,7 @@ pub struct AgentState {
     pub skills: Mutex<Vec<Skill>>,
     pub agents: Mutex<Vec<AgentProfile>>,
     pub channel: tokio::sync::Mutex<ChannelState>,
+    pub router: Arc<crate::models::router::ModelRouter>,
 }
 
 impl AgentState {
@@ -46,6 +47,7 @@ impl AgentState {
             skills: Mutex::new(Vec::new()),
             agents: Mutex::new(Vec::new()),
             channel: tokio::sync::Mutex::new(ChannelState::default()),
+            router: Arc::new(crate::models::router::ModelRouter::new()),
         }
     }
 }

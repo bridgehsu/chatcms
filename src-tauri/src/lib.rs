@@ -2,6 +2,7 @@ mod agent;
 mod agents;
 mod chat;
 mod mcp;
+mod models;
 mod permission;
 mod provider;
 mod scripts;
@@ -46,7 +47,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .build()
         .expect("failed to build tokio rt for db init");
 
-    let pool = rt.block_on(crate::db::init(&handle)).expect("db init failed");
+    let pool = rt.block_on(crate::db::init(&handle))?;
     handle.manage(crate::db::DbPool(pool));
 
     // Sync state from disk
@@ -59,6 +60,17 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     *state.knowledge.lock().unwrap() = rt.block_on(kbase::repository::load_all(&handle));
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = rt.block_on(agents::service::ensure_seeded(&handle));
+
+    // 迁移旧 chatcms.json 中的 profiles 到 SQLite model_profile 表
+    {
+        let legacy_profiles = state.config.lock().unwrap().profiles.clone();
+        if !legacy_profiles.is_empty() {
+            let h = handle.clone();
+            tauri::async_runtime::spawn(async move {
+                models::service::migrate_from_legacy(&h, legacy_profiles).await;
+            });
+        }
+    }
 
     // MCP — connect all enabled servers
     let mcp_configs = mcp::repository::load_configs(&handle);
@@ -249,6 +261,12 @@ pub fn run() {
             // publish
             publish::commands::publish_to_browser,
             publish::commands::publish_media_base,
+            // model profiles
+            models::commands::model_profile_list,
+            models::commands::model_profile_add,
+            models::commands::model_profile_update,
+            models::commands::model_profile_remove,
+            models::commands::model_profile_pin_session,
         ])
         .setup(setup)
         .run(tauri::generate_context!())

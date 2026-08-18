@@ -107,6 +107,9 @@ CREATE TABLE IF NOT EXISTS skill_pkg (
     created                  INTEGER NOT NULL,        -- 创建时间（Unix 毫秒）
     updated                  INTEGER NOT NULL         -- 最近修改时间（Unix 毫秒）
 );
+-- 为已有数据库补列（幂等）
+ALTER TABLE skill_pkg ADD COLUMN IF NOT EXISTS user_invocable           INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE skill_pkg ADD COLUMN IF NOT EXISTS disable_model_invocation INTEGER NOT NULL DEFAULT 0;
 
 -- Images metadata
 CREATE TABLE IF NOT EXISTS images (
@@ -163,3 +166,29 @@ CREATE TABLE IF NOT EXISTS agent (
     updated       INTEGER NOT NULL,                  -- 最近修改时间（Unix 毫秒）
     yn            INTEGER NOT NULL DEFAULT 0         -- 软删除标志（0=正常 1=已删除）
 );
+-- 为已有数据库补列（幂等）
+ALTER TABLE agent ADD COLUMN IF NOT EXISTS spawnable     INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE agent ADD COLUMN IF NOT EXISTS perms         TEXT    NOT NULL DEFAULT '{}';
+ALTER TABLE agent ADD COLUMN IF NOT EXISTS workspace_dir TEXT;
+ALTER TABLE agent ADD COLUMN IF NOT EXISTS sort          INTEGER NOT NULL DEFAULT 0;
+
+-- Model profiles (replaces chatcms.json provider profiles)
+CREATE TABLE IF NOT EXISTS model_profile (
+    id             TEXT    PRIMARY KEY,                       -- 唯一标识（UUID）
+    name           TEXT    NOT NULL,                          -- 显示名称
+    kind           TEXT    NOT NULL,                          -- 'anthropic' | 'openai'
+    api_key        TEXT    NOT NULL DEFAULT '',               -- API 密钥
+    model          TEXT    NOT NULL,                          -- 模型 ID（如 claude-sonnet-4-6）
+    base_url       TEXT,                                      -- 自定义接口地址（Ollama 等）
+    tier           TEXT    NOT NULL DEFAULT 'cloud',          -- 'local' | 'cloud'
+    weight         INTEGER NOT NULL DEFAULT 2,                -- 路由权重 1~4（越大越优先）
+    context_window INTEGER NOT NULL DEFAULT 8192,             -- 最大 context token 数
+    enabled        INTEGER NOT NULL DEFAULT 1,                -- 是否启用（0=禁用 1=启用）
+    created        INTEGER NOT NULL,                          -- 创建时间（Unix 毫秒）
+    updated        INTEGER NOT NULL                           -- 最近修改时间（Unix 毫秒）
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_profile_tier_weight ON model_profile(tier, weight DESC);
+
+-- 为 sessions 表补 profile_id 列（幂等）
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS profile_id TEXT;

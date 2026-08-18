@@ -5,7 +5,6 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use tauri::{AppHandle, Emitter};
 
-use crate::config::AppConfig;
 use crate::chat::{Message, Role};
 use crate::tools::{ToolDef, ToolResult};
 
@@ -13,16 +12,16 @@ use super::types::{ProviderOutput, StreamChunk};
 
 pub(super) async fn stream_openai(
     app: AppHandle,
-    config: AppConfig,
+    profile: &crate::models::ProviderProfile,
     session_id: String,
     api_messages: Vec<Value>,
     tools: Vec<ToolDef>,
     system_prompt: Option<String>,
 ) -> Result<ProviderOutput> {
     let client = Client::new();
-    let base_url = config
-        .provider
+    let base_url = profile
         .base_url
+        .clone()
         .unwrap_or_else(|| "https://api.openai.com".to_string());
 
     let tools_json: Vec<Value> = tools
@@ -48,7 +47,7 @@ pub(super) async fn stream_openai(
     }
 
     let body = json!({
-        "model": config.provider.model,
+        "model": profile.model,
         "stream": true,
         "tools": tools_json,
         "messages": messages,
@@ -56,7 +55,7 @@ pub(super) async fn stream_openai(
 
     let resp = client
         .post(format!("{}/v1/chat/completions", base_url))
-        .header("Authorization", format!("Bearer {}", config.provider.api_key))
+        .header("Authorization", format!("Bearer {}", profile.api_key))
         .header("content-type", "application/json")
         .json(&body)
         .send()

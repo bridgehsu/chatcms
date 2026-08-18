@@ -1,6 +1,8 @@
 pub mod commands;
+pub mod compress;
 pub mod repository;
 pub mod service;
+pub mod truncate;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -19,6 +21,9 @@ pub struct Session {
     /// 创建时从 AgentProfile 锁定的 workspace 路径，整个会话生命周期内不变
     #[serde(default)]
     pub workspace_dir: Option<String>,
+    /// 手动指定的模型 profile（优先级高于 auto 路由）
+    #[serde(default)]
+    pub profile_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +55,7 @@ impl Session {
             pinned: false,
             agent_id: None,
             workspace_dir: None,
+            profile_id: None,
         }
     }
 

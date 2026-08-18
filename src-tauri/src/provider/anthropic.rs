@@ -5,7 +5,6 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use tauri::{AppHandle, Emitter};
 
-use crate::config::AppConfig;
 use crate::chat::{Message, Role};
 use crate::tools::{ToolCall, ToolDef, ToolResult};
 
@@ -13,16 +12,16 @@ use super::types::{ProviderOutput, StreamChunk};
 
 pub(super) async fn stream_anthropic(
     app: AppHandle,
-    config: AppConfig,
+    profile: &crate::models::ProviderProfile,
     session_id: String,
     api_messages: Vec<Value>,
     tools: Vec<ToolDef>,
     system_prompt: Option<String>,
 ) -> Result<ProviderOutput> {
     let client = Client::new();
-    let base_url = config
-        .provider
+    let base_url = profile
         .base_url
+        .clone()
         .unwrap_or_else(|| "https://api.anthropic.com".to_string());
 
     let tools_json: Vec<Value> = tools
@@ -37,7 +36,7 @@ pub(super) async fn stream_anthropic(
         .collect();
 
     let mut body = json!({
-        "model": config.provider.model,
+        "model": profile.model,
         "max_tokens": 4096,
         "stream": true,
         "tools": tools_json,
@@ -52,7 +51,7 @@ pub(super) async fn stream_anthropic(
 
     let resp = client
         .post(format!("{}/v1/messages", base_url))
-        .header("x-api-key", &config.provider.api_key)
+        .header("x-api-key", &profile.api_key)
         .header("anthropic-version", "2023-06-01")
         .header("content-type", "application/json")
         .json(&body)

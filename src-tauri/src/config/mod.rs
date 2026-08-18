@@ -3,6 +3,8 @@ pub mod commands;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+fn default_true() -> bool { true }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     /// 当前生效的模型配置（Agent 请求使用）
@@ -19,6 +21,9 @@ pub struct AppConfig {
     /// 当前激活的代理 ID（None 时取第一个启用代理）
     #[serde(default)]
     pub active_agent_id: Option<String>,
+    /// 是否启用自动路由（true=按 tier+weight 路由，false=手动）
+    #[serde(default = "default_true")]
+    pub auto_mode: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,6 +83,7 @@ impl Default for AppConfig {
             profiles: vec![profile],
             permission: crate::permission::PermissionConfig::default(),
             active_agent_id: None,
+            auto_mode: true,
         }
     }
 }

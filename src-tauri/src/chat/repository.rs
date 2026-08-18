@@ -14,7 +14,7 @@ fn pool(app: &AppHandle) -> sqlx::SqlitePool {
 pub async fn load_all(app: &AppHandle) -> HashMap<String, Session> {
     let p = pool(app);
     let rows = sqlx::query(
-        "SELECT id, title, pinned, agent_id, workspace_dir, created, updated FROM sessions",
+        "SELECT id, title, pinned, agent_id, workspace_dir, profile_id, created, updated FROM sessions",
     )
     .fetch_all(&p)
     .await
@@ -63,6 +63,7 @@ pub async fn load_all(app: &AppHandle) -> HashMap<String, Session> {
                 pinned: pinned != 0,
                 agent_id: row.get("agent_id"),
                 workspace_dir: row.get("workspace_dir"),
+                profile_id: row.get("profile_id"),
                 created: created as u64,
                 updated: updated as u64,
             },
@@ -75,13 +76,14 @@ pub async fn load_all(app: &AppHandle) -> HashMap<String, Session> {
 pub async fn save(app: &AppHandle, session: &Session) {
     let p = pool(app);
     let _ = sqlx::query(
-        "INSERT INTO sessions (id, title, pinned, agent_id, workspace_dir, created, updated)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+        "INSERT INTO sessions (id, title, pinned, agent_id, workspace_dir, profile_id, created, updated)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            title         = excluded.title,
            pinned        = excluded.pinned,
            agent_id      = excluded.agent_id,
            workspace_dir = excluded.workspace_dir,
+           profile_id    = excluded.profile_id,
            updated       = excluded.updated",
     )
     .bind(&session.id)
@@ -89,6 +91,7 @@ pub async fn save(app: &AppHandle, session: &Session) {
     .bind(session.pinned as i64)
     .bind(&session.agent_id)
     .bind(&session.workspace_dir)
+    .bind(&session.profile_id)
     .bind(session.created as i64)
     .bind(session.updated as i64)
     .execute(&p)

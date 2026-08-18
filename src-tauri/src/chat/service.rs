@@ -5,7 +5,6 @@ use tauri::{AppHandle, Emitter, State};
 use super::{now_secs, repository as repo, Role, Session};
 use crate::agent::dispatch::dispatch_tool;
 use crate::agent::AgentState;
-use crate::config::{AppConfig, ProviderKind};
 use crate::kbase as knowledge;
 use crate::provider::{self, ProviderOutput};
 use crate::scripts;
@@ -176,7 +175,6 @@ pub async fn send_message(
     agent_id: Option<String>,
     content: String,
 ) -> Result<String> {
-    let config = state.config.lock().unwrap().clone();
     let sid = ensure_session(&app, &state, session_id, agent_id.clone()).await;
     push_user_message(&app, &state, &sid, &content).await;
 
@@ -184,14 +182,20 @@ pub async fn send_message(
         .get(&sid)
         .and_then(|s| s.workspace_dir.clone());
 
+    // 判断该 session 是否有绑定 agent（有 agent 就有 tools，强制 cloud tier）
+    let has_agent = state.sessions.lock().unwrap()
+        .get(&sid)
+        .and_then(|s| s.agent_id.clone())
+        .or_else(|| agent_id.clone())
+        .is_some();
+
     let resolved_agent_id = agent_id.or_else(|| {
         state.sessions.lock().unwrap().get(&sid).and_then(|s| s.agent_id.clone())
     });
     let active_agent = resolve_active_agent(&state, resolved_agent_id.as_deref());
     let system_prompt = build_system_prompt(&state, &content, active_agent);
-    let mut api_messages = build_api_messages(&state, &sid, &config);
 
-    run_agent_loop(&app, &state, &config, &sid, &mut api_messages, system_prompt, workspace_dir.as_deref()).await?;
+    run_agent_loop(&app, &state, &sid, has_agent, &mut Vec::new(), system_prompt, workspace_dir.as_deref()).await?;
 
     Ok(sid)
 }
@@ -253,12 +257,12 @@ fn skills_block(
     if text.is_empty() { None } else { Some(text) }
 }
 
-fn build_api_messages(state: &State<'_, AgentState>, sid: &str, config: &AppConfig) -> Vec<Value> {
+fn build_api_messages(state: &State<'_, AgentState>, sid: &str, kind: &str) -> Vec<Value> {
     let sessions = state.sessions.lock().unwrap();
     let msgs = sessions.get(sid).map(|s| s.messages.as_slice()).unwrap_or(&[]);
-    match config.provider.kind {
-        ProviderKind::Anthropic => provider::messages_to_anthropic(msgs),
-        ProviderKind::OpenAI => provider::messages_to_openai(msgs),
+    match kind {
+        "anthropic" => provider::messages_to_anthropic(msgs),
+        _ => provider::messages_to_openai(msgs),
     }
 }
 
@@ -273,29 +277,72 @@ async fn collect_tools(state: &State<'_, AgentState>) -> Vec<tools::ToolDef> {
 async fn run_agent_loop(
     app: &AppHandle,
     state: &State<'_, AgentState>,
-    config: &AppConfig,
     sid: &str,
+    has_tools: bool,
     api_messages: &mut Vec<Value>,
     system_prompt: Option<String>,
     workspace_dir: Option<&str>,
 ) -> Result<()> {
     loop {
+        // 估算当前 context 大小
+        let context_chars: usize = api_messages.iter()
+            .map(|m| m.to_string().len())
+            .sum();
+        let context_tokens = context_chars / 4; // 粗略估算
+
+        // 从 DB 获取所有 profile，通过 router 选择
+        let profiles = crate::models::repository::list(app).await;
+
+        // 检查 session 是否有手动绑定的 profile
+        let pinned_profile_id = state.sessions.lock().unwrap()
+            .get(sid)
+            .and_then(|s| s.profile_id.clone());
+
+        let profile = if let Some(pid) = pinned_profile_id {
+            profiles.iter().find(|p| p.id == pid && p.enabled).cloned()
+        } else {
+            let router = state.router.clone();
+            router.pick(&profiles, has_tools, context_tokens)
+                .and_then(|id| profiles.iter().find(|p| p.id == id).cloned())
+        };
+
+        let profile = match profile {
+            Some(p) => p,
+            None => anyhow::bail!("没有可用的模型配置，请在 Models 页面添加并启用至少一个 Profile"),
+        };
+
+        // 初始化或重建 api_messages（首轮）
+        if api_messages.is_empty() {
+            *api_messages = build_api_messages(state, sid, &profile.kind);
+        }
+
         let all_tools = collect_tools(state).await;
-        let output = provider::stream_chat(
+        let result = provider::stream_chat(
             app.clone(),
-            config.clone(),
+            &profile,
             sid.to_string(),
             api_messages.clone(),
             all_tools,
             system_prompt.clone(),
         )
-        .await?;
+        .await;
+
+        let output = match result {
+            Ok(o) => {
+                state.router.mark_success(&profile.id);
+                o
+            }
+            Err(e) => {
+                state.router.mark_failed(&profile.id);
+                return Err(e);
+            }
+        };
 
         if output.tool_calls.is_empty() {
             finalize_assistant_turn(app, state, sid, &output.text).await;
             break;
         }
-        append_tool_turn(app, state, &config.provider.kind, sid, api_messages, &output, workspace_dir).await;
+        append_tool_turn(app, state, &profile.kind, sid, api_messages, &output, workspace_dir).await;
     }
     Ok(())
 }
@@ -324,7 +371,7 @@ async fn finalize_assistant_turn(
 async fn append_tool_turn(
     app: &AppHandle,
     state: &State<'_, AgentState>,
-    kind: &ProviderKind,
+    kind: &str,
     sid: &str,
     api_messages: &mut Vec<Value>,
     output: &ProviderOutput,
@@ -334,7 +381,7 @@ async fn append_tool_turn(
     for tc in &output.tool_calls {
         results.push(execute_one_tool(app, state, sid, tc, workspace_dir).await);
     }
-    api_messages.extend(provider::encode_tool_turn(kind.clone(), output, &results));
+    api_messages.extend(provider::encode_tool_turn(kind, output, &results));
 }
 
 async fn execute_one_tool(
@@ -347,6 +394,10 @@ async fn execute_one_tool(
     emit_tool_call(app, sid, tc);
     let result = dispatch_tool(tc, app, state, sid, workspace_dir).await;
     emit_tool_result(app, sid, &result);
+    let result = tools::ToolResult {
+        content: crate::chat::truncate::truncate_tool_result(&result.content),
+        ..result
+    };
     {
         let display = tool_display(tc, &result);
         let mut sessions = state.sessions.lock().unwrap();
