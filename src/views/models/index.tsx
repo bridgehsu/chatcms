@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Form, InputNumber, Select } from 'antd';
+import { Form, InputNumber, Select, Switch, Tag } from 'antd';
 import { invoke } from '@/hooks/useTauri';
 import CabinX, { type CabinXColumn } from '@/components/CabinX';
 
@@ -159,9 +159,9 @@ export const ModelsPage = () => {
                 ),
             },
             render: (tier: string) => (
-                <span className={`model-badge${tier === 'local' ? ' model-badge--disabled' : ''}`}>
+                <Tag color={tier === 'cloud' ? 'blue' : 'orange'}>
                     {tier === 'cloud' ? '云端' : '本地'}
-                </span>
+                </Tag>
             ),
         },
         {
@@ -220,10 +220,9 @@ export const ModelsPage = () => {
             title: '状态',
             dataIndex: 'enabled',
             key: 'enabled',
-            render: (enabled: boolean) =>
-                enabled
-                    ? <span className="model-badge">启用</span>
-                    : <span className="model-status-idle">停用</span>,
+            render: (enabled: boolean) => (
+                <Switch size="small" checked={enabled} style={{ pointerEvents: 'none' }} />
+            ),
         },
         // ── Form-only fields (hideInTable) ────────────────────────────────
         {
