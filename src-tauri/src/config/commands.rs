@@ -167,6 +167,7 @@ pub fn provider_activate(
         return Err("配置不存在".into());
     }
     cfg.active_profile_id = Some(id.clone());
+    cfg.auto_mode = false;
     cfg.sync_active_provider();
     persist::save_config(&app, &cfg);
     cfg.profile_infos()
@@ -174,6 +175,19 @@ pub fn provider_activate(
         .find(|p| p.id == id)
         .ok_or_else(|| "激活失败".into())
 }
+
+/// 切换到 auto 路由模式（用户在 ModelPicker 选择"Auto"时调用）
+#[tauri::command]
+pub fn provider_set_auto(
+    app: AppHandle,
+    state: State<'_, AgentState>,
+) -> Result<(), String> {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.auto_mode = true;
+    persist::save_config(&app, &cfg);
+    Ok(())
+}
+
 #[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("config")

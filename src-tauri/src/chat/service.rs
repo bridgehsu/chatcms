@@ -293,14 +293,30 @@ async fn run_agent_loop(
         // 从 DB 获取所有 profile，通过 router 选择
         let profiles = crate::models::repository::list(app).await;
 
-        // 检查 session 是否有手动绑定的 profile
-        let pinned_profile_id = state.sessions.lock().unwrap()
-            .get(sid)
-            .and_then(|s| s.profile_id.clone());
+        // 优先级：session 手动绑定 > 全局手动激活（auto_mode=false）> auto 路由
+        let (pinned_profile_id, auto_mode, active_profile_id) = {
+            let sessions = state.sessions.lock().unwrap();
+            let cfg = state.config.lock().unwrap();
+            let pinned = sessions.get(sid).and_then(|s| s.profile_id.clone());
+            (pinned, cfg.auto_mode, cfg.active_profile_id.clone())
+        };
 
         let profile = if let Some(pid) = pinned_profile_id {
+            // session 级别手动绑定（最高优先）
             profiles.iter().find(|p| p.id == pid && p.enabled).cloned()
+        } else if !auto_mode {
+            // 全局手动模式：用 active_profile_id 对应的 SQLite profile
+            active_profile_id
+                .as_deref()
+                .and_then(|pid| profiles.iter().find(|p| p.id == pid && p.enabled).cloned())
+                .or_else(|| {
+                    // fallback 到 router
+                    let router = state.router.clone();
+                    router.pick(&profiles, has_tools, context_tokens)
+                        .and_then(|id| profiles.iter().find(|p| p.id == id).cloned())
+                })
         } else {
+            // auto 路由（默认）
             let router = state.router.clone();
             router.pick(&profiles, has_tools, context_tokens)
                 .and_then(|id| profiles.iter().find(|p| p.id == id).cloned())

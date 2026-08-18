@@ -61,15 +61,10 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = rt.block_on(agents::service::ensure_seeded(&handle));
 
-    // 迁移旧 chatcms.json 中的 profiles 到 SQLite model_profile 表
+    // 迁移旧 chatcms.json 中的 profiles 到 SQLite model_profile 表（同步执行，确保启动时完成）
     {
         let legacy_profiles = state.config.lock().unwrap().profiles.clone();
-        if !legacy_profiles.is_empty() {
-            let h = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                models::service::migrate_from_legacy(&h, legacy_profiles).await;
-            });
-        }
+        rt.block_on(models::service::migrate_from_legacy(&handle, legacy_profiles));
     }
 
     // MCP — connect all enabled servers
@@ -120,6 +115,7 @@ pub fn run() {
             config::commands::provider_update,
             config::commands::provider_remove,
             config::commands::provider_activate,
+            config::commands::provider_set_auto,
             // permission
             permission::commands::permission_respond,
             permission::commands::permission_get,

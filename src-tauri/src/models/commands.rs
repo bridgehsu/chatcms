@@ -48,13 +48,17 @@ pub async fn model_profile_remove(app: AppHandle, id: String) -> Result<(), Stri
 /// 手动为指定 Session 绑定固定 profile（绕过 auto 路由）
 #[tauri::command]
 pub async fn model_profile_pin_session(
-    _app: AppHandle,
+    app: AppHandle,
     state: State<'_, AgentState>,
     session_id: String,
     profile_id: Option<String>,
 ) -> Result<(), String> {
-    let mut sessions = state.sessions.lock().unwrap();
-    let session = sessions.get_mut(&session_id).ok_or("会话不存在")?;
-    session.profile_id = profile_id;
+    let session = {
+        let mut sessions = state.sessions.lock().unwrap();
+        let s = sessions.get_mut(&session_id).ok_or("会话不存在")?;
+        s.profile_id = profile_id;
+        s.clone()
+    };
+    crate::chat::repository::save(&app, &session).await;
     Ok(())
 }

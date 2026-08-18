@@ -47,6 +47,7 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
   const label = autoModel ? "Auto" : (active?.name ?? "选择模型");
 
   const pickAuto = () => {
+    invoke("provider_set_auto").catch(console.error);
     onAutoChange(true);
     writeAuto(true);
     setOpen(false);
