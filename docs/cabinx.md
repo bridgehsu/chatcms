@@ -156,7 +156,60 @@ interface FormField {
 },
 ```
 
-### 2. 编辑时显示、新增时隐藏
+### 2. 用 Tag 展示枚举值
+
+适合 tier、状态、类型等有限枚举字段，直接在列的 `render` 中使用 antd `Tag`：
+
+```tsx
+import { Tag } from 'antd'
+
+{
+  title: '类型',
+  dataIndex: 'tier',
+  key: 'tier',
+  render: (tier: string) => (
+    <Tag color={tier === 'cloud' ? 'blue' : 'orange'}>
+      {tier === 'cloud' ? '云端' : '本地'}
+    </Tag>
+  ),
+},
+```
+
+常用 Tag 颜色：
+
+| 颜色值 | 适用场景 |
+|---|---|
+| `blue` | 云端、主要类型 |
+| `orange` | 本地、次要类型 |
+| `green` | 成功、已连接 |
+| `red` | 错误、禁用 |
+| `default` | 中性状态 |
+| `processing` | 处理中、运行中 |
+
+---
+
+### 3. 用 Switch 展示布尔状态
+
+表格中展示 enabled 等布尔字段时，用 antd `Switch` 纯展示（加 `pointerEvents: none` 防止误触）：
+
+```tsx
+import { Switch } from 'antd'
+
+{
+  title: '状态',
+  dataIndex: 'enabled',
+  key: 'enabled',
+  render: (enabled: boolean) => (
+    <Switch size="small" checked={enabled} style={{ pointerEvents: 'none' }} />
+  ),
+},
+```
+
+表单中的 Switch（可交互，用于新增/编辑）配置在 `editor` 字段，见下方"编辑时显示、新增时隐藏"示例。
+
+---
+
+### 4. 编辑时显示、新增时隐藏
 
 ```tsx
 editor: {
