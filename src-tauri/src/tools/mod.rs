@@ -1,7 +1,10 @@
 pub mod bash;
+pub mod glob_files;
 pub mod read_file;
+pub mod search_files;
 pub mod spawn_agent;
 pub mod types;
+pub mod web_fetch;
 pub mod write_file;
 
 pub use types::{ToolCall, ToolDef, ToolResult};
@@ -16,9 +19,12 @@ pub fn requires_permission(tool_name: &str) -> bool {
 pub fn all_tools() -> Vec<ToolDef> {
     vec![
         spawn_agent::def(),
+        bash::def(),
         read_file::def(),
         write_file::def(),
-        bash::def(),
+        web_fetch::def(),
+        search_files::def(),
+        glob_files::def(),
     ]
 }
 
@@ -59,6 +65,9 @@ pub async fn execute(call: &ToolCall, workspace_dir: Option<&str>) -> ToolResult
         "read_file" => read_file::execute(call, workspace_dir).await,
         "write_file" => write_file::execute(call, workspace_dir).await,
         "bash" => bash::execute(call, workspace_dir).await,
+        "web_fetch" => web_fetch::execute(call).await,
+        "search_files" => search_files::execute(call, workspace_dir).await,
+        "glob_files" => glob_files::execute(call, workspace_dir).await,
         name => Err(format!("Unknown tool: {name}")),
     };
 

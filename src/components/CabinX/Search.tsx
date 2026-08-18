@@ -37,8 +37,8 @@ const Search: React.FC<SearchProps> = ({
             {processedSearchFields.map(renderFormField)}
             <Form.Item style={{marginBottom: 0}}>
                 <Space>
-                    <Button type="primary" htmlType="submit">查询</Button>
-                    <Button onClick={onResetSearch}>重置</Button>
+                    <Button variant="outlined" color="primary" htmlType="submit">查询</Button>
+                    <Button variant="outlined" onClick={onResetSearch}>重置</Button>
                 </Space>
             </Form.Item>
         </Form>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { IconSend } from "@/components/icons";
+import { IconSend, IconStop } from "@/components/icons";
 import { Select } from "@/components/Select";
 import { useChatStore } from "@/stores/useChatStore";
 import { usePermissionStore } from "@/stores/usePermissionStore";
@@ -50,7 +50,9 @@ export const ChatWindow = () => {
     isStreaming,
     error,
     pendingPermission,
+    tokenUsage,
     sendMessage,
+    abortSession,
     clearError,
   } = useChatStore();
   const { load } = useProviderStore();
@@ -165,21 +167,37 @@ export const ChatWindow = () => {
               rows={1}
               disabled={isStreaming || !!pendingPermission}
             />
-            <button
-              className="btn-send"
-              onClick={() => void handleSend()}
-              disabled={isStreaming || !!pendingPermission || !input.trim()}
-              type="button"
-              aria-label="发送"
-            >
-              {isStreaming ? <span className="btn-send__dots">…</span> : <IconSend />}
-            </button>
+            {isStreaming ? (
+              <button
+                className="btn-stop"
+                onClick={() => abortSession()}
+                type="button"
+                aria-label="停止"
+              >
+                <IconStop />
+              </button>
+            ) : (
+              <button
+                className="btn-send"
+                onClick={() => void handleSend()}
+                disabled={!!pendingPermission || !input.trim()}
+                type="button"
+                aria-label="发送"
+              >
+                <IconSend />
+              </button>
+            )}
           </div>
           <div className="composer__footer">
             <ModelPicker
               autoModel={autoModel}
               onAutoChange={setAutoModel}
             />
+            {tokenUsage && (
+              <span className="composer__tokens" title={`输入 ${tokenUsage.input.toLocaleString()} · 输出 ${tokenUsage.output.toLocaleString()}`}>
+                {tokenUsage.total.toLocaleString()} tokens
+              </span>
+            )}
             {permissionOptions.length > 0 && (
               <Select
                 className="composer__perm"

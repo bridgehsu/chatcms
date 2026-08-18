@@ -145,8 +145,8 @@ export const NAV_ENTRIES: NavEntry[] = [
       },
       {
         path: "/mcp",
-        label: "工具扩展",
-        description: "接入 MCP 服务器，扩展 Agent 可用的外部工具",
+        label: "模型协议",
+        description: "接入 MCP 服务器，为 Agent 动态扩展外部工具能力",
         Icon: IconMcp,
       },
       {

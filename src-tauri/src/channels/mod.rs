@@ -459,7 +459,7 @@ async fn route_to_agent(
     session_id: Option<String>,
     content: String,
 ) -> Option<String> {
-    use crate::agent::AgentState;
+    use crate::agents::AgentState;
     use crate::chat::service::send_message;
     use tauri::Manager;
 
@@ -474,7 +474,7 @@ async fn route_to_agent(
 }
 
 fn get_last_reply(app: &AppHandle, session_id: &str) -> Option<String> {
-    use crate::agent::AgentState;
+    use crate::agents::AgentState;
     use crate::chat::Role;
     use tauri::Manager;
 

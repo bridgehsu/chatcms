@@ -2023,6 +2023,34 @@ body,
   line-height: 1;
 }
 
+.btn-stop {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-2));
+  color: var(--accent);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 140ms var(--ease-out);
+}
+.btn-stop:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-2));
+}
+
+.composer__tokens {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  margin-left: auto;
+  margin-right: 4px;
+  cursor: default;
+}
+
 /* ── Settings modal（偏好设置布局） ───────────────────────────────────────── */
 @keyframes settings-modal-in {
   from {

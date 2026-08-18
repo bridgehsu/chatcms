@@ -3,6 +3,11 @@
 pub mod commands;
 pub mod repository;
 pub mod service;
+pub mod state;
+pub mod dispatch;
+pub mod subagent;
+
+pub use state::{AgentState, PermissionUserReply};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};

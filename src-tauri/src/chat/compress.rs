@@ -2,10 +2,10 @@
 
 use super::{Message, Role};
 
-/// context token 数超过此阈值时触发压缩（粗略估算：1 token ≈ 4 字符）
-const COMPRESS_THRESHOLD_CHARS: usize = 240_000; // ≈ 60k tokens
+/// context token 数超过此阈值时触发截断（粗略估算：1 token ≈ 4 字符）
+pub const COMPRESS_THRESHOLD_CHARS: usize = 240_000; // ≈ 60k tokens
 /// 每次压缩保留最近 N 条消息不动
-const KEEP_RECENT: usize = 20;
+pub const KEEP_RECENT: usize = 20;
 
 /// 估算消息列表的总字符数（粗略 token 估算）
 pub fn estimate_chars(messages: &[Message]) -> usize {
@@ -42,6 +42,27 @@ pub fn prepare_compress(messages: &[Message]) -> (String, Vec<Message>) {
         .join("\n\n");
 
     (summary_input, keep)
+}
+
+/// 当 api_messages（Vec<serde_json::Value>）超过 context 限制时，原地截断旧消息。
+/// 保留第 0 条（通常是首轮 user 消息）+ 最近 KEEP_RECENT 条。
+pub fn truncate_api_messages(messages: &mut Vec<serde_json::Value>, char_limit: usize) {
+    let current_chars: usize = messages.iter().map(|m| m.to_string().len()).sum();
+    if current_chars <= char_limit || messages.len() <= KEEP_RECENT + 1 {
+        return;
+    }
+    let keep_start = messages.len().saturating_sub(KEEP_RECENT);
+    // 保留 [0] + [keep_start..]，丢弃中间部分
+    if keep_start > 1 {
+        messages.drain(1..keep_start);
+        messages.insert(
+            1,
+            serde_json::json!({
+                "role": "user",
+                "content": "[系统：旧消息已截断以适应模型上下文限制]"
+            }),
+        );
+    }
 }
 
 /// 将摘要文本 + 保留消息重组为新的消息列表

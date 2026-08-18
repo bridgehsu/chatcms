@@ -1,7 +1,7 @@
 use tauri::AppHandle;
 
 use super::{McpServerConfig, McpServerInfo, McpToolDef};
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use super::repository as repo;
 
 pub async fn list(state: &AgentState) -> Vec<McpServerInfo> {

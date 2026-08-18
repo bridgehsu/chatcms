@@ -1,5 +1,5 @@
 use super::{McpServerConfig, McpServerInfo, McpToolDef};
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use std::collections::HashMap;
 use tauri::{AppHandle, State};
 

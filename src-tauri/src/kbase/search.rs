@@ -2,6 +2,10 @@ use std::collections::HashSet;
 
 use super::types::KnowledgeEntry;
 
+fn is_cjk(c: char) -> bool {
+    ('\u{4e00}'..='\u{9fff}').contains(&c) || ('\u{3400}'..='\u{4dbf}').contains(&c)
+}
+
 fn tokenize(text: &str) -> HashSet<String> {
     let lower = text.to_lowercase();
     let mut tokens: HashSet<String> = lower
@@ -9,10 +13,14 @@ fn tokenize(text: &str) -> HashSet<String> {
         .filter(|s| s.len() >= 2)
         .map(|s| s.to_string())
         .collect();
-    for c in text.chars() {
-        if ('\u{4e00}'..='\u{9fff}').contains(&c) || ('\u{3400}'..='\u{4dbf}').contains(&c) {
-            tokens.insert(c.to_string());
-        }
+
+    // CJK single chars + consecutive bigrams for better partial matching
+    let cjk_chars: Vec<char> = text.chars().filter(|c| is_cjk(*c)).collect();
+    for &c in &cjk_chars {
+        tokens.insert(c.to_string());
+    }
+    for pair in cjk_chars.windows(2) {
+        tokens.insert(format!("{}{}", pair[0], pair[1]));
     }
     tokens
 }

@@ -1,6 +1,10 @@
 use serde_json::json;
+use tokio::time::{timeout, Duration};
 
 use super::types::{ToolCall, ToolDef};
+
+/// bash 命令最长执行时间
+const BASH_TIMEOUT_SECS: u64 = 120;
 
 pub fn def() -> ToolDef {
     ToolDef {
@@ -17,15 +21,20 @@ pub fn def() -> ToolDef {
 }
 
 pub async fn execute(call: &ToolCall, workspace_dir: Option<&str>) -> Result<String, String> {
-    let command = call.input["command"].as_str().unwrap_or("");
-    let mut cmd = std::process::Command::new("/bin/sh");
-    cmd.arg("-c").arg(command);
-    if let Some(ws) = workspace_dir {
-        cmd.current_dir(ws);
-    }
-    let output = cmd.output();
-    match output {
-        Ok(out) => {
+    let command = call.input["command"].as_str().unwrap_or("").to_string();
+    let cwd = workspace_dir.map(|s| s.to_string());
+
+    let task = async move {
+        let mut cmd = tokio::process::Command::new("/bin/sh");
+        cmd.arg("-c").arg(&command);
+        if let Some(ws) = &cwd {
+            cmd.current_dir(ws);
+        }
+        cmd.output().await
+    };
+
+    match timeout(Duration::from_secs(BASH_TIMEOUT_SECS), task).await {
+        Ok(Ok(out)) => {
             let mut combined = String::from_utf8_lossy(&out.stdout).to_string();
             let stderr = String::from_utf8_lossy(&out.stderr);
             if !stderr.is_empty() {
@@ -40,6 +49,10 @@ pub async fn execute(call: &ToolCall, workspace_dir: Option<&str>) -> Result<Str
                 Err(format!("exit code: {}", out.status))
             }
         }
-        Err(e) => Err(e.to_string()),
+        Ok(Err(e)) => Err(e.to_string()),
+        Err(_) => Err(format!(
+            "bash: command timed out after {}s",
+            BASH_TIMEOUT_SECS
+        )),
     }
 }

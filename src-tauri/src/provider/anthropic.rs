@@ -70,6 +70,8 @@ pub(super) async fn stream_anthropic(
     let mut tool_blocks: HashMap<usize, (String, String, String)> = HashMap::new();
     let mut finished_tool_calls: Vec<ToolCall> = Vec::new();
     let mut stop_reason = String::new();
+    let mut input_tokens: u32 = 0;
+    let mut output_tokens: u32 = 0;
 
     while let Some(chunk) = resp.next().await {
         let chunk = chunk?;
@@ -85,6 +87,11 @@ pub(super) async fn stream_anthropic(
                 };
 
                 match val["type"].as_str().unwrap_or("") {
+                    "message_start" => {
+                        if let Some(u) = val["message"]["usage"]["input_tokens"].as_u64() {
+                            input_tokens = u as u32;
+                        }
+                    }
                     "content_block_start" => {
                         let idx = val["index"].as_u64().unwrap_or(0) as usize;
                         let block = &val["content_block"];
@@ -129,6 +136,9 @@ pub(super) async fn stream_anthropic(
                         if let Some(sr) = val["delta"]["stop_reason"].as_str() {
                             stop_reason = sr.to_string();
                         }
+                        if let Some(u) = val["usage"]["output_tokens"].as_u64() {
+                            output_tokens = u as u32;
+                        }
                     }
                     _ => {}
                 }
@@ -150,6 +160,8 @@ pub(super) async fn stream_anthropic(
     Ok(ProviderOutput {
         text: full_text,
         tool_calls: finished_tool_calls,
+        input_tokens,
+        output_tokens,
     })
 }
 

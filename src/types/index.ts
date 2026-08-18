@@ -32,6 +32,13 @@ export interface StreamChunk {
   done: boolean;
 }
 
+export interface TokenUsageEvent {
+  session_id: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+
 export interface ToolCallEvent {
   session_id: string;
   id: string;

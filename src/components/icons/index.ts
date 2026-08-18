@@ -20,6 +20,7 @@ export { IconMemory } from "./IconMemory";
 export { IconChannels } from "./IconChannels";
 export { IconProvider } from "./IconProvider";
 export { IconSend } from "./IconSend";
+export { IconStop } from "./IconStop";
 export { IconPlus } from "./IconPlus";
 export { IconUser } from "./IconUser";
 export { IconBot } from "./IconBot";

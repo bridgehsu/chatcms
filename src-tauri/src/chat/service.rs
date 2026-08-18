@@ -1,10 +1,12 @@
 use anyhow::Result;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, State};
+use tokio::sync::watch;
 
 use super::{now_secs, repository as repo, Role, Session};
-use crate::agent::dispatch::dispatch_tool;
-use crate::agent::AgentState;
+use crate::agents::dispatch::dispatch_tool;
+use crate::agents::AgentState;
+use crate::chat::compress;
 use crate::kbase as knowledge;
 use crate::provider::{self, ProviderOutput};
 use crate::scripts;
@@ -195,8 +197,16 @@ pub async fn send_message(
     let active_agent = resolve_active_agent(&state, resolved_agent_id.as_deref());
     let system_prompt = build_system_prompt(&state, &content, active_agent);
 
-    run_agent_loop(&app, &state, &sid, has_agent, &mut Vec::new(), system_prompt, workspace_dir.as_deref()).await?;
+    // ⑧ 创建中断信号，注册到全局 abort_handles
+    let (abort_tx, abort_rx) = watch::channel(false);
+    state.abort_handles.lock().unwrap().insert(sid.clone(), abort_tx);
 
+    let result = run_agent_loop(&app, &state, &sid, has_agent, &mut Vec::new(), system_prompt, workspace_dir.as_deref(), abort_rx).await;
+
+    // 清理中断句柄
+    state.abort_handles.lock().unwrap().remove(&sid);
+
+    result?;
     Ok(sid)
 }
 
@@ -282,8 +292,21 @@ async fn run_agent_loop(
     api_messages: &mut Vec<Value>,
     system_prompt: Option<String>,
     workspace_dir: Option<&str>,
+    mut abort_rx: watch::Receiver<bool>,
 ) -> Result<()> {
+    let mut total_input_tokens: u32 = 0;
+    let mut total_output_tokens: u32 = 0;
+
     loop {
+        // ⑧ 检查中断信号
+        if *abort_rx.borrow() {
+            let _ = app.emit("stream-chunk", provider::StreamChunk {
+                session_id: sid.to_string(),
+                delta: String::new(),
+                done: true,
+            });
+            break;
+        }
         // 估算当前 context 大小
         let context_chars: usize = api_messages.iter()
             .map(|m| m.to_string().len())
@@ -332,27 +355,56 @@ async fn run_agent_loop(
             *api_messages = build_api_messages(state, sid, &profile.kind);
         }
 
-        let all_tools = collect_tools(state).await;
-        let result = provider::stream_chat(
-            app.clone(),
-            &profile,
-            sid.to_string(),
-            api_messages.clone(),
-            all_tools,
-            system_prompt.clone(),
-        )
-        .await;
+        // ③ context 边界检查：超出 profile 上限 85% 或全局阈值时截断旧消息
+        {
+            let char_limit = (profile.context_window as usize * 4 * 85 / 100)
+                .min(compress::COMPRESS_THRESHOLD_CHARS);
+            compress::truncate_api_messages(api_messages, char_limit);
+        }
 
-        let output = match result {
-            Ok(o) => {
+        let all_tools = collect_tools(state).await;
+
+        // ⑧ race: API call vs 中断信号
+        let chat_result = tokio::select! {
+            r = provider::stream_chat(
+                app.clone(),
+                &profile,
+                sid.to_string(),
+                api_messages.clone(),
+                all_tools,
+                system_prompt.clone(),
+            ) => Some(r),
+            _ = async {
+                loop {
+                    if abort_rx.changed().await.is_err() { return; }
+                    if *abort_rx.borrow() { return; }
+                }
+            } => None,
+        };
+
+        let output = match chat_result {
+            None => {
+                // ⑧ 用户中断
+                let _ = app.emit("stream-chunk", provider::StreamChunk {
+                    session_id: sid.to_string(),
+                    delta: String::new(),
+                    done: true,
+                });
+                break;
+            }
+            Some(Ok(o)) => {
                 state.router.mark_success(&profile.id);
                 o
             }
-            Err(e) => {
+            Some(Err(e)) => {
                 state.router.mark_failed(&profile.id);
                 return Err(e);
             }
         };
+
+        // ⑨ 累计 token 使用量
+        total_input_tokens += output.input_tokens;
+        total_output_tokens += output.output_tokens;
 
         if output.tool_calls.is_empty() {
             finalize_assistant_turn(app, state, sid, &output.text).await;
@@ -360,6 +412,17 @@ async fn run_agent_loop(
         }
         append_tool_turn(app, state, &profile.kind, sid, api_messages, &output, workspace_dir).await;
     }
+
+    // ⑨ 发送本次 agent loop 总 token 统计
+    if total_input_tokens > 0 || total_output_tokens > 0 {
+        let _ = app.emit("session-token-usage", provider::TokenUsageEvent {
+            session_id: sid.to_string(),
+            input_tokens: total_input_tokens,
+            output_tokens: total_output_tokens,
+            total_tokens: total_input_tokens + total_output_tokens,
+        });
+    }
+
     Ok(())
 }
 

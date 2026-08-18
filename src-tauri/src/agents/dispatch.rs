@@ -2,6 +2,10 @@
 
 use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager, State};
+use tokio::time::{timeout, Duration};
+
+/// MCP 工具调用最长等待时间
+const MCP_TOOL_TIMEOUT_SECS: u64 = 60;
 
 use crate::permission::{
     self, append_audit, make_audit, AuditDecision, RememberScope, SessionGrant, Verdict,
@@ -246,15 +250,20 @@ async fn dispatch_mcp_tool(
     state: &State<'_, AgentState>,
 ) -> tools::ToolResult {
     let mcp = state.mcp.lock().await;
-    match mcp.call_tool(&tc.name, tc.input.clone()).await {
-        Ok(text) => tools::ToolResult {
+    match timeout(Duration::from_secs(MCP_TOOL_TIMEOUT_SECS), mcp.call_tool(&tc.name, tc.input.clone())).await {
+        Ok(Ok(text)) => tools::ToolResult {
             id: tc.id.clone(),
             content: text,
             is_error: false,
         },
-        Err(e) => tools::ToolResult {
+        Ok(Err(e)) => tools::ToolResult {
             id: tc.id.clone(),
             content: e.to_string(),
+            is_error: true,
+        },
+        Err(_) => tools::ToolResult {
+            id: tc.id.clone(),
+            content: format!("MCP tool timed out after {}s", MCP_TOOL_TIMEOUT_SECS),
             is_error: true,
         },
     }
@@ -336,15 +345,20 @@ pub async fn dispatch_sub_tool(
 
     if mcp_tool_names.iter().any(|n| n == &tc.name) {
         let mcp = s.mcp.lock().await;
-        return match mcp.call_tool(&tc.name, tc.input.clone()).await {
-            Ok(text) => tools::ToolResult {
+        return match timeout(Duration::from_secs(MCP_TOOL_TIMEOUT_SECS), mcp.call_tool(&tc.name, tc.input.clone())).await {
+            Ok(Ok(text)) => tools::ToolResult {
                 id: tc.id.clone(),
                 content: text,
                 is_error: false,
             },
-            Err(e) => tools::ToolResult {
+            Ok(Err(e)) => tools::ToolResult {
                 id: tc.id.clone(),
                 content: e.to_string(),
+                is_error: true,
+            },
+            Err(_) => tools::ToolResult {
+                id: tc.id.clone(),
+                content: format!("MCP tool timed out after {}s", MCP_TOOL_TIMEOUT_SECS),
                 is_error: true,
             },
         };

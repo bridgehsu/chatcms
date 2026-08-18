@@ -1,7 +1,7 @@
 use tauri::{AppHandle, State};
 
 use super::{service, ProviderProfile};
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 
 #[tauri::command]
 pub async fn model_profile_list(app: AppHandle) -> Vec<ProviderProfile> {

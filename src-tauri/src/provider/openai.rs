@@ -49,6 +49,7 @@ pub(super) async fn stream_openai(
     let body = json!({
         "model": profile.model,
         "stream": true,
+        "stream_options": {"include_usage": true},
         "tools": tools_json,
         "messages": messages,
     });
@@ -71,6 +72,8 @@ pub(super) async fn stream_openai(
 
     let mut full_text = String::new();
     let mut tool_accum: HashMap<usize, (String, String, String)> = HashMap::new();
+    let mut input_tokens: u32 = 0;
+    let mut output_tokens: u32 = 0;
 
     while let Some(chunk) = resp.next().await {
         let chunk = chunk?;
@@ -97,6 +100,16 @@ pub(super) async fn stream_openai(
                             done: false,
                         },
                     );
+                }
+
+                // Usage comes in final chunk (stream_options.include_usage=true)
+                if let Some(usage) = val.get("usage").filter(|u| !u.is_null()) {
+                    if let Some(p) = usage["prompt_tokens"].as_u64() {
+                        input_tokens = p as u32;
+                    }
+                    if let Some(c) = usage["completion_tokens"].as_u64() {
+                        output_tokens = c as u32;
+                    }
                 }
 
                 if let Some(tc_arr) = delta["tool_calls"].as_array() {
@@ -154,6 +167,8 @@ pub(super) async fn stream_openai(
     Ok(ProviderOutput {
         text: full_text,
         tool_calls,
+        input_tokens,
+        output_tokens,
     })
 }
 

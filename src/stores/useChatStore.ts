@@ -9,9 +9,16 @@ import type {
   StreamChunk,
   SubAgentDone,
   SubAgentStart,
+  TokenUsageEvent,
   ToolCallEvent,
   ToolResultEvent,
 } from "@/types";
+
+interface TokenUsage {
+  input: number;
+  output: number;
+  total: number;
+}
 
 interface ChatState {
   sessions: SessionSummary[];
@@ -22,11 +29,13 @@ interface ChatState {
   isStreaming: boolean;
   pendingPermission: PermissionRequest | null;
   error: string | null;
+  tokenUsage: TokenUsage | null;
 
   setActiveAgent: (agentId: string | null) => void;
   loadSessions: () => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
+  abortSession: () => void;
   newSession: () => void;
   renameSession: (id: string, title: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
@@ -126,6 +135,14 @@ export const useChatStore = create<ChatState>((set, get) => {
     }
   });
 
+  // ── session-token-usage ──────────────────────────────────────────────────
+  listen<TokenUsageEvent>("session-token-usage", (event) => {
+    const { session_id, input_tokens, output_tokens, total_tokens } = event.payload;
+    const { activeSessionId } = get();
+    if (session_id !== activeSessionId && activeSessionId !== null) return;
+    set({ tokenUsage: { input: input_tokens, output: output_tokens, total: total_tokens } });
+  });
+
   // ── sub-agent events ──────────────────────────────────────────────────────
   listen<SubAgentStart>("subagent-start", (event) => {
     const { parent_session_id, task_id, prompt } = event.payload;
@@ -169,8 +186,15 @@ export const useChatStore = create<ChatState>((set, get) => {
     isStreaming: false,
     pendingPermission: null,
     error: null,
+    tokenUsage: null,
 
     clearError: () => set({ error: null }),
+
+    abortSession: () => {
+      const { activeSessionId } = get();
+      if (!activeSessionId) return;
+      void invoke("chat_abort", { sessionId: activeSessionId });
+    },
 
     setActiveAgent: (agentId) => {
       set({ activeAgentId: agentId, activeSessionId: null, activeSession: null, error: null });
@@ -220,6 +244,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         streamingContent: "",
         isStreaming: true,
         error: null,
+        tokenUsage: null,
       });
 
       try {

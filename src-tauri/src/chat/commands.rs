@@ -1,5 +1,5 @@
 use super::Session;
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use tauri::{AppHandle, State};
 
 #[tauri::command]
@@ -58,4 +58,13 @@ pub async fn session_pin(
     pinned: bool,
 ) -> Result<(), String> {
     super::service::pin(&app, &state, &session_id, pinned).await
+}
+
+/// 中断正在运行的 Agent（⑧）。
+#[tauri::command]
+pub fn chat_abort(state: State<'_, AgentState>, session_id: String) {
+    let handles = state.abort_handles.lock().unwrap();
+    if let Some(tx) = handles.get(&session_id) {
+        let _ = tx.send(true);
+    }
 }

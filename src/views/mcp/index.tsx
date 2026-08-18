@@ -279,7 +279,7 @@ export const McpPage = () => {
             <CabinX
                 api={api}
                 columns={columns}
-                pageTitle="MCP 服务器"
+                pageTitle="模型协议（MCP）"
                 rowKey="name"
                 formatRecordForEdit={formatRecordForEdit}
                 beforeSubmit={beforeSubmit}

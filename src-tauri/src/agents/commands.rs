@@ -1,5 +1,5 @@
 use super::AgentProfile;
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use crate::permission::DomainPolicy;
 use std::collections::HashMap;
 use tauri::{AppHandle, State};

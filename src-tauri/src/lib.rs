@@ -1,4 +1,3 @@
-mod agent;
 mod agents;
 mod chat;
 mod mcp;
@@ -24,7 +23,7 @@ mod publish;
 mod schedules;
 mod videos;
 
-use agent::AgentState;
+use agents::AgentState;
 use publish::PublishBridge;
 use tauri::Manager;
 
@@ -102,6 +101,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // chat / session
             chat::commands::chat_send,
+            chat::commands::chat_abort,
             chat::commands::session_list,
             chat::commands::session_get,
             chat::commands::session_delete,

@@ -1,7 +1,7 @@
 use tauri::AppHandle;
 
 use super::{KnowledgeEntry, KnowledgeSiteProfile, normalize_slug};
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use super::repository as repo;
 
 pub async fn add(

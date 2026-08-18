@@ -1,5 +1,5 @@
 use super::{AppConfig, ProviderConfig, ProviderKind, ProviderProfile, ProviderProfileInfo};
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use crate::persist;
 use tauri::{AppHandle, State};
 use uuid::Uuid;

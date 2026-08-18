@@ -1,7 +1,7 @@
 use super::{
     AuditEvent, DomainInfo, DomainPolicy, PermissionConfig, PermissionMode, RememberScope,
 };
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use crate::persist;
 use std::collections::HashMap;
 use tauri::{AppHandle, State};

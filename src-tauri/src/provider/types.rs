@@ -29,4 +29,16 @@ pub struct ToolResultEvent {
 pub struct ProviderOutput {
     pub text: String,
     pub tool_calls: Vec<ToolCall>,
+    /// 本次 API 调用消耗的 input tokens（0 = 未知）
+    pub input_tokens: u32,
+    /// 本次 API 调用消耗的 output tokens（0 = 未知）
+    pub output_tokens: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TokenUsageEvent {
+    pub session_id: String,
+    pub input_tokens: u32,
+    pub output_tokens: u32,
+    pub total_tokens: u32,
 }

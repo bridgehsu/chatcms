@@ -1,5 +1,5 @@
 use super::Skill;
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use tauri::{AppHandle, State};
 
 async fn sync_state(app: &AppHandle, state: &State<'_, AgentState>) {

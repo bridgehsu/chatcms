@@ -1,5 +1,5 @@
 use super::{ExportResult, KnowledgeEntry, KnowledgeSiteProfile, PublicFeed};
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use tauri::{AppHandle, State};
 
 use super::service;

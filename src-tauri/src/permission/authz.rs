@@ -8,19 +8,14 @@ use super::grants::SessionGrantStore;
 use super::types::{Domain, DomainPolicy, Verdict};
 
 pub fn domain_for_tool(tool_name: &str) -> Domain {
-    if tool_name == "read_file" {
-        Domain::FileRead
-    } else if tool_name == "write_file" {
-        Domain::FileWrite
-    } else if tool_name == "bash" {
-        Domain::Shell
-    } else if tool_name == "spawn_agent" {
-        Domain::Agent
-    } else if tool_name.starts_with("mcp__") {
-        Domain::Mcp
-    } else {
-        // 未知内置工具：保守按 shell 对待（需确认）
-        Domain::Shell
+    match tool_name {
+        "read_file" | "search_files" | "glob_files" => Domain::FileRead,
+        "write_file" => Domain::FileWrite,
+        "bash" => Domain::Shell,
+        "spawn_agent" => Domain::Agent,
+        "web_fetch" => Domain::Network,
+        _ if tool_name.starts_with("mcp__") => Domain::Mcp,
+        _ => Domain::Shell, // 未知工具：保守按 shell 对待
     }
 }
 
@@ -40,6 +35,8 @@ fn summarize_input(tc: &ToolCall) -> String {
         "bash" => tc.input.get("command").or_else(|| tc.input.get("cmd")),
         "read_file" | "write_file" => tc.input.get("path").or_else(|| tc.input.get("file_path")),
         "spawn_agent" => tc.input.get("prompt"),
+        "web_fetch" => tc.input.get("url"),
+        "search_files" | "glob_files" => tc.input.get("pattern"),
         _ => None,
     };
     let raw = s

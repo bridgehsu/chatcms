@@ -1,5 +1,5 @@
 use super::{ChannelInfo, TelegramConfig};
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use crate::persist;
 use serde_json::json;
 use tauri::{AppHandle, State};

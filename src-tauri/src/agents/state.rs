@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::oneshot;
 
-use crate::agents::AgentProfile;
+use super::AgentProfile;
 use crate::channels::ChannelState;
 use crate::config::AppConfig;
 use crate::kbase::KnowledgeEntry;
@@ -33,6 +33,8 @@ pub struct AgentState {
     pub agents: Mutex<Vec<AgentProfile>>,
     pub channel: tokio::sync::Mutex<ChannelState>,
     pub router: Arc<crate::models::router::ModelRouter>,
+    /// Agent 运行中断信号：session_id → watch sender（发送 true 触发中断）
+    pub abort_handles: Mutex<HashMap<String, tokio::sync::watch::Sender<bool>>>,
 }
 
 impl AgentState {
@@ -48,6 +50,7 @@ impl AgentState {
             agents: Mutex::new(Vec::new()),
             channel: tokio::sync::Mutex::new(ChannelState::default()),
             router: Arc::new(crate::models::router::ModelRouter::new()),
+            abort_handles: Mutex::new(HashMap::new()),
         }
     }
 }

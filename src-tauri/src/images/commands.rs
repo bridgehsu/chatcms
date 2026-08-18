@@ -1,5 +1,5 @@
 use super::GeneratedImage;
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use tauri::{AppHandle, State};
 
 #[tauri::command]

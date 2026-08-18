@@ -513,7 +513,7 @@ const CabinX: React.FC<CabinXProps> = ({
                 <div className="topbar-actions">
                     {extraHeaderActions}
                     {headerActions === undefined ? (
-                        <Button type="primary" onClick={handleAdd}>新增</Button>
+                        <Button variant="outlined" color="primary" onClick={handleAdd}>新增</Button>
                     ) : headerActions}
                 </div>
             </header>

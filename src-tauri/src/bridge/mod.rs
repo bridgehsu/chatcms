@@ -14,7 +14,7 @@ use serde_json::json;
 use tauri::{Emitter, Listener, Manager};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
-use crate::agent::AgentState;
+use crate::agents::AgentState;
 use crate::chat::service::send_message;
 use crate::chat::Session;
 use crate::persist;
