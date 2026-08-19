@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use crate::tools::ToolCall;
+use crate::agents::tools::ToolCall;
 
 use super::config::PermissionConfig;
 use super::grants::SessionGrantStore;

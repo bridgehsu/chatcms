@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use serde_json::Value;
 
-use crate::tools::{ToolDef, ToolResult};
+use crate::agents::tools::{ToolDef, ToolResult};
 
 mod types;
 mod anthropic;

@@ -113,7 +113,7 @@ impl McpManager {
     }
 
     /// All tools from connected servers, as API-ready ToolDefs.
-    pub fn all_api_tools(&self) -> Vec<crate::tools::ToolDef> {
+    pub fn all_api_tools(&self) -> Vec<crate::agents::tools::ToolDef> {
         self.clients
             .values()
             .flat_map(|c| c.tools.iter().map(|t| t.as_api_tool()))

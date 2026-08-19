@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tauri::{AppHandle, Emitter};
 
 use crate::chat::{Message, Role};
-use crate::tools::{ToolCall, ToolDef, ToolResult};
+use crate::agents::tools::{ToolCall, ToolDef, ToolResult};
 
 use super::types::{ProviderOutput, StreamChunk};
 

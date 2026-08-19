@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::tools::ToolCall;
+use crate::agents::tools::ToolCall;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StreamChunk {

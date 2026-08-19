@@ -5,7 +5,6 @@ mod models;
 mod permission;
 mod provider;
 mod scripts;
-mod tools;
 mod accounts;
 mod business_map;
 mod channels;

@@ -6,6 +6,9 @@ pub mod service;
 pub mod state;
 pub mod dispatch;
 pub mod subagent;
+pub mod tools;
+
+pub use tools::{ToolCall, ToolDef, ToolResult};
 
 pub use state::{AgentState, PermissionUserReply};
 

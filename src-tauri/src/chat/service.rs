@@ -10,7 +10,7 @@ use crate::chat::compress;
 use crate::kbase as knowledge;
 use crate::provider::{self, ProviderOutput};
 use crate::scripts;
-use crate::tools;
+use crate::agents::tools;
 
 // ── 会话 CRUD ─────────────────────────────────────────────────────────────────
 

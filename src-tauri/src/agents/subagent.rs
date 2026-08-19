@@ -5,7 +5,7 @@ use serde_json::json;
 use tauri::{AppHandle, Manager};
 
 use crate::provider;
-use crate::tools;
+use super::tools;
 
 use super::dispatch::dispatch_sub_tool;
 use super::state::AgentState;

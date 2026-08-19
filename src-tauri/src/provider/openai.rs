@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tauri::{AppHandle, Emitter};
 
 use crate::chat::{Message, Role};
-use crate::tools::{ToolDef, ToolResult};
+use crate::agents::tools::{ToolDef, ToolResult};
 
 use super::types::{ProviderOutput, StreamChunk};
 
@@ -149,7 +149,7 @@ pub(super) async fn stream_openai(
         },
     );
 
-    let mut tool_calls: Vec<crate::tools::ToolCall> = tool_accum
+    let mut tool_calls: Vec<crate::agents::tools::ToolCall> = tool_accum
         .into_iter()
         .map(|(idx, (id, name, args))| {
             let id = if id.is_empty() {
@@ -159,7 +159,7 @@ pub(super) async fn stream_openai(
             };
             let input: Value = serde_json::from_str(&args)
                 .unwrap_or(Value::Object(Default::default()));
-            crate::tools::ToolCall { id, name, input }
+            crate::agents::tools::ToolCall { id, name, input }
         })
         .collect();
     tool_calls.sort_by(|a, b| a.id.cmp(&b.id));

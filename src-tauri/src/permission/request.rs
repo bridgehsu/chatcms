@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter, State};
 use tokio::sync::oneshot;
 
 use crate::permission::{Domain, RememberScope};
-use crate::tools;
+use crate::agents::tools;
 use crate::agents::{AgentState, PermissionUserReply};
 
 /// 发给前端的权限请求载荷（对应事件 `permission-request`）。

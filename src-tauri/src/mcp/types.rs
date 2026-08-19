@@ -14,8 +14,8 @@ pub struct McpToolDef {
 
 impl McpToolDef {
     /// Convert to the generic ToolDef used by the provider module.
-    pub fn as_api_tool(&self) -> crate::tools::ToolDef {
-        crate::tools::ToolDef {
+    pub fn as_api_tool(&self) -> crate::agents::tools::ToolDef {
+        crate::agents::tools::ToolDef {
             name: self.api_name.clone(),
             description: format!("[MCP:{}] {}", self.server, self.description),
             input_schema: self.input_schema.clone(),

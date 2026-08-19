@@ -10,7 +10,7 @@ const MCP_TOOL_TIMEOUT_SECS: u64 = 60;
 use crate::permission::{
     self, append_audit, make_audit, AuditDecision, RememberScope, SessionGrant, Verdict,
 };
-use crate::tools;
+use super::tools;
 
 use crate::permission::request_permission;
 use super::state::AgentState;
