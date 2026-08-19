@@ -68,6 +68,13 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   {
     kind: "leaf",
+    path: "/settings/knowledge",
+    label: "知识检索",
+    description: "本机知识条目；可勾选公开并导出到 chatcms.org",
+    Icon: IconMemory,
+  },
+  {
+    kind: "leaf",
     path: "/content",
     label: "内容管理",
     description: "Notion 风格 AI 笔记，沉淀选题与成稿",
@@ -115,13 +122,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     description: "创建调度项目，在画布中设计节点工作流（类似 n8n）",
     Icon: IconCron,
     dividerBefore: true,
-  },
-  {
-    kind: "leaf",
-    path: "/settings/knowledge",
-    label: "知识库",
-    description: "本机知识条目；可勾选公开并导出到 chatcms.org",
-    Icon: IconMemory,
   },
   {
     kind: "group",

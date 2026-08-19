@@ -317,11 +317,11 @@ async fn run_agent_loop(
         let profiles = crate::models::repository::list(app).await;
 
         // 优先级：session 手动绑定 > 全局手动激活（auto_mode=false）> auto 路由
-        let (pinned_profile_id, auto_mode, active_profile_id) = {
+        let (pinned_profile_id, auto_mode, active_profile_id, legacy_provider) = {
             let sessions = state.sessions.lock().unwrap();
             let cfg = state.config.lock().unwrap();
             let pinned = sessions.get(sid).and_then(|s| s.profile_id.clone());
-            (pinned, cfg.auto_mode, cfg.active_profile_id.clone())
+            (pinned, cfg.auto_mode, cfg.active_profile_id.clone(), cfg.provider.clone())
         };
 
         let profile = if let Some(pid) = pinned_profile_id {
@@ -335,15 +335,48 @@ async fn run_agent_loop(
                 .or_else(|| {
                     // fallback 到 router
                     let router = state.router.clone();
-                    router.pick(&profiles, has_tools, context_tokens)
+                    router.pick(&profiles, has_tools, context_tokens, &[])
                         .and_then(|id| profiles.iter().find(|p| p.id == id).cloned())
                 })
         } else {
             // auto 路由（默认）
             let router = state.router.clone();
-            router.pick(&profiles, has_tools, context_tokens)
+            router.pick(&profiles, has_tools, context_tokens, &[])
                 .and_then(|id| profiles.iter().find(|p| p.id == id).cloned())
         };
+
+        // 终极 fallback：SQLite model_profile 为空时，回退到 JSON config 中保存的 provider 配置
+        // 这兼容了旧版本用户（只在旧 UI 配置过模型，未迁移到 SQLite 的情况）
+        let profile = profile.or_else(|| {
+            if legacy_provider.api_key.trim().is_empty() {
+                return None;
+            }
+            let kind_str = match legacy_provider.kind {
+                crate::config::ProviderKind::Anthropic => "anthropic",
+                crate::config::ProviderKind::OpenAI => "openai",
+            };
+            Some(crate::models::ProviderProfile {
+                id: "__legacy__".to_string(),
+                name: "Legacy Config".to_string(),
+                kind: kind_str.to_string(),
+                api_key: legacy_provider.api_key.clone(),
+                model: legacy_provider.model.clone(),
+                base_url: legacy_provider.base_url.clone(),
+                tier: "cloud".to_string(),
+                weight: 2,
+                context_window: 8192,
+                enabled: true,
+                created: 0,
+                updated: 0,
+                capabilities: serde_json::Value::Object(Default::default()),
+                thinking: false,
+                thinking_effort: "medium".into(),
+                temperature: None,
+                max_output_tokens: None,
+                extra_body: serde_json::Value::Object(Default::default()),
+                tags: vec![],
+            })
+        });
 
         let profile = match profile {
             Some(p) => p,

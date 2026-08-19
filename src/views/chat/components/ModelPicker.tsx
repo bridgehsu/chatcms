@@ -1,15 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@/hooks/useTauri";
-import { useProviderStore } from "@/stores/useProviderStore";
-import type { ProviderProfile } from "@/types";
 
-const AUTO_KEY = "chatcms.autoModel";
-
-export function readAuto() {
-  try { return localStorage.getItem(AUTO_KEY) !== "0"; } catch { return true; }
+interface Profile {
+  id: string;
+  name: string;
+  model: string;
+  tier: string;
+  enabled: boolean;
 }
-function writeAuto(v: boolean) {
-  try { localStorage.setItem(AUTO_KEY, v ? "1" : "0"); } catch { /* */ }
+
+const STORAGE_KEY = "chatcms.activeProfileId";
+
+export function readActiveProfileId(): string | null {
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
+}
+
+/** @deprecated Use readActiveProfileId instead */
+export function readAuto(): boolean {
+  return readActiveProfileId() === null;
 }
 
 type Props = {
@@ -19,12 +27,13 @@ type Props = {
 
 export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
   const [open, setOpen] = useState(false);
-  const [profiles, setProfiles] = useState<ProviderProfile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
-  const load = useProviderStore((s) => s.load);
 
   const refresh = () => {
-    invoke<ProviderProfile[]>("provider_list").then(setProfiles).catch(console.error);
+    invoke<Profile[]>("model_profile_list")
+      .then((list) => setProfiles(list.filter((p) => p.enabled)))
+      .catch(console.error);
   };
 
   useEffect(() => { refresh(); }, []);
@@ -43,22 +52,21 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
     };
   }, [open]);
 
-  const active = profiles.find((p) => p.active);
+  const activeId = autoModel ? null : readActiveProfileId();
+  const active = profiles.find((p) => p.id === activeId);
   const label = autoModel ? "Auto" : (active?.name ?? "选择模型");
 
   const pickAuto = () => {
-    invoke("provider_set_auto").catch(console.error);
+    invoke("model_profile_activate", { id: null }).catch(console.error);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
     onAutoChange(true);
-    writeAuto(true);
     setOpen(false);
   };
 
-  const pickProfile = async (id: string) => {
-    await invoke("provider_activate", { id });
-    await load();
-    refresh();
+  const pickProfile = (id: string) => {
+    invoke("model_profile_activate", { id }).catch(console.error);
+    try { localStorage.setItem(STORAGE_KEY, id); } catch { /* */ }
     onAutoChange(false);
-    writeAuto(false);
     setOpen(false);
   };
 
@@ -79,7 +87,6 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
 
       {open && (
         <ul className="model-picker__menu" role="listbox" aria-label="选择模型">
-          {/* Auto */}
           <li role="option" aria-selected={autoModel}>
             <button
               type="button"
@@ -96,16 +103,15 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
           )}
 
           {profiles.map((p) => {
-            const selected = !autoModel && p.active;
+            const selected = !autoModel && p.id === activeId;
             return (
               <li key={p.id} role="option" aria-selected={selected}>
                 <button
                   type="button"
                   className={`model-picker__item${selected ? " is-active" : ""}`}
-                  onClick={() => void pickProfile(p.id)}
+                  onClick={() => pickProfile(p.id)}
                 >
                   <span className="model-picker__item-label">{p.name}</span>
-                  <span className="model-picker__item-sub">{p.model}</span>
                   {selected && <CheckIcon />}
                 </button>
               </li>

@@ -1316,9 +1316,73 @@ body,
 
 .message--assistant,
 .message--tool,
-.message--error {
+.message--error,
+.message--thinking {
   display: flex;
   justify-content: flex-start;
+}
+
+/* ── 思考过程气泡 ─────────────────────────────────────────────── */
+.message--thinking {
+  flex-direction: column;
+  max-width: 720px;
+  margin-bottom: 4px;
+}
+
+.thinking-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-sidebar, #f5f5f5);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.thinking-header:hover {
+  background: var(--bg-hover, #ebebeb);
+}
+
+.thinking-header__icon {
+  font-size: 11px;
+}
+
+.thinking-header__dots::after {
+  content: "···";
+  display: inline-block;
+  animation: thinking-dots 1.2s steps(3, end) infinite;
+  width: 1.5em;
+  overflow: hidden;
+}
+
+@keyframes thinking-dots {
+  0%   { width: 0; }
+  100% { width: 1.5em; }
+}
+
+.thinking-body {
+  margin-top: 6px;
+  padding: 10px 14px;
+  background: var(--bg-sidebar, #f5f5f5);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.thinking-body__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary, #888);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
 }
 
 .message--error {

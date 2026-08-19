@@ -261,6 +261,7 @@ pub fn run() {
             models::commands::model_profile_add,
             models::commands::model_profile_update,
             models::commands::model_profile_remove,
+            models::commands::model_profile_activate,
             models::commands::model_profile_pin_session,
         ])
         .setup(setup)

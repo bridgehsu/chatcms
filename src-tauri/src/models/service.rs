@@ -1,3 +1,4 @@
+use serde_json::Value;
 use tauri::AppHandle;
 use uuid::Uuid;
 
@@ -18,6 +19,7 @@ pub async fn get(app: &AppHandle, id: &str) -> Option<ProviderProfile> {
     repo::get(app, id).await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn add(
     app: &AppHandle,
     name: String,
@@ -28,12 +30,19 @@ pub async fn add(
     tier: String,
     weight: i64,
     context_window: i64,
+    // 新增参数（均有默认值，前端可不传）
+    capabilities: Option<Value>,
+    thinking: Option<bool>,
+    thinking_effort: Option<String>,
+    temperature: Option<f64>,
+    max_output_tokens: Option<i64>,
+    extra_body: Option<Value>,
+    tags: Option<Vec<String>>,
 ) -> Result<ProviderProfile, String> {
     let name = name.trim().to_string();
     if name.is_empty() {
         return Err("名称不能为空".into());
     }
-    let weight = weight.clamp(1, 4);
     let p = ProviderProfile {
         id: Uuid::new_v4().to_string(),
         name,
@@ -42,16 +51,24 @@ pub async fn add(
         model,
         base_url,
         tier,
-        weight,
+        weight: weight.clamp(1, 4),
         context_window,
         enabled: true,
         created: now_ms(),
         updated: now_ms(),
+        capabilities: capabilities.unwrap_or_else(|| Value::Object(Default::default())),
+        thinking: thinking.unwrap_or(false),
+        thinking_effort: thinking_effort.unwrap_or_else(|| "medium".into()),
+        temperature,
+        max_output_tokens,
+        extra_body: extra_body.unwrap_or_else(|| Value::Object(Default::default())),
+        tags: tags.unwrap_or_default(),
     };
-    repo::insert(app, &p).await;
+    repo::insert(app, &p).await.map_err(|e| format!("写入失败：{e}"))?;
     Ok(p)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn update(
     app: &AppHandle,
     id: String,
@@ -64,6 +81,14 @@ pub async fn update(
     weight: i64,
     context_window: i64,
     enabled: bool,
+    // 新增参数
+    capabilities: Option<Value>,
+    thinking: Option<bool>,
+    thinking_effort: Option<String>,
+    temperature: Option<f64>,
+    max_output_tokens: Option<i64>,
+    extra_body: Option<Value>,
+    tags: Option<Vec<String>>,
 ) -> Result<ProviderProfile, String> {
     let mut p = repo::get(app, &id).await.ok_or("Profile 不存在")?;
     let name = name.trim().to_string();
@@ -80,6 +105,13 @@ pub async fn update(
     p.context_window = context_window;
     p.enabled = enabled;
     p.updated = now_ms();
+    if let Some(v) = capabilities    { p.capabilities = v; }
+    if let Some(v) = thinking        { p.thinking = v; }
+    if let Some(v) = thinking_effort { p.thinking_effort = v; }
+    if temperature.is_some()         { p.temperature = temperature; }
+    if max_output_tokens.is_some()   { p.max_output_tokens = max_output_tokens; }
+    if let Some(v) = extra_body      { p.extra_body = v; }
+    if let Some(v) = tags            { p.tags = v; }
     repo::update(app, &p).await;
     Ok(p)
 }
@@ -97,7 +129,7 @@ pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
 pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::config::ProviderProfile>) {
     let existing = repo::list(app).await;
     if !existing.is_empty() {
-        return; // 已迁移，跳过
+        return;
     }
     let now = now_ms();
     for (i, lp) in legacy_profiles.iter().enumerate() {
@@ -118,7 +150,14 @@ pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::co
             enabled: true,
             created: now + i as i64,
             updated: now + i as i64,
+            capabilities: Value::Object(Default::default()),
+            thinking: false,
+            thinking_effort: "medium".into(),
+            temperature: None,
+            max_output_tokens: None,
+            extra_body: Value::Object(Default::default()),
+            tags: vec![],
         };
-        repo::insert(app, &p).await;
+        let _ = repo::insert(app, &p).await;
     }
 }

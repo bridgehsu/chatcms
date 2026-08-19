@@ -10,6 +10,14 @@ pub struct StreamChunk {
     pub done: bool,
 }
 
+/// 思考内容流式块（Anthropic extended thinking / OpenAI &lt;think&gt; 标签）
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ThinkingChunk {
+    pub session_id: String,
+    pub delta: String,
+    pub done: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ToolCallEvent {
     pub session_id: String,

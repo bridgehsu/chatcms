@@ -192,3 +192,12 @@ CREATE INDEX IF NOT EXISTS idx_model_profile_tier_weight ON model_profile(tier, 
 
 -- 为 sessions 表补 profile_id 列（幂等）
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS profile_id TEXT;
+
+-- model_profile 新增字段（首次运行添加列；列已存在时 db::init 会自动跳过报错）
+ALTER TABLE model_profile ADD COLUMN capabilities      TEXT    NOT NULL DEFAULT '{}';
+ALTER TABLE model_profile ADD COLUMN thinking          INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE model_profile ADD COLUMN thinking_effort   TEXT    NOT NULL DEFAULT 'medium';
+ALTER TABLE model_profile ADD COLUMN temperature       REAL;
+ALTER TABLE model_profile ADD COLUMN max_output_tokens INTEGER;
+ALTER TABLE model_profile ADD COLUMN extra_body        TEXT    NOT NULL DEFAULT '{}';
+ALTER TABLE model_profile ADD COLUMN tags              TEXT    NOT NULL DEFAULT '[]';

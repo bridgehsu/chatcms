@@ -32,6 +32,12 @@ export interface StreamChunk {
   done: boolean;
 }
 
+export interface ThinkingChunk {
+  session_id: string;
+  delta: string;
+  done: boolean;
+}
+
 export interface TokenUsageEvent {
   session_id: string;
   input_tokens: number;

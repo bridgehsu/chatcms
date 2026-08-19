@@ -52,7 +52,7 @@ pub async fn run_sub_agent(
             bail!("子 Agent 超过最大迭代次数 ({MAX_SUB_AGENT_ITERS})，已终止");
         }
         // 每轮独立选 profile（cloud tier，按权重轮询）
-        let profile_id = router.pick(&profiles, has_tools, 0);
+        let profile_id = router.pick(&profiles, has_tools, 0, &[]);
         let profile = match profile_id.and_then(|id| profiles.iter().find(|p| p.id == id).cloned()) {
             Some(p) => p,
             None => bail!("子 Agent 无可用的 Cloud 模型配置"),

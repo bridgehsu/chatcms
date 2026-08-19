@@ -7,7 +7,7 @@ mod types;
 mod anthropic;
 mod openai;
 
-pub use types::{ProviderOutput, StreamChunk, ToolCallEvent, ToolResultEvent, TokenUsageEvent};
+pub use types::{ProviderOutput, StreamChunk, ThinkingChunk, ToolCallEvent, ToolResultEvent, TokenUsageEvent};
 pub use anthropic::messages_to_anthropic;
 pub use openai::messages_to_openai;
 

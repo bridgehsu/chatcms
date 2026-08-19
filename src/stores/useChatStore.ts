@@ -9,6 +9,7 @@ import type {
   StreamChunk,
   SubAgentDone,
   SubAgentStart,
+  ThinkingChunk,
   TokenUsageEvent,
   ToolCallEvent,
   ToolResultEvent,
@@ -27,6 +28,8 @@ interface ChatState {
   activeAgentId: string | null;
   streamingContent: string;
   isStreaming: boolean;
+  thinkingContent: string;
+  isThinking: boolean;
   pendingPermission: PermissionRequest | null;
   error: string | null;
   tokenUsage: TokenUsage | null;
@@ -79,6 +82,22 @@ export const useChatStore = create<ChatState>((set, get) => {
         isStreaming: true,
         // 收到首包时就把真实 session id 对齐，避免后续事件被过滤
         activeSessionId: s.activeSessionId ?? session_id,
+      }));
+    }
+  });
+
+  // ── thinking-chunk ───────────────────────────────────────────────────────
+  listen<ThinkingChunk>("thinking-chunk", (event) => {
+    const { session_id, delta, done } = event.payload;
+    const { activeSessionId } = get();
+    if (session_id !== activeSessionId && activeSessionId !== null) return;
+
+    if (done) {
+      set({ isThinking: false });
+    } else {
+      set((s) => ({
+        thinkingContent: s.thinkingContent + delta,
+        isThinking: true,
       }));
     }
   });
@@ -184,6 +203,8 @@ export const useChatStore = create<ChatState>((set, get) => {
     activeAgentId: null,
     streamingContent: "",
     isStreaming: false,
+    thinkingContent: "",
+    isThinking: false,
     pendingPermission: null,
     error: null,
     tokenUsage: null,
@@ -243,6 +264,8 @@ export const useChatStore = create<ChatState>((set, get) => {
             },
         streamingContent: "",
         isStreaming: true,
+        thinkingContent: "",
+        isThinking: false,
         error: null,
         tokenUsage: null,
       });
