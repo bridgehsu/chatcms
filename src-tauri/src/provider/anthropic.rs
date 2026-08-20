@@ -1,6 +1,5 @@
 use anyhow::{bail, Result};
 use futures_util::StreamExt;
-use reqwest::Client;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter};
@@ -31,7 +30,7 @@ pub(super) async fn stream_anthropic(
     tools: Vec<ToolDef>,
     system_prompt: Option<String>,
 ) -> Result<ProviderOutput> {
-    let client = Client::new();
+    let client = &*super::HTTP_CLIENT;
     let base_url = profile
         .base_url
         .clone()

@@ -1,11 +1,16 @@
 use anyhow::{bail, Result};
+use reqwest::Client;
 use serde_json::Value;
+use std::sync::LazyLock;
 
 use crate::agents::tools::{ToolDef, ToolResult};
 
 mod types;
 mod anthropic;
 mod openai;
+
+/// 全局共享 HTTP 客户端，复用连接池，避免每次请求建立新 TCP 连接。
+pub(super) static HTTP_CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 
 pub use types::{ProviderOutput, StreamChunk, ThinkingChunk, ToolCallEvent, ToolResultEvent, TokenUsageEvent};
 pub use anthropic::messages_to_anthropic;
