@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod compress;
+pub mod intent;
 pub mod repository;
 pub mod service;
 pub mod truncate;

@@ -149,6 +149,21 @@ src-tauri/src/
 │   ├── mod.rs           # Session / Message / Role 类型；Session.workspace_dir 创建时锁定
 │   ├── repository.rs    # SQLite sessions + messages 读写
 │   ├── service.rs       # ensure_session（锁定 workspace）/ push_user_message / save_snapshot / list / get / delete / rename / pin
+│   ├── intent/          # 会话意图识别流水线（软路由，不短路 Agent Loop）
+│   │   ├── mod.rs           # 入口 run：编排流水线；再导出 Intent / format_for_prompt
+│   │   ├── intent_result.rs # Intent / IntentKind / IntentSource
+│   │   ├── normalize.rs     # 输入规范化
+│   │   ├── rules.rs         # 规则表数据
+│   │   ├── score.rs         # 规则打分
+│   │   ├── confidence.rs    # 置信度 + High/Low
+│   │   ├── classify.rs      # Local Classifier（低置信补判，预留）
+│   │   ├── fusion.rs        # 规则与本地结果融合
+│   │   ├── enrich.rs        # 派生字段（needs_tools 等）
+│   │   ├── validate.rs      # 边界校验
+│   │   ├── fallback.rs      # 短句等兜底
+│   │   └── inject.rs        # Intent → system prompt 块
+│   ├── compress.rs      # 上下文压缩 / 截断
+│   ├── truncate.rs      # tool 结果截断
 │   └── commands.rs      # chat_send + session_* Tauri commands
 ├── accounts/            # 多平台账号 CRUD + 主密码保险柜
 │   ├── mod.rs

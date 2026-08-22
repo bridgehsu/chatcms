@@ -195,7 +195,8 @@ pub async fn send_message(
         state.sessions.lock().unwrap().get(&sid).and_then(|s| s.agent_id.clone())
     });
     let active_agent = resolve_active_agent(&state, resolved_agent_id.as_deref());
-    let system_prompt = build_system_prompt(&state, &content, active_agent);
+    let intent = super::intent::run(&content);
+    let system_prompt = build_system_prompt(&state, &content, active_agent, &intent);
 
     // ⑧ 创建中断信号，注册到全局 abort_handles
     let (abort_tx, abort_rx) = watch::channel(false);
@@ -235,10 +236,15 @@ fn build_system_prompt(
     state: &State<'_, AgentState>,
     content: &str,
     active_agent: Option<crate::agents::AgentProfile>,
+    intent: &super::intent::Intent,
 ) -> Option<String> {
     let mut blocks: Vec<String> = Vec::new();
     if let Some(p) = active_agent.as_ref().map(crate::agents::format_persona) {
         blocks.push(p);
+    }
+    // 意图软路由：只提示模型，不短路 Agent Loop
+    if let Some(i) = super::intent::format_for_prompt(intent) {
+        blocks.push(i);
     }
     if let Some(m) = knowledge_block(state, content) {
         blocks.push(m);
