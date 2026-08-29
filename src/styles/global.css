@@ -94,22 +94,16 @@ body,
 }
 
 .sidebar-toggle {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
   flex-shrink: 0;
-  margin-left: auto;
   border: none;
   border-radius: 8px;
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
   padding: 0;
-}
-.sidebar.is-expanded .sidebar-toggle {
-  display: inline-flex;
 }
 .sidebar-toggle:hover {
   color: var(--text);

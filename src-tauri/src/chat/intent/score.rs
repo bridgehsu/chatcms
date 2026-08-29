@@ -1,8 +1,8 @@
 //! 规则打分：命中累加，不管阈值与融合。
 
+use super::cache;
 use super::intent_result::IntentKind;
 use super::normalize::NormalizedInput;
-use super::rules;
 
 /// 单个意图的原始得分。
 #[derive(Debug, Clone)]
@@ -12,22 +12,22 @@ pub struct ScoredCandidate {
     pub matched: Vec<String>,
 }
 
-/// 对规范化输入套全部规则，返回各意图得分。
+/// 对规范化输入套启用中的规则，返回各意图得分。
 pub fn score_all(input: &NormalizedInput) -> Vec<ScoredCandidate> {
-    rules::all()
-        .iter()
+    cache::enabled_rules()
+        .into_iter()
         .map(|rule| {
             let mut raw_score = 0.0f32;
             let mut matched = Vec::new();
-            for kw in rule.keywords {
+            for kw in &rule.keywords {
                 let hit = if kw.is_ascii() {
-                    input.lower.contains(&kw.to_lowercase())
+                    input.lower.contains(kw.as_str())
                 } else {
-                    input.text.contains(kw)
+                    input.text.contains(kw.as_str())
                 };
                 if hit {
                     raw_score += rule.weight;
-                    matched.push((*kw).to_string());
+                    matched.push(kw.clone());
                 }
             }
             ScoredCandidate {

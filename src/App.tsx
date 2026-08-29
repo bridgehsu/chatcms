@@ -20,6 +20,7 @@ import { SkillsPage } from "@/views/skills";
 import { AgentsPage } from "@/views/agents";
 import { McpPage } from "@/views/mcp";
 import { ModelsPage } from "@/views/models";
+import { IntentsPage } from "@/views/intents";
 import { ChannelsPage } from "@/views/settings/ChannelsPage";
 import { KnowledgePage } from "@/views/settings/KnowledgePage";
 import {
@@ -72,6 +73,7 @@ const App = () => {
               <Route path="agents" element={<AgentsPage />} />
               <Route path="mcp" element={<McpPage />} />
               <Route path="models" element={<ModelsPage />} />
+              <Route path="intents" element={<IntentsPage />} />
               <Route path="settings/permissions" element={<SettingsPermissionsPage />} />
               <Route path="settings/knowledge" element={<KnowledgePage />} />
               <Route path="settings/channels" element={<ChannelsPage />} />

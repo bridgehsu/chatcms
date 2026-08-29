@@ -38,7 +38,7 @@ pub async fn init(app: &AppHandle) -> Result<SqlitePool> {
         if let Err(e) = sqlx::query(s).execute(&pool).await {
             if is_alter {
                 // 列已存在 / 不支持 IF NOT EXISTS 语法 → 忽略
-                eprintln!("[db] ALTER skipped: {e}");
+                log::debug!(target: "chatcms_lib::db", "ALTER skipped: {e}");
             } else {
                 return Err(e.into());
             }

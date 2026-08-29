@@ -19,6 +19,7 @@ export { IconMcp } from "./IconMcp";
 export { IconMemory } from "./IconMemory";
 export { IconChannels } from "./IconChannels";
 export { IconProvider } from "./IconProvider";
+export { IconIntent } from "./IconIntent";
 export { IconSend } from "./IconSend";
 export { IconStop } from "./IconStop";
 export { IconPlus } from "./IconPlus";

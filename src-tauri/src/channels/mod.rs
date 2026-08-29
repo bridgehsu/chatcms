@@ -305,7 +305,7 @@ pub async fn stop_telegram_poller(state: &mut ChannelState) {
         handle.abort();
         // 给 Telegram 侧释放上一次长轮询一点时间
         tokio::time::sleep(std::time::Duration::from_millis(400)).await;
-        eprintln!("[telegram] previous poller aborted");
+        log::info!(target: "chatcms_lib::channels", "telegram previous poller aborted");
     }
 }
 
@@ -329,7 +329,7 @@ pub async fn restart_telegram_poller(
         .map_err(|e| e.to_string())?;
 
     if let Err(e) = delete_webhook(&client, &tg_config.token).await {
-        eprintln!("[telegram] deleteWebhook warning: {e}");
+        log::warn!(target: "chatcms_lib::channels", "telegram deleteWebhook warning: {e}");
     }
 
     let running = Arc::new(AtomicBool::new(true));
@@ -343,7 +343,7 @@ pub async fn restart_telegram_poller(
     });
     state.telegram_task = Some(handle);
     state.config.set_kind_enabled("telegram", true);
-    eprintln!("[telegram] poller started");
+    log::info!(target: "chatcms_lib::channels", "telegram poller started");
     Ok(())
 }
 
@@ -387,14 +387,15 @@ async fn run_poll_loop(
             Err(e) => {
                 if is_conflict_error(&e) {
                     conflict_streak = conflict_streak.saturating_add(1);
-                    eprintln!(
-                        "[telegram] getUpdates conflict (#{conflict_streak}): {e} — clearing webhook & backing off"
+                    log::warn!(
+                        target: "chatcms_lib::channels",
+                        "telegram getUpdates conflict (#{conflict_streak}): {e} — clearing webhook & backing off",
                     );
                     let _ = delete_webhook(&client, &token).await;
                     let wait = std::cmp::min(5 + conflict_streak * 2, 20);
                     tokio::time::sleep(std::time::Duration::from_secs(u64::from(wait))).await;
                 } else {
-                    eprintln!("[telegram] getUpdates error: {e}");
+                    log::warn!(target: "chatcms_lib::channels", "telegram getUpdates error: {e}");
                     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                 }
                 continue;
@@ -425,7 +426,10 @@ async fn run_poll_loop(
             let sender_id = msg["from"]["id"].to_string();
 
             if !allowed(&sender_id, &allowed_ids) && !allowed(&chat_id, &allowed_ids) {
-                eprintln!("[telegram] blocked sender={sender_id} chat={chat_id}");
+                log::info!(
+                    target: "chatcms_lib::channels",
+                    "telegram blocked sender={sender_id} chat={chat_id}",
+                );
                 continue;
             }
 
@@ -444,14 +448,14 @@ async fn run_poll_loop(
 
                 if let Some(reply) = get_last_reply(&app, &sid) {
                     if let Err(e) = send_message(&client, &token, &chat_id, &reply).await {
-                        eprintln!("[telegram] sendMessage error: {e}");
+                        log::warn!(target: "chatcms_lib::channels", "telegram sendMessage error: {e}");
                     }
                 }
             }
         }
     }
 
-    eprintln!("[telegram] poller stopped");
+    log::info!(target: "chatcms_lib::channels", "telegram poller stopped");
 }
 
 async fn route_to_agent(
@@ -467,7 +471,7 @@ async fn route_to_agent(
     match send_message(app.clone(), state, session_id, None, content).await {
         Ok(sid) => Some(sid),
         Err(e) => {
-            eprintln!("[telegram] agent error: {e}");
+            log::error!(target: "chatcms_lib::channels", "telegram agent error: {e:#}");
             None
         }
     }

@@ -201,3 +201,16 @@ ALTER TABLE model_profile ADD COLUMN temperature       REAL;
 ALTER TABLE model_profile ADD COLUMN max_output_tokens INTEGER;
 ALTER TABLE model_profile ADD COLUMN extra_body        TEXT    NOT NULL DEFAULT '{}';
 ALTER TABLE model_profile ADD COLUMN tags              TEXT    NOT NULL DEFAULT '[]';
+
+-- Intent classification rules (soft routing keywords)
+CREATE TABLE IF NOT EXISTS intent_rule (
+    id         TEXT    PRIMARY KEY,                 -- 规则唯一标识（与 kind 对齐，稳定可重置）
+    kind       TEXT    NOT NULL UNIQUE,             -- IntentKind：general_chat / use_tools / …
+    keywords   TEXT    NOT NULL DEFAULT '[]',       -- 关键词列表（JSON 数组）
+    weight     REAL    NOT NULL DEFAULT 0.3,        -- 单次关键词命中加分
+    enabled    INTEGER NOT NULL DEFAULT 1,          -- 是否启用（0=禁用 1=启用）
+    sort_order INTEGER NOT NULL DEFAULT 0,          -- 展示排序（越小越靠前）
+    updated    INTEGER NOT NULL                     -- 最近修改时间（Unix 毫秒）
+);
+
+CREATE INDEX IF NOT EXISTS idx_intent_rule_sort ON intent_rule(sort_order ASC, kind ASC);

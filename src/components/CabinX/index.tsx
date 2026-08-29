@@ -465,20 +465,23 @@ const CabinX: React.FC<CabinXProps> = ({
                 fixed: 'right',
                 align: 'center',
                 width: actionColumnWidth,
-                render: (_: any, record: any) => (
-                    <Action
-                        record={record}
-                        rowKey={rowKey}
-                        api={api}
-                        handleEdit={handleEdit}
-                        handleDelete={handleDelete}
-                        fetchData={fetchData}
-                        searchFormValues={searchForm.getFieldsValue()}
-                        pagination={pagination}
-                        actionBtnComponents={actionBtnComponents}
-                    />
-                )
-            });
+                render: (_: any, record: any) =>
+                    actionColumnRender ? (
+                        actionColumnRender(record, { handleEdit, handleDelete })
+                    ) : (
+                        <Action
+                            record={record}
+                            rowKey={rowKey}
+                            api={api}
+                            handleEdit={handleEdit}
+                            handleDelete={handleDelete}
+                            fetchData={fetchData}
+                            searchFormValues={searchForm.getFieldsValue()}
+                            pagination={pagination}
+                            actionBtnComponents={actionBtnComponents}
+                        />
+                    ),
+            } as any);
         }
 
         return baseColumns;

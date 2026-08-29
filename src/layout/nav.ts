@@ -13,6 +13,7 @@ import {
   IconMcp,
   IconMedia,
   IconMemory,
+  IconIntent,
   IconProvider,
   IconSettings,
   IconSkills,
@@ -54,17 +55,17 @@ export type NavEntry = NavLeaf | NavGroup;
 export const NAV_ENTRIES: NavEntry[] = [
   {
     kind: "leaf",
-    path: "/map",
-    label: "业务地图",
-    description: "分区入口、笔记与截止提醒，一览业务全貌",
-    Icon: IconMap,
-  },
-  {
-    kind: "leaf",
     path: "/chat",
     label: "智能会话",
     description: "与 Agent 对话，调用工具与技能完成任务",
     Icon: IconChat,
+  },
+  {
+    kind: "leaf",
+    path: "/map",
+    label: "业务地图",
+    description: "分区入口、笔记与截止提醒，一览业务全貌",
+    Icon: IconMap,
   },
   {
     kind: "leaf",
@@ -154,6 +155,12 @@ export const NAV_ENTRIES: NavEntry[] = [
         label: "模型配置",
         description: "配置模型提供商、密钥与当前激活模型",
         Icon: IconProvider,
+      },
+      {
+        path: "/intents",
+        label: "意图规则",
+        description: "配置会话意图关键词与权重（软路由，不短路 Agent）",
+        Icon: IconIntent,
       },
     ],
   },

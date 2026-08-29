@@ -1,4 +1,5 @@
 mod agents;
+mod logging;
 mod chat;
 mod mcp;
 mod models;
@@ -29,6 +30,8 @@ use tauri::Manager;
 // ── App bootstrap ─────────────────────────────────────────────────────────────
 
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    crate::logging::log_startup();
+
     let handle = app.handle().clone();
     let state = handle.state::<AgentState>();
 
@@ -58,6 +61,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     *state.knowledge.lock().unwrap() = rt.block_on(kbase::repository::load_all(&handle));
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = rt.block_on(agents::service::ensure_seeded(&handle));
+    rt.block_on(chat::intent::ensure_seeded(&handle));
 
     // 迁移旧 chatcms.json 中的 profiles 到 SQLite model_profile 表（同步执行，确保启动时完成）
     {
@@ -86,12 +90,15 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         ch.config = channel_cfg;
     });
 
+    log::info!(target: "chatcms_lib", "app setup completed");
     Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let app_env = logging::AppEnv::detect();
     tauri::Builder::default()
+        .plugin(logging::plugin(app_env).build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(AgentState::new())
@@ -106,6 +113,10 @@ pub fn run() {
             chat::commands::session_delete,
             chat::commands::session_rename,
             chat::commands::session_pin,
+            chat::intent::commands::intent_rule_list,
+            chat::intent::commands::intent_rule_update,
+            chat::intent::commands::intent_rule_reset_defaults,
+            chat::intent::commands::intent_rule_reset_one,
             // config / provider
             config::commands::config_get,
             config::commands::config_set,

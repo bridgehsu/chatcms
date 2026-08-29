@@ -38,6 +38,27 @@ impl IntentKind {
             Self::Unknown => "未识别",
         }
     }
+
+    /// 可配置规则支持的类别（不含 Unknown）。
+    pub fn configurable() -> &'static [Self] {
+        &[
+            Self::ContentPublish,
+            Self::AccountLookup,
+            Self::UseTools,
+            Self::GeneralChat,
+        ]
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "general_chat" => Some(Self::GeneralChat),
+            "use_tools" => Some(Self::UseTools),
+            "content_publish" => Some(Self::ContentPublish),
+            "account_lookup" => Some(Self::AccountLookup),
+            "unknown" => Some(Self::Unknown),
+            _ => None,
+        }
+    }
 }
 
 /// 分类结果来源（可观测）。
@@ -87,8 +108,4 @@ impl Intent {
         }
     }
 
-    /// 是否偏向需要工具（供模型路由或后续裁剪 tools 使用）。
-    pub fn prefers_tools(&self) -> bool {
-        self.needs_tools
-    }
 }

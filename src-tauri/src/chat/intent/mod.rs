@@ -7,8 +7,12 @@
 //!
 //! Router / Agent Loop 在包外由 `service` 消费。
 //! 入口：[`run`]。
+//!
+//! 规则数据可经 `intent_rule_*` 命令配置；热路径从 [`cache`] 同步读取。
 
+mod cache;
 mod classify;
+pub mod commands;
 mod confidence;
 mod enrich;
 mod fallback;
@@ -16,19 +20,25 @@ mod fusion;
 mod inject;
 mod intent_result;
 mod normalize;
+mod repository;
 mod rules;
 mod score;
+mod service;
 mod validate;
 
 pub use inject::format_for_prompt;
 pub use intent_result::{Intent, IntentKind, IntentSource};
+pub use service::ensure_seeded;
 
 /// 意图识别入口：串联全流水线，返回最终 [`Intent`]。
 pub fn run(input: &str) -> Intent {
+    let started = std::time::Instant::now();
     let norm = normalize::normalize(input);
     if norm.is_empty() {
+        log::debug!(target: "chatcms_lib::chat::intent", "intent empty input");
         return Intent::unknown();
     }
+
     let scored = score::score_all(&norm);
     let assessment = confidence::assess(&scored);
 
@@ -41,7 +51,21 @@ pub fn run(input: &str) -> Intent {
     let fused = fusion::fuse(&assessment, local_hit);
     let enriched = enrich::enrich(fused);
     let validated = validate::validate(enriched);
-    fallback::apply(validated, &norm)
+    let intent = fallback::apply(validated, &norm);
+
+    log::debug!(
+        target: "chatcms_lib::chat::intent",
+        "intent kind={} conf={:.2} source={} needs_tools={} matched={} high={} ms={}",
+        intent.kind.as_str(),
+        intent.confidence,
+        intent.source.as_str(),
+        intent.needs_tools,
+        intent.matched.len(),
+        assessment.is_high,
+        started.elapsed().as_millis(),
+    );
+
+    intent
 }
 
 #[cfg(test)]

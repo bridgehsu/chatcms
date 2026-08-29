@@ -31,11 +31,9 @@ pub fn assess(candidates: &[ScoredCandidate]) -> RulesAssessment {
     let mut best = RulesAssessment::unknown();
     for c in candidates {
         let confidence = c.raw_score.clamp(0.0, 1.0);
-        if confidence > best.confidence
-            || (confidence == best.confidence
-                && confidence > 0.0
-                && matches!(best.kind, IntentKind::Unknown))
-        {
+        // 第一个严格大于已足够：规则表不含 Unknown，best.kind==Unknown 时
+        // best.confidence 必为 0.0，任何 confidence>0.0 自然满足此条件。
+        if confidence > best.confidence {
             best = RulesAssessment {
                 kind: c.kind,
                 confidence,

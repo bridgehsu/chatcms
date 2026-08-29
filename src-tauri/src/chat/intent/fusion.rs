@@ -17,39 +17,29 @@ pub struct FusedCandidate {
 
 /// 高置信仅用规则；有本地结果时按置信度择优或标记 fused。
 pub fn fuse(rules: &RulesAssessment, local: Option<LocalHit>) -> FusedCandidate {
+    let matched = rules.matched.clone();
     match local {
         None => FusedCandidate {
             kind: rules.kind,
             confidence: rules.confidence,
-            matched: rules.matched.clone(),
+            matched,
             source: IntentSource::Rules,
             needs_tools_hint: None,
         },
         Some(hit) => {
-            if hit.confidence > rules.confidence {
-                FusedCandidate {
-                    kind: hit.kind,
-                    confidence: hit.confidence,
-                    matched: rules.matched.clone(),
-                    source: IntentSource::LocalLlm,
-                    needs_tools_hint: hit.needs_tools,
-                }
+            let (kind, confidence, source) = if hit.confidence > rules.confidence {
+                (hit.kind, hit.confidence, IntentSource::LocalLlm)
             } else if hit.confidence == rules.confidence && hit.kind != rules.kind {
-                FusedCandidate {
-                    kind: rules.kind,
-                    confidence: rules.confidence,
-                    matched: rules.matched.clone(),
-                    source: IntentSource::Fused,
-                    needs_tools_hint: hit.needs_tools,
-                }
+                (rules.kind, rules.confidence, IntentSource::Fused)
             } else {
-                FusedCandidate {
-                    kind: rules.kind,
-                    confidence: rules.confidence,
-                    matched: rules.matched.clone(),
-                    source: IntentSource::Rules,
-                    needs_tools_hint: hit.needs_tools,
-                }
+                (rules.kind, rules.confidence, IntentSource::Rules)
+            };
+            FusedCandidate {
+                kind,
+                confidence,
+                matched,
+                source,
+                needs_tools_hint: hit.needs_tools,
             }
         }
     }

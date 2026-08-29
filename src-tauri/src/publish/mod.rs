@@ -107,7 +107,7 @@ impl PublishBridge {
         let state = self.clone();
         tauri::async_runtime::spawn(async move {
             if let Err(e) = run_server(state).await {
-                eprintln!("[publish-bridge] server error: {e}");
+                log::error!(target: "chatcms_lib::publish", "publish-bridge server error: {e}");
                 // 允许下次重试绑定
             }
         });
@@ -192,7 +192,10 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .map_err(|e| format!("绑定发布桥端口失败 {BRIDGE_PORT}: {e}"))?;
-    eprintln!("[publish-bridge] listening on http://127.0.0.1:{BRIDGE_PORT}");
+    log::info!(
+        target: "chatcms_lib::publish",
+        "publish-bridge listening on http://127.0.0.1:{BRIDGE_PORT}",
+    );
     axum::serve(listener, app)
         .await
         .map_err(|e| e.to_string())

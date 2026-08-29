@@ -198,6 +198,16 @@ pub async fn send_message(
     let intent = super::intent::run(&content);
     let system_prompt = build_system_prompt(&state, &content, active_agent, &intent);
 
+    log::info!(
+        target: "chatcms_lib::chat",
+        "chat_send session_id={sid} agent_id={:?} content_len={} intent={} conf={:.2} needs_tools={}",
+        resolved_agent_id,
+        content.chars().count(),
+        intent.kind.as_str(),
+        intent.confidence,
+        intent.needs_tools,
+    );
+
     // ⑧ 创建中断信号，注册到全局 abort_handles
     let (abort_tx, abort_rx) = watch::channel(false);
     state.abort_handles.lock().unwrap().insert(sid.clone(), abort_tx);
@@ -206,6 +216,18 @@ pub async fn send_message(
 
     // 清理中断句柄
     state.abort_handles.lock().unwrap().remove(&sid);
+
+    if let Err(ref e) = result {
+        log::error!(
+            target: "chatcms_lib::chat",
+            "chat_send failed session_id={sid}: {e:#}",
+        );
+    } else {
+        log::debug!(
+            target: "chatcms_lib::chat",
+            "chat_send completed session_id={sid}",
+        );
+    }
 
     result?;
     Ok(sid)

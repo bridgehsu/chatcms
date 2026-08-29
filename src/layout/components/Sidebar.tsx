@@ -240,15 +240,6 @@ export const Sidebar = () => {
             C
           </button>
           {expanded ? <span className="sidebar-brand-text">ChatCMS</span> : null}
-          <button
-            type="button"
-            className="sidebar-toggle"
-            aria-label={expanded ? "收起导航" : "展开导航"}
-            aria-expanded={expanded}
-            onClick={() => setExpanded((v) => !v)}
-          >
-            <IconSidebar />
-          </button>
         </div>
 
         <nav className="nav-list" aria-label="主导航">
@@ -320,6 +311,16 @@ export const Sidebar = () => {
             >
               <IconGlobe />
             </a>
+            <button
+              type="button"
+              className="sidebar-icon-btn sidebar-toggle"
+              aria-label={expanded ? "收起导航" : "展开导航"}
+              aria-expanded={expanded}
+              title={expanded ? "收起导航" : "展开导航"}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              <IconSidebar />
+            </button>
           </div>
         </div>
       </aside>
