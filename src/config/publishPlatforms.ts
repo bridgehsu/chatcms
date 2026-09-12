@@ -44,8 +44,19 @@ export const platformsForKind = (kind: PublishKind) => {
 
 export const PUBLISH_BRIDGE_PORT = 17890;
 
-export const publishMediaUrl = (kind: "image" | "video", id: string) =>
-  `http://127.0.0.1:${PUBLISH_BRIDGE_PORT}/media/${kind}/${id}`;
+/** @param bridgeBase 如 http://127.0.0.1:17890；缺省用默认端口 */
+export const publishMediaUrl = (
+  kind: "image" | "video",
+  id: string,
+  bridgeBase?: string,
+) => {
+  const base =
+    (bridgeBase ?? `http://127.0.0.1:${PUBLISH_BRIDGE_PORT}`).replace(/\/$/, "");
+  return `${base}/media/${kind}/${id}`;
+};
 
-export const publishPlaceholderCoverUrl = () =>
-  `http://127.0.0.1:${PUBLISH_BRIDGE_PORT}/media/placeholder/cover.png`;
+export const publishPlaceholderCoverUrl = (bridgeBase?: string) => {
+  const base =
+    (bridgeBase ?? `http://127.0.0.1:${PUBLISH_BRIDGE_PORT}`).replace(/\/$/, "");
+  return `${base}/media/placeholder/cover.png`;
+};

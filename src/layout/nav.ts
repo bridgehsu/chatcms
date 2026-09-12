@@ -14,6 +14,8 @@ import {
   IconMedia,
   IconMemory,
   IconIntent,
+  IconEval,
+  IconObserve,
   IconProvider,
   IconSettings,
   IconSkills,
@@ -69,13 +71,6 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   {
     kind: "leaf",
-    path: "/settings/knowledge",
-    label: "知识检索",
-    description: "本机知识条目；可勾选公开并导出到 chatcms.org",
-    Icon: IconMemory,
-  },
-  {
-    kind: "leaf",
     path: "/content",
     label: "内容管理",
     description: "Notion 风格 AI 笔记，沉淀选题与成稿",
@@ -84,45 +79,50 @@ export const NAV_ENTRIES: NavEntry[] = [
   {
     kind: "leaf",
     path: "/images",
-    label: "图片管理",
+    label: "图片工厂",
     description: "图片列表：上传、AI 生成与网页导入素材",
     Icon: IconImages,
   },
   {
     kind: "leaf",
     path: "/videos",
-    label: "视频管理",
+    label: "视频工厂",
     description: "视频列表：上传、AI 生成与网页导入成片",
     Icon: IconVideos,
   },
   {
-    kind: "leaf",
-    path: "/crawler",
-    label: "采集中心",
-    description: "经 HTTP 连接 chatcms-collect：启停任务、查看日志与数据文件",
-    Icon: IconCrawler,
-  },
-  {
-    kind: "leaf",
-    path: "/media-platforms",
+    kind: "group",
+    id: "media-ops",
     label: "媒体管理",
-    description: "维护各平台发布/采集注入页与脚本（草稿 / 已发布）",
     Icon: IconMedia,
-  },
-  {
-    kind: "leaf",
-    path: "/accounts",
-    label: "账号管理",
-    description: "管理各大内容平台的账号与密钥，数据保存在本机应用目录",
-    Icon: IconAccounts,
+    defaultPath: "/crawler",
+    children: [
+      {
+        path: "/crawler",
+        label: "媒体采集",
+        description: "连接 chatcms-collect：启停任务、日志与数据文件",
+        Icon: IconCrawler,
+      },
+      {
+        path: "/media-platforms",
+        label: "插件脚本",
+        description: "各平台发布/采集注入页与 JS 脚本（浏览器插件）",
+        Icon: IconMedia,
+      },
+      {
+        path: "/accounts",
+        label: "账号管理",
+        description: "本机平台账号与密钥，主密码保险柜保护",
+        Icon: IconAccounts,
+      },
+    ],
   },
   {
     kind: "leaf",
     path: "/schedules",
-    label: "任务调度",
+    label: "调度中心",
     description: "创建调度项目，在画布中设计节点工作流（类似 n8n）",
     Icon: IconCron,
-    dividerBefore: true,
   },
   {
     kind: "group",
@@ -130,7 +130,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     label: "智能配置",
     Icon: IconAgents,
     defaultPath: "/agents",
-    dividerBefore: true,
     children: [
       {
         path: "/agents",
@@ -162,6 +161,12 @@ export const NAV_ENTRIES: NavEntry[] = [
         description: "配置会话意图关键词与权重（软路由，不短路 Agent）",
         Icon: IconIntent,
       },
+      {
+        path: "/settings/knowledge",
+        label: "知识库",
+        description: "本机知识条目；可注入 Agent，并可勾选公开导出",
+        Icon: IconMemory,
+      },
     ],
   },
   {
@@ -169,17 +174,35 @@ export const NAV_ENTRIES: NavEntry[] = [
     id: "settings",
     label: "系统设置",
     Icon: IconSettings,
-    defaultPath: "/settings/permissions",
+    defaultPath: "/settings/general",
     children: [
       {
+        path: "/settings/general",
+        label: "全局配置",
+        description: "存储根目录、视频/采集服务地址与发布桥端口",
+        Icon: IconSettings,
+      },
+      {
         path: "/settings/permissions",
-        label: "权限",
+        label: "权限管理",
         description: "自定义权限模式，控制工具调用的授权策略",
         Icon: IconLock,
       },
       {
+        path: "/settings/eval",
+        label: "意图评测",
+        description: "意图规则离线 case 批跑，查看准确率与失败样例",
+        Icon: IconEval,
+      },
+      {
+        path: "/settings/observability",
+        label: "运行观测",
+        description: "查看工具权限裁决与近期 Agent 操作审计",
+        Icon: IconObserve,
+      },
+      {
         path: "/settings/channels",
-        label: "渠道",
+        label: "渠道列表",
         description: "配置 Telegram 等聊天渠道机器人，各平台可并行启用",
         Icon: IconChannels,
       },
@@ -220,29 +243,19 @@ const leafForPath = (pathname: string) => {
 export const titleForPath = (pathname: string): string => {
   if (pathname === "/images/generate") return "AI 生成图片";
   if (pathname === "/videos/generate") return "AI 生成视频";
-  if (pathname === "/videos/studio") return "视频工程";
+  if (pathname === "/videos/studio") return "制片";
+  if (pathname === "/crawler/new") return "新增媒体采集";
+  if (pathname.match(/^\/crawler\/[^/]+$/)) return "媒体采集";
   if (pathname.match(/^\/media-platforms\/[^/]+\/collect-script$/))
     return "采集脚本";
   if (pathname.match(/^\/media-platforms\/[^/]+\/script$/)) return "填表脚本";
   return leafForPath(pathname)?.label ?? "ChatCMS";
 };
 
-/** 顶部标题下方的页面说明 */
-export const subtitleForPath = (pathname: string): string | undefined => {
-  if (pathname === "/images/generate") {
-    return "填写提示词生成图片，完成后回到图片列表";
-  }
-  if (pathname === "/videos/generate") {
-    return "填写提示词生成视频，完成后回到视频列表";
-  }
-  if (pathname.match(/^\/media-platforms\/[^/]+\/collect-script$/)) {
-    return "编辑采集草稿并发布；扩展桥仅消费已发布采集脚本";
-  }
-  if (pathname.match(/^\/media-platforms\/[^/]+\/script$/)) {
-    return "编辑草稿并发布；扩展桥仅消费已发布脚本";
-  }
-  return leafForPath(pathname)?.description;
-};
+/** 顶部标题下方的页面说明（产品页统一不展示二级标题） */
+export const subtitleForPath = (_pathname: string): string | undefined =>
+  undefined;
+
 
 /** 当前路径是否属于某分组 */
 export const groupContainsPath = (group: NavGroup, pathname: string): boolean =>

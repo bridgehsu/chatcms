@@ -5,6 +5,7 @@ import { platformHomeUrl, platformLabel } from '@/config/platformPresets';
 import { invoke } from '@/hooks/useTauri';
 import type { PlatformAccount, VaultStatus } from '@/types';
 import CabinX, { type CabinXColumn } from '@/components/CabinX';
+import { IconPlus } from '@/components/icons';
 import { formatTime } from '@/utils/time';
 import { AccountModal } from './components/AccountModal';
 import { RevealSecretsModal } from './components/RevealSecretsModal';
@@ -243,8 +244,13 @@ export const AccountsPage = () => {
                 showActionColumn={false}
                 headerActions={null}
                 extraHeaderActions={
-                    <Button type="primary" onClick={() => { setEditing(null); setMode('add'); }}>
-                        新增账号
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        icon={<IconPlus />}
+                        onClick={() => { setEditing(null); setMode('add'); }}
+                    >
+                        新增
                     </Button>
                 }
             />

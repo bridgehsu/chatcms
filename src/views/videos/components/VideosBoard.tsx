@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Select } from "@/components/Select";
 import { PublishModal, type PublishSource } from "@/views/publish/PublishModal";
 import { MediaEditModal } from "../../images/components/MediaEditModal";
@@ -17,8 +16,13 @@ const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
   { value: "web", label: "网页" },
 ];
 
+const emitBusy = (busy: boolean) => {
+  window.dispatchEvent(
+    new CustomEvent("videos:topbar-busy", { detail: { busy } }),
+  );
+};
+
 export const VideosBoard = () => {
-  const navigate = useNavigate();
   const {
     videos,
     busy,
@@ -41,6 +45,21 @@ export const VideosBoard = () => {
   useEffect(() => {
     setPage(1);
   }, [query, source]);
+
+  useEffect(() => {
+    emitBusy(busy);
+  }, [busy]);
+
+  useEffect(() => {
+    const onPick = () => fileRef.current?.click();
+    const onRequest = () => emitBusy(busy);
+    window.addEventListener("videos:pick-upload", onPick);
+    window.addEventListener("videos:topbar-request", onRequest);
+    return () => {
+      window.removeEventListener("videos:pick-upload", onPick);
+      window.removeEventListener("videos:topbar-request", onRequest);
+    };
+  }, [busy]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -112,30 +131,6 @@ export const VideosBoard = () => {
               删除选中 ({selected.size})
             </button>
           )}
-          <button
-            type="button"
-            className="btn-mcp-action"
-            disabled={busy}
-            onClick={() => fileRef.current?.click()}
-          >
-            {busy ? "处理中…" : "上传"}
-          </button>
-          <button
-            type="button"
-            className="btn-mcp-action"
-            disabled={busy}
-            onClick={() => navigate("/videos/studio")}
-          >
-            视频工程
-          </button>
-          <button
-            type="button"
-            className="model-btn-add"
-            disabled={busy}
-            onClick={() => navigate("/videos/generate")}
-          >
-            AI 生成
-          </button>
           <input
             ref={fileRef}
             type="file"

@@ -1,4 +1,4 @@
-/** 采集中心 — chatcms-collect Worker 控制 */
+/** 媒体采集 — chatcms-collect Worker 控制 */
 export const IconCrawler = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />

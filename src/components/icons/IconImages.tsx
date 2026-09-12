@@ -1,4 +1,4 @@
-/** 图片管理 */
+/** 图片工厂 */
 export const IconImages = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <rect x="3.5" y="5" width="17" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />

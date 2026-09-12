@@ -13,7 +13,7 @@ pub use tools::{ToolCall, ToolDef, ToolResult};
 pub use state::{AgentState, PermissionUserReply};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentProfile {
@@ -76,10 +76,7 @@ pub(super) fn validate_slug(slug: &str) -> Result<String, String> {
 
 /// 创建 workspace 目录树，返回根路径字符串
 pub(super) fn create_workspace(app: &AppHandle, slug: &str) -> Result<String, String> {
-    let base = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
+    let base = crate::config::resolve_data_root(app)
         .join("workspaces")
         .join(slug);
     for sub in &["input", "output", "tmp", "memory", "logs"] {

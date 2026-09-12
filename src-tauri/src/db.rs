@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 const SCHEMA: &str = include_str!("../../scripts/database/schema.sql");
 
@@ -11,7 +11,7 @@ pub struct DbPool(pub SqlitePool);
 
 /// 初始化连接池并创建 Schema（首次运行时建表）。
 pub async fn init(app: &AppHandle) -> Result<SqlitePool> {
-    let dir = app.path().app_data_dir()?;
+    let dir = crate::config::resolve_data_root(app);
     std::fs::create_dir_all(&dir)?;
     let db_path = dir.join("chatcms.db");
     let url = format!("sqlite://{}?mode=rwc", db_path.display());

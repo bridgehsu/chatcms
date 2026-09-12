@@ -24,7 +24,7 @@ export const WorkflowEditorPage = () => {
         <div className="model-panel">
           <div className="mcp-form-error">{error}</div>
           <Link className="wf-back" to="/schedules">
-            ← 返回任务调度
+            ← 返回调度中心
           </Link>
         </div>
       </div>
@@ -43,7 +43,7 @@ export const WorkflowEditorPage = () => {
     <div className="page page-workflow">
       <div className="wf-editor-bar">
         <Link className="wf-back" to="/schedules">
-          ← 任务调度
+          ← 调度中心
         </Link>
         <div className="wf-editor-bar__meta">
           <h1 className="wf-editor-bar__title">{project.name}</h1>

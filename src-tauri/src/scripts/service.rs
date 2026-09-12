@@ -1,15 +1,12 @@
 use serde_json::Value;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use uuid::Uuid;
 
 use super::types::{now_ms, validate_name, Skill, SkillSource};
 use super::repository as repo;
 
 fn skills_dir(app: &AppHandle, source: &str) -> std::path::PathBuf {
-    let base = app
-        .path()
-        .app_data_dir()
-        .unwrap_or_default()
+    let base = crate::config::resolve_data_root(app)
         .join("skills")
         .join(source);
     let _ = std::fs::create_dir_all(&base);

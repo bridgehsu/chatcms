@@ -124,7 +124,7 @@ export const SchedulesPage = () => {
             <CabinX
                 api={api}
                 columns={columns}
-                pageTitle="调度项目"
+                pageTitle="调度中心"
                 rowKey="id"
                 formType="D"
                 editorWidth={480}

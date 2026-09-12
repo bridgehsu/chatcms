@@ -5,7 +5,7 @@ use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use uuid::Uuid;
 
 use super::GeneratedImage;
@@ -20,11 +20,7 @@ fn now_ms() -> i64 {
 }
 
 fn images_dir(app: &AppHandle) -> Result<PathBuf> {
-    let dir = app
-        .path()
-        .app_data_dir()
-        .context("无法获取应用数据目录")?
-        .join("images");
+    let dir = crate::config::resolve_data_root(app).join("images");
     fs::create_dir_all(&dir).context("创建图片目录失败")?;
     Ok(dir)
 }

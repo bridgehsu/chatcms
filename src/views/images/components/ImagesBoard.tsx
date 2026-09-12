@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Select } from "@/components/Select";
 import { PublishModal, type PublishSource } from "@/views/publish/PublishModal";
 import type { GeneratedImage } from "../types";
@@ -16,8 +15,13 @@ const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
   { value: "web", label: "网页" },
 ];
 
+const emitBusy = (busy: boolean) => {
+  window.dispatchEvent(
+    new CustomEvent("images:topbar-busy", { detail: { busy } }),
+  );
+};
+
 export const ImagesBoard = () => {
-  const navigate = useNavigate();
   const {
     images,
     previews,
@@ -40,6 +44,21 @@ export const ImagesBoard = () => {
   useEffect(() => {
     setPage(1);
   }, [query, source]);
+
+  useEffect(() => {
+    emitBusy(busy);
+  }, [busy]);
+
+  useEffect(() => {
+    const onPick = () => fileRef.current?.click();
+    const onRequest = () => emitBusy(busy);
+    window.addEventListener("images:pick-upload", onPick);
+    window.addEventListener("images:topbar-request", onRequest);
+    return () => {
+      window.removeEventListener("images:pick-upload", onPick);
+      window.removeEventListener("images:topbar-request", onRequest);
+    };
+  }, [busy]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -111,22 +130,6 @@ export const ImagesBoard = () => {
               删除选中 ({selected.size})
             </button>
           )}
-          <button
-            type="button"
-            className="btn-mcp-action"
-            disabled={busy}
-            onClick={() => fileRef.current?.click()}
-          >
-            {busy ? "处理中…" : "上传"}
-          </button>
-          <button
-            type="button"
-            className="model-btn-add"
-            disabled={busy}
-            onClick={() => navigate("/images/generate")}
-          >
-            AI 生成
-          </button>
           <input
             ref={fileRef}
             type="file"

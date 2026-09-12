@@ -9,7 +9,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::time::Duration;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::persist;
 use crate::videos::{self, GeneratedVideo};
@@ -193,6 +193,17 @@ fn normalize_base(url: &str) -> String {
 }
 
 pub fn load_config(app: &AppHandle) -> MptConfig {
+    // 优先 AppConfig.general（全局配置为真相）
+    if let Some(state) = app.try_state::<crate::agents::AgentState>() {
+        if let Ok(cfg) = state.config.lock() {
+            let url = cfg.general.video_base_url.trim();
+            if !url.is_empty() {
+                return MptConfig {
+                    base_url: normalize_base(url),
+                };
+            }
+        }
+    }
     persist::load_mpt_config(app)
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default()
@@ -206,6 +217,13 @@ pub fn save_config(app: &AppHandle, config: &MptConfig) {
     }
     if let Ok(val) = serde_json::to_value(&cfg) {
         persist::save_mpt_config(app, &val);
+    }
+    // 同步到全局配置
+    if let Some(state) = app.try_state::<crate::agents::AgentState>() {
+        if let Ok(mut app_cfg) = state.config.lock() {
+            app_cfg.general.video_base_url = cfg.base_url.clone();
+            persist::save_config(app, &app_cfg);
+        }
     }
 }
 

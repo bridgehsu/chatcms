@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 use super::service::parse_skill_md;
 use super::types::{Skill, SkillSource};
@@ -21,8 +21,9 @@ pub async fn ensure_seeded(app: &AppHandle) -> Vec<Skill> {
         }
 
         // 写出到 skills/bundled/{name}.md
-        let dir = app.path().app_data_dir().unwrap_or_default()
-            .join("skills").join("bundled");
+        let dir = crate::config::resolve_data_root(app)
+            .join("skills")
+            .join("bundled");
         let _ = std::fs::create_dir_all(&dir);
         let file_path = dir.join(format!("{name}.md"));
         let _ = std::fs::write(&file_path, content);

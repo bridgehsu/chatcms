@@ -65,7 +65,7 @@ export const PublishModal = ({ source, onClose }: Props) => {
     );
   };
 
-  const buildSyncData = () => {
+  const buildSyncData = (bridgeBase: string) => {
     const platforms = selected.map((name) => ({ name }));
     const kind: PublishKind = source.kind;
     if (kind === "dynamic" && source.kind === "dynamic") {
@@ -77,7 +77,7 @@ export const PublishModal = ({ source, onClose }: Props) => {
           content: content.trim(),
           images: source.imageIds.map((id, i) => ({
             name: `image-${i + 1}.png`,
-            url: publishMediaUrl("image", id),
+            url: publishMediaUrl("image", id, bridgeBase),
             type: "image/png",
           })),
           videos: [],
@@ -93,7 +93,7 @@ export const PublishModal = ({ source, onClose }: Props) => {
           content: content.trim(),
           video: {
             name: "video.mp4",
-            url: publishMediaUrl("video", source.videoId),
+            url: publishMediaUrl("video", source.videoId, bridgeBase),
             type: "video/mp4",
           },
         },
@@ -109,7 +109,7 @@ export const PublishModal = ({ source, onClose }: Props) => {
         digest: md.slice(0, 120),
         cover: {
           name: "cover.png",
-          url: publishPlaceholderCoverUrl(),
+          url: publishPlaceholderCoverUrl(bridgeBase),
           type: "image/png",
         },
         htmlContent: plainToHtml(md),
@@ -135,8 +135,9 @@ export const PublishModal = ({ source, onClose }: Props) => {
     }
     setBusy(true);
     try {
+      const bridgeBase = await invoke<string>("publish_media_base");
       const url = await invoke<string>("publish_to_browser", {
-        syncData: buildSyncData(),
+        syncData: buildSyncData(bridgeBase),
       });
       setOkMsg(`已打开浏览器桥接页：${url}`);
     } catch (e) {

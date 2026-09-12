@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { App as AntdApp, Button, Input, InputNumber, Select, Space, Switch, Tag } from 'antd';
-import { EditOutlined, RedoOutlined } from '@ant-design/icons';
+import { App as AntdApp, Button, Input, InputNumber, Select, Switch, Tag } from 'antd';
+import { RedoOutlined } from '@ant-design/icons';
 import { invoke } from '@/hooks/useTauri';
-import CabinX, { type CabinXColumn } from '@/components/CabinX';
+import CabinX, { ActionOverflow, type CabinXColumn } from '@/components/CabinX';
 import { formatTime } from '@/utils/time';
 
 export interface IntentRule {
@@ -225,14 +225,21 @@ export const IntentsPage = () => {
                     <Button onClick={resetAll}>全部恢复默认</Button>
                 }
                 actionColumnRender={(record, actions) => (
-                    <Space size={2}>
-                        <Button type="link" icon={<EditOutlined />} onClick={() => actions.handleEdit(record)}>
-                            编辑
-                        </Button>
-                        <Button type="link" icon={<RedoOutlined />} onClick={() => resetOne(record)}>
-                            恢复默认
-                        </Button>
-                    </Space>
+                    <ActionOverflow
+                        items={[
+                            {
+                                key: 'edit',
+                                label: '编辑',
+                                onClick: () => actions.handleEdit(record),
+                            },
+                            {
+                                key: 'reset',
+                                label: '恢复默认',
+                                icon: <RedoOutlined />,
+                                onClick: () => resetOne(record),
+                            },
+                        ]}
+                    />
                 )}
             />
         </div>

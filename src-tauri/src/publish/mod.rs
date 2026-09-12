@@ -24,7 +24,7 @@ use uuid::Uuid;
 use crate::medias;
 use crate::persist;
 
-pub const BRIDGE_PORT: u16 = 17890;
+pub const DEFAULT_BRIDGE_PORT: u16 = 17890;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublishDraft {
@@ -96,8 +96,15 @@ impl PublishBridge {
         self.inner.page_bindings.lock().unwrap().clone()
     }
 
-    pub fn base_url() -> String {
-        format!("http://127.0.0.1:{BRIDGE_PORT}")
+    pub fn base_url_for(app: &AppHandle) -> String {
+        let port = crate::config::resolve_bridge_port(app);
+        format!("http://127.0.0.1:{port}")
+    }
+
+    pub fn base_url(&self) -> String {
+        self.app_handle()
+            .map(|a| Self::base_url_for(&a))
+            .unwrap_or_else(|| format!("http://127.0.0.1:{DEFAULT_BRIDGE_PORT}"))
     }
 
     pub async fn ensure_running(&self) -> Result<(), String> {
@@ -186,15 +193,19 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
         .route("/health", get(|| async { "ok" }))
         .merge(crate::bridge::routes())
         .layer(cors)
-        .with_state(bridge);
+        .with_state(bridge.clone());
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], BRIDGE_PORT));
+    let port = bridge
+        .app_handle()
+        .map(|a| crate::config::resolve_bridge_port(&a))
+        .unwrap_or(DEFAULT_BRIDGE_PORT);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(addr)
         .await
-        .map_err(|e| format!("绑定发布桥端口失败 {BRIDGE_PORT}: {e}"))?;
+        .map_err(|e| format!("绑定发布桥端口失败 {port}: {e}"))?;
     log::info!(
         target: "chatcms_lib::publish",
-        "publish-bridge listening on http://127.0.0.1:{BRIDGE_PORT}",
+        "publish-bridge listening on http://127.0.0.1:{port}",
     );
     axum::serve(listener, app)
         .await
@@ -708,20 +719,20 @@ pub async fn prepare_and_open(
     bridge.bind_app(app.clone());
     bridge.ensure_running().await?;
     let draft = bridge.put_draft(sync_data);
-    let url = format!("{}/bridge?id={}", PublishBridge::base_url(), draft.id);
+    let url = format!("{}/bridge?id={}", bridge.base_url(), draft.id);
     tauri_plugin_opener::open_url(&url, None::<&str>).map_err(|e| e.to_string())?;
     Ok(url)
 }
 
 #[allow(dead_code)]
-pub fn media_url(kind: &str, id: &str) -> String {
-    format!("{}/media/{kind}/{id}", PublishBridge::base_url())
+pub fn media_url(app: &AppHandle, kind: &str, id: &str) -> String {
+    format!("{}/media/{kind}/{id}", PublishBridge::base_url_for(app))
 }
 
 #[allow(dead_code)]
-pub fn placeholder_cover_url() -> String {
+pub fn placeholder_cover_url(app: &AppHandle) -> String {
     format!(
         "{}/media/placeholder/cover.png",
-        PublishBridge::base_url()
+        PublishBridge::base_url_for(app)
     )
 }

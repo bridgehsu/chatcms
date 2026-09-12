@@ -35,6 +35,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let handle = app.handle().clone();
     let state = handle.state::<AgentState>();
 
+    // 先加载配置（data_root / 发布桥端口依赖此项）
+    if let Some(mut config) = persist::load_config(&handle) {
+        config.ensure_profiles();
+        config.hydrate_general_from_legacy(&handle);
+        persist::save_config(&handle, &config);
+        *state.config.lock().unwrap() = config;
+    }
+
     // Publish bridge
     handle.state::<PublishBridge>().bind_app(handle.clone());
     let bridge = (*app.state::<PublishBridge>()).clone();
@@ -52,11 +60,6 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     handle.manage(crate::db::DbPool(pool));
 
     // Sync state from disk
-    if let Some(mut config) = persist::load_config(&handle) {
-        config.ensure_profiles();
-        persist::save_config(&handle, &config);
-        *state.config.lock().unwrap() = config;
-    }
     *state.sessions.lock().unwrap() = rt.block_on(chat::repository::load_all(&handle));
     *state.knowledge.lock().unwrap() = rt.block_on(kbase::repository::load_all(&handle));
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
@@ -117,6 +120,8 @@ pub fn run() {
             chat::intent::commands::intent_rule_update,
             chat::intent::commands::intent_rule_reset_defaults,
             chat::intent::commands::intent_rule_reset_one,
+            chat::intent::commands::intent_eval_cases,
+            chat::intent::commands::intent_eval_run,
             // config / provider
             config::commands::config_get,
             config::commands::config_set,
@@ -126,6 +131,8 @@ pub fn run() {
             config::commands::provider_remove,
             config::commands::provider_activate,
             config::commands::provider_set_auto,
+            config::commands::general_config_get,
+            config::commands::general_config_set,
             // permission
             permission::commands::permission_respond,
             permission::commands::permission_get,
@@ -251,6 +258,11 @@ pub fn run() {
             crawler::commands::crawler_status,
             crawler::commands::crawler_logs,
             crawler::commands::crawler_list_data,
+            crawler::commands::crawler_task_list,
+            crawler::commands::crawler_task_get,
+            crawler::commands::crawler_task_add,
+            crawler::commands::crawler_task_update,
+            crawler::commands::crawler_task_remove,
             // skills
             scripts::commands::skill_list,
             scripts::commands::skill_add,

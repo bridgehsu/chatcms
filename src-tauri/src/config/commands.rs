@@ -1,8 +1,71 @@
-use super::{AppConfig, ProviderConfig, ProviderKind, ProviderProfile, ProviderProfileInfo};
+use super::{
+    default_data_root, AppConfig, GeneralSettings, ProviderConfig, ProviderKind, ProviderProfile,
+    ProviderProfileInfo,
+};
 use crate::agents::AgentState;
 use crate::persist;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 use uuid::Uuid;
+
+/// 全局配置页视图（含默认数据目录提示）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeneralConfigView {
+    pub data_root: String,
+    pub default_data_root: String,
+    pub video_base_url: String,
+    pub publish_bridge_port: u16,
+    pub crawler_base_url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeneralConfigSetResult {
+    pub config: GeneralConfigView,
+    /// 改存储根或发布桥端口后需重启才对 DB / 桥生效
+    pub restart_required: bool,
+}
+
+fn normalize_http_url(raw: &str, label: &str) -> Result<String, String> {
+    let url = raw.trim().trim_end_matches('/').to_string();
+    if url.is_empty() {
+        return Err(format!("{label} 不能为空"));
+    }
+    if !(url.starts_with("http://") || url.starts_with("https://")) {
+        return Err(format!("{label} 需以 http:// 或 https:// 开头"));
+    }
+    Ok(url)
+}
+
+fn to_view(app: &AppHandle, g: &GeneralSettings) -> GeneralConfigView {
+    GeneralConfigView {
+        data_root: g
+            .data_root
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_default(),
+        default_data_root: default_data_root(app).to_string_lossy().to_string(),
+        video_base_url: g.video_base_url.clone(),
+        publish_bridge_port: g.publish_bridge_port,
+        crawler_base_url: g.crawler_base_url.clone(),
+    }
+}
+
+fn sync_service_stores(app: &AppHandle, g: &GeneralSettings) {
+    // 只写 sidecar store，避免在已持有 AgentState.config 锁时重入
+    let mpt = crate::mpt::MptConfig {
+        base_url: g.video_base_url.clone(),
+    };
+    if let Ok(val) = serde_json::to_value(&mpt) {
+        persist::save_mpt_config(app, &val);
+    }
+    let crawler = crate::crawler::CrawlerConfig {
+        base_url: g.crawler_base_url.clone(),
+    };
+    if let Ok(val) = serde_json::to_value(&crawler) {
+        persist::save_crawler_config(app, &val);
+    }
+}
 
 fn parse_provider_kind(provider: &str) -> ProviderKind {
     match provider {
@@ -188,6 +251,63 @@ pub fn provider_set_auto(
     Ok(())
 }
 
+#[tauri::command]
+pub fn general_config_get(app: AppHandle, state: State<'_, AgentState>) -> GeneralConfigView {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.hydrate_general_from_legacy(&app);
+    to_view(&app, &cfg.general)
+}
+
+#[tauri::command]
+pub fn general_config_set(
+    app: AppHandle,
+    state: State<'_, AgentState>,
+    data_root: String,
+    video_base_url: String,
+    publish_bridge_port: u16,
+    crawler_base_url: String,
+) -> Result<GeneralConfigSetResult, String> {
+    let video_base_url = normalize_http_url(&video_base_url, "视频服务地址")?;
+    let crawler_base_url = normalize_http_url(&crawler_base_url, "采集服务地址")?;
+    if publish_bridge_port < 1024 {
+        return Err("发布桥端口需 ≥ 1024".into());
+    }
+
+    let data_root_opt = {
+        let t = data_root.trim();
+        if t.is_empty() {
+            None
+        } else {
+            let p = std::path::PathBuf::from(t);
+            if p.exists() && !p.is_dir() {
+                return Err("存储根路径已存在且不是目录".into());
+            }
+            std::fs::create_dir_all(&p).map_err(|e| format!("无法创建存储根目录: {e}"))?;
+            Some(t.to_string())
+        }
+    };
+
+    let mut cfg = state.config.lock().unwrap();
+    let prev = cfg.general.clone();
+    cfg.general = GeneralSettings {
+        data_root: data_root_opt,
+        video_base_url,
+        publish_bridge_port,
+        crawler_base_url,
+    };
+    let restart_required = prev.data_root != cfg.general.data_root
+        || prev.publish_bridge_port != cfg.general.publish_bridge_port;
+    let general = cfg.general.clone();
+    persist::save_config(&app, &cfg);
+    let view = to_view(&app, &general);
+    drop(cfg);
+    sync_service_stores(&app, &general);
+    Ok(GeneralConfigSetResult {
+        config: view,
+        restart_required,
+    })
+}
+
 #[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("config")
@@ -199,6 +319,8 @@ pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
             provider_update,
             provider_remove,
             provider_activate,
+            general_config_get,
+            general_config_set,
         ])
         .build()
 }

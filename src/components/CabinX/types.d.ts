@@ -91,7 +91,7 @@ export interface CabinXProps<T = any> {
   editorWidth?: number; // 自定义Drawer/Modal宽度，默认500px
   showIdColumn?: boolean;
   showActionColumn?: boolean;
-  actionColumnWidth?: number;
+  actionColumnWidth?: number; // default: 120
   actionColumnRender?: (record: T, actions: ActionHandlers) => React.ReactNode;
   actionBtnComponents?: (record: T) => React.ReactNode;
   formType?: 'D' | 'M'; // D for Drawer, M for Tmodal
@@ -118,7 +118,7 @@ export type CabinXParameters<T = any> = {
   editorWidth?: number; // default: 500px (统一命名为 editorWidth)
   showIdColumn?: boolean; // default: true
   showActionColumn?: boolean; // default: true
-  actionColumnWidth?: number; // default: 200
+  actionColumnWidth?: number; // default: 120
   actionColumnRender?: (record: any, actions: ActionHandlers) => React.ReactNode;
   actionBtnComponents?: (record: any) => React.ReactNode;
   formType?: 'D' | 'M'; // default: 'D' (Drawer), M for Tmodal

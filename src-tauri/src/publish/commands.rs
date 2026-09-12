@@ -11,8 +11,8 @@ pub async fn publish_to_browser(
 }
 
 #[tauri::command]
-pub fn publish_media_base() -> String {
-    PublishBridge::base_url()
+pub fn publish_media_base(app: AppHandle) -> String {
+    PublishBridge::base_url_for(&app)
 }
 #[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {

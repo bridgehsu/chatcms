@@ -16,7 +16,8 @@ impl NormalizedInput {
     }
 }
 
-pub fn normalize(input: &str) -> NormalizedInput {
+/// trim + 小写副本 + 字数；不做意图判定。
+pub fn prepare(input: &str) -> NormalizedInput {
     let text = input.trim().to_string();
     let lower = text.to_lowercase();
     let char_count = text.chars().count();

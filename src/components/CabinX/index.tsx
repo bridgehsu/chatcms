@@ -16,6 +16,10 @@ export type {
     ActionHandlers,
 } from './types';
 import Editor from "./Editor.tsx";
+import { IconPlus } from "@/components/icons";
+
+export {ActionOverflow} from './Action';
+export type {ActionItem} from './Action';
 
 // 默认的单元格渲染：
 // - 当值为数组时，拼接多个 label/name/title/value
@@ -145,7 +149,7 @@ const CabinX: React.FC<CabinXProps> = ({
                                            drawerSize = 'default',
                                            editorWidth = 500, // 默认宽度500px
                                            showActionColumn = true,
-                                           actionColumnWidth = 200,
+                                           actionColumnWidth = 120,
                                            actionColumnRender,
                                            actionBtnComponents,
                                            formType = 'D',
@@ -516,7 +520,7 @@ const CabinX: React.FC<CabinXProps> = ({
                 <div className="topbar-actions">
                     {extraHeaderActions}
                     {headerActions === undefined ? (
-                        <Button variant="outlined" color="primary" onClick={handleAdd}>新增</Button>
+                        <Button variant="outlined" color="primary" icon={<IconPlus />} onClick={handleAdd}>新增</Button>
                     ) : headerActions}
                 </div>
             </header>

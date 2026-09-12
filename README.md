@@ -1,11 +1,11 @@
 # ChatCMS
 
-Tauri + React 桌面 Agent。侧栏「采集中心」通过 HTTP 连接 [chatcms-collect](../chatcms-collect) FastAPI Worker。
+Tauri + React 桌面 Agent。侧栏「媒体采集 → 采集任务」通过 HTTP 连接 [chatcms-collect](../chatcms-collect) FastAPI Worker；「调度中心」用于配置 n8n 风格工作流。
 
 ## 启动
 
 ```bash
-# 终端 1：采集 Worker
+# 终端 1：采集 Worker（可选）
 cd ../chatcms-collect
 uv run uvicorn api.main:app --port 8080 --reload
 
@@ -15,7 +15,7 @@ pnpm install
 pnpm tauri dev
 ```
 
-采集中心默认 Base URL：`http://127.0.0.1:8080`。
+采集任务默认 Base URL：`http://127.0.0.1:8080`。
 
 ## 打包
 
@@ -42,8 +42,3 @@ powershell -ExecutionPolicy Bypass -File bin/package-windows.ps1 -Msi
 ## Recommended IDE Setup
 
 - [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
-
-
-帮我将当前前端的model-config改名为models 后端工程src-taur中提取一个models文件夹 还是安装项目的规范mod commands service repository三层结构来    
-                                                                                                                                                 
-同时model 配置表需要夹一个权重1，2，3，4 等先不要写代码 理解我的需求          

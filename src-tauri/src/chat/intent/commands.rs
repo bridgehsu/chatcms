@@ -2,6 +2,7 @@
 
 use tauri::AppHandle;
 
+use super::eval::{self, EvalCase, EvalReport};
 use super::repository::IntentRuleRecord;
 use super::service;
 
@@ -29,4 +30,16 @@ pub async fn intent_rule_reset_defaults(app: AppHandle) -> Result<Vec<IntentRule
 #[tauri::command]
 pub async fn intent_rule_reset_one(app: AppHandle, id: String) -> Result<IntentRuleRecord, String> {
     service::reset_one(&app, id).await
+}
+
+/// 内置意图评测 case bank。
+#[tauri::command]
+pub async fn intent_eval_cases() -> Result<Vec<EvalCase>, String> {
+    Ok(eval::default_cases())
+}
+
+/// 跑意图离线评测；`cases` 为空则用内置样例。
+#[tauri::command]
+pub async fn intent_eval_run(cases: Option<Vec<EvalCase>>) -> Result<EvalReport, String> {
+    Ok(eval::run_cases(cases))
 }

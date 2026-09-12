@@ -59,6 +59,12 @@ export const PermissionsPanel = () => {
     setError("");
   };
 
+  useEffect(() => {
+    const onAdd = () => openAdd();
+    window.addEventListener("settings-permissions:add", onAdd);
+    return () => window.removeEventListener("settings-permissions:add", onAdd);
+  }, []);
+
   const openEdit = (m: PermissionMode) => {
     setEditing(m);
     setModal("edit");
@@ -123,17 +129,6 @@ export const PermissionsPanel = () => {
 
   return (
     <div className="model-panel">
-      <div className="model-toolbar">
-        <div className="model-filters">
-          <p className="permission-manage__lede">
-            自定义权限模式并调整顺序；会话工具栏按此顺序展示，默认第一项。
-          </p>
-        </div>
-        <button className="model-btn-add" type="button" onClick={openAdd}>
-          + 新建模式
-        </button>
-      </div>
-
       {error ? <div className="mcp-form-error">{error}</div> : null}
 
       <div className="model-table-wrap">

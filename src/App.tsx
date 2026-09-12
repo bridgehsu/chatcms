@@ -2,7 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { App as AntdApp, ConfigProvider, theme } from "antd";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { AppLayout } from "@/layout/AppLayout";
-import { CrawlerPage } from "@/views/crawler";
+import { CrawlerPage, CrawlerConfigPage } from "@/views/crawler";
 import { ChatPage } from "@/views/chat";
 import { MapPage } from "@/views/map";
 import { NavBookmarksPage } from "@/views/nav";
@@ -27,6 +27,9 @@ import {
   PermissionsRedirect,
   SettingsPermissionsPage,
 } from "@/views/settings/PermissionsPage";
+import { EvalPage } from "@/views/settings/EvalPage";
+import { ObservabilityPage } from "@/views/settings/ObservabilityPage";
+import { GeneralPage } from "@/views/settings/GeneralPage";
 
 const App = () => {
   const resolved = useThemeStore((s) => s.resolved);
@@ -66,6 +69,7 @@ const App = () => {
               />
               <Route path="accounts" element={<AccountsPage />} />
               <Route path="crawler" element={<CrawlerPage />} />
+              <Route path="crawler/:taskId" element={<CrawlerConfigPage />} />
               <Route path="schedules" element={<SchedulesPage />} />
               <Route path="schedules/:projectId" element={<WorkflowEditorPage />} />
               <Route path="cron" element={<Navigate to="/schedules" replace />} />
@@ -74,7 +78,10 @@ const App = () => {
               <Route path="mcp" element={<McpPage />} />
               <Route path="models" element={<ModelsPage />} />
               <Route path="intents" element={<IntentsPage />} />
+              <Route path="settings/general" element={<GeneralPage />} />
               <Route path="settings/permissions" element={<SettingsPermissionsPage />} />
+              <Route path="settings/eval" element={<EvalPage />} />
+              <Route path="settings/observability" element={<ObservabilityPage />} />
               <Route path="settings/knowledge" element={<KnowledgePage />} />
               <Route path="settings/channels" element={<ChannelsPage />} />
               <Route path="permissions" element={<PermissionsRedirect />} />

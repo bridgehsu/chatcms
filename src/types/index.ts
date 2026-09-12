@@ -268,10 +268,18 @@ export interface ProviderProfile {
   active: boolean;
 }
 
+export interface GeneralSettings {
+  data_root?: string | null;
+  video_base_url?: string;
+  publish_bridge_port?: number;
+  crawler_base_url?: string;
+}
+
 export interface AppConfig {
   provider: ProviderConfig;
   profiles?: ProviderProfile[];
   active_profile_id?: string | null;
+  general?: GeneralSettings;
 }
 
 // ── Platform accounts ─────────────────────────────────────────────────────────
@@ -401,6 +409,27 @@ export interface ScheduleProject {
   description: string;
   enabled: boolean;
   workflow: WorkflowGraph;
+  updated: number;
+  created: number;
+}
+
+// ── Crawler tasks ─────────────────────────────────────────────────────────────
+
+export interface CrawlerTask {
+  id: string;
+  name: string;
+  description: string;
+  platform: string;
+  login_type: string;
+  crawler_type: string;
+  keywords: string;
+  specified_ids: string;
+  creator_ids: string;
+  enable_comments: boolean;
+  enable_sub_comments: boolean;
+  save_option: string;
+  headless: boolean;
+  max_notes_count: string;
   updated: number;
   created: number;
 }

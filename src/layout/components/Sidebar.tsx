@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   IconChevron,
   IconGithub,
@@ -109,39 +109,36 @@ const GroupBlock = ({
   sidebarExpanded,
   open,
   onToggle,
+  onExpandSidebar,
 }: {
   group: NavGroup;
   sidebarExpanded: boolean;
   open: boolean;
   onToggle: () => void;
+  onExpandSidebar: () => void;
 }) => {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const active = groupContainsPath(group, pathname);
+  const inGroup = groupContainsPath(group, pathname);
   const showChildren = sidebarExpanded && open;
 
+  /** 一级只负责展开/收起，不跳转到子路由 */
   const onParentClick = () => {
     if (!sidebarExpanded) {
-      navigate(group.defaultPath);
+      onExpandSidebar();
+      if (!open) onToggle();
       return;
     }
-    if (!open) {
-      onToggle();
-      if (!active) navigate(group.defaultPath);
-      return;
-    }
-    if (!active) navigate(group.defaultPath);
-    else onToggle();
+    onToggle();
   };
 
   return (
-    <div className={`nav-group${active ? " is-active" : ""}${open ? " is-open" : ""}`}>
+    <div className={`nav-group${inGroup ? " is-active" : ""}${open ? " is-open" : ""}`}>
       {group.dividerBefore ? (
         <div className="nav-divider" role="separator" />
       ) : null}
       <button
         type="button"
-        className={`nav-item nav-item--group${active ? " active" : ""}`}
+        className="nav-item nav-item--group"
         aria-label={group.label}
         aria-expanded={showChildren}
         title={sidebarExpanded ? undefined : group.label}
@@ -260,6 +257,7 @@ export const Sidebar = () => {
                 sidebarExpanded={expanded}
                 open={!!groupOpen[entry.id]}
                 onToggle={() => toggleGroup(entry.id)}
+                onExpandSidebar={() => setExpanded(true)}
               />
             ),
           )}

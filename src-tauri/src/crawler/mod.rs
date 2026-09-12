@@ -1,13 +1,15 @@
 //! chatcms-collect HTTP 控制面客户端。
-//! 采集中心通过 Base URL 调用 Worker：`/api/crawler/*`、`/api/data/*`、`/api/health`。
+//! 采集任务通过 Base URL 调用 Worker：`/api/crawler/*`、`/api/data/*`、`/api/health`。
 
 pub mod commands;
+mod repository;
+mod service;
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::persist;
 
@@ -26,6 +28,56 @@ impl Default for CrawlerConfig {
         }
     }
 }
+
+/// 持久化的采集任务配置（列表 + 配置页）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrawlerTask {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default = "default_platform")]
+    pub platform: String,
+    #[serde(default = "default_login")]
+    pub login_type: String,
+    #[serde(default = "default_crawler_type")]
+    pub crawler_type: String,
+    #[serde(default)]
+    pub keywords: String,
+    #[serde(default)]
+    pub specified_ids: String,
+    #[serde(default)]
+    pub creator_ids: String,
+    #[serde(default = "default_true")]
+    pub enable_comments: bool,
+    #[serde(default)]
+    pub enable_sub_comments: bool,
+    #[serde(default = "default_save")]
+    pub save_option: String,
+    #[serde(default)]
+    pub headless: bool,
+    #[serde(default = "default_max_notes")]
+    pub max_notes_count: String,
+    pub updated: i64,
+    pub created: i64,
+}
+
+fn default_platform() -> String {
+    "xhs".into()
+}
+fn default_max_notes() -> String {
+    "15".into()
+}
+
+pub(crate) fn now_ms() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
+}
+
+pub use service::{add as task_add, get as task_get, list as task_list, remove as task_remove, update as task_update};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CrawlerStartRequest {
@@ -116,6 +168,17 @@ fn client() -> Client {
 }
 
 pub fn load_config(app: &AppHandle) -> CrawlerConfig {
+    // 优先 AppConfig.general
+    if let Some(state) = app.try_state::<crate::agents::AgentState>() {
+        if let Ok(cfg) = state.config.lock() {
+            let url = cfg.general.crawler_base_url.trim();
+            if !url.is_empty() {
+                return CrawlerConfig {
+                    base_url: normalize_base(url),
+                };
+            }
+        }
+    }
     if let Some(v) = persist::load_crawler_config(app) {
         // 兼容旧配置：只有 project_root 时回落到默认 HTTP
         if let Ok(cfg) = serde_json::from_value::<CrawlerConfig>(v.clone()) {
@@ -142,6 +205,12 @@ pub fn save_config(app: &AppHandle, cfg: &CrawlerConfig) {
     };
     if let Ok(v) = serde_json::to_value(&to_store) {
         persist::save_crawler_config(app, &v);
+    }
+    if let Some(state) = app.try_state::<crate::agents::AgentState>() {
+        if let Ok(mut app_cfg) = state.config.lock() {
+            app_cfg.general.crawler_base_url = to_store.base_url.clone();
+            persist::save_config(app, &app_cfg);
+        }
     }
 }
 

@@ -28,6 +28,7 @@ chatcms/
 │       └── skill-creator.md
 ├── bin/                 # 打包脚本（mac / windows）
 ├── doc/                 # 原理说明（如 how-it-works.md）
+├── resume/              # 简历用项目经历文稿（非运行时）
 ├── .cursor/rules/       # Cursor rules（含本文件）
 ├── .cursor/skills/      # 项目 skills
 ├── package.json         # 前端依赖；脚本 pnpm tauri / pnpm package*
@@ -45,25 +46,25 @@ src/
 ├── App.tsx / main.tsx      # HashRouter + 一级路由
 ├── layout/
 │   ├── AppLayout.tsx       # Sidebar + Topbar + Outlet
-│   ├── nav.ts              # 导航：干活区 + 智能配置 / 系统设置二级
-│   └── components/         # Sidebar、Topbar、ThemeToggle
+│   ├── nav.ts              # 导航：干活区 + 媒体管理 / 智能配置 / 系统设置二级
+│   └── components/         # Sidebar、Topbar、ThemeToggle、PageShell
 ├── views/
 │   ├── chat/               # 智能会话（SessionList + ChatWindow + PermissionPrompt）
 │   ├── map/                # 业务地图看板（分区入口 / 笔记 / 时钟）
 │   ├── content/            # 内容管理 · AI 笔记（Notion 风格）
-│   ├── images/             # 图片管理 · AI 生图与本地保存
-│   ├── videos/             # 视频管理 · AI 生视频 / MPT 口播工程页 / 本地保存
-│   ├── accounts/           # 账号管理 · 本地密码本（序号/跳转/主密码解锁查看）
-│   ├── schedules/          # 任务调度 · 项目列表 + n8n 风格工作流画布
+│   ├── images/             # 图片工厂 · AI 生图与本地保存
+│   ├── videos/             # 视频工厂 · AI 生视频 / MPT 口播工程页 / 本地保存
+│   ├── schedules/          # 调度中心 · 项目列表 + n8n 风格工作流画布
 │   ├── skills/             # 技能管理 · OpenClaw SKILL.md CRUD
 │   ├── agents/             # 代理管理 · 多 Agent 档案 / 技能白名单
 │   ├── mcp/                # MCP 管理 · 表格/预设/工具列表
 │   ├── models/             # 模型配置表格 + 弹窗 CRUD
 │   ├── intents/            # 意图规则 · 关键词/权重/启用（软路由配置）
 │   ├── permissions/        # 权限模式面板组件（路由在 settings）
-│   ├── settings/           # 系统设置页：权限 / 记忆 / 渠道
-│   ├── media-platforms/    # 媒体平台管理
-│   ├── crawler/            # 采集器管理
+│   ├── settings/           # 全局配置 / 权限 / 意图评测 / 运行观测 / 渠道；知识库页文件亦在此（导航在智能配置）
+│   ├── media-platforms/    # 插件脚本（导航在媒体管理）· 发布/采集注入页
+│   ├── crawler/            # 媒体采集（列表 + /crawler/:id 配置页 · chatcms-collect）
+│   ├── accounts/           # 账号管理（媒体管理 · 本地密码本）
 │   ├── nav/                # 导航书签
 │   └── publish/            # 发布到浏览器插件（自动填表桥接弹窗）
 ├── components/
@@ -99,7 +100,7 @@ src/
 src-tauri/src/
 ├── main.rs              # 二进制入口 → lib::run
 ├── lib.rs               # Tauri commands 注册 + bootstrap（setup）
-├── db.rs                # SQLite 连接池；include_str! 加载 scripts/database/schema.sql
+├── db.rs                # SQLite 连接池；路径走 config::resolve_data_root；schema include_str!
 ├── logging/             # 应用日志（tauri-plugin-log + AppEnv）
 │   ├── mod.rs           # plugin 注册、启动摘要
 │   └── env.rs           # Dev / Test / Prod 环境识别
@@ -161,7 +162,8 @@ src-tauri/src/
 │   │   ├── cache.rs         # 启用规则内存缓存（热路径同步读）
 │   │   ├── repository.rs    # intent_rule 表读写
 │   │   ├── service.rs       # ensure_seeded / list / update / reset
-│   │   ├── commands.rs      # intent_rule_* Tauri commands
+│   │   ├── commands.rs      # intent_rule_* / intent_eval_* Tauri commands
+│   │   ├── eval.rs          # 意图离线评测 case bank + 批跑报告
 │   │   ├── score.rs         # 规则打分（读 cache）
 │   │   ├── confidence.rs    # 置信度 + High/Low
 │   │   ├── classify.rs      # Local Classifier（低置信补判，预留）
@@ -193,13 +195,16 @@ src-tauri/src/
 ├── channels/            # IM 渠道运行时（Telegram 等）
 │   ├── mod.rs
 │   └── commands.rs
-├── config/              # AppConfig / Provider CRUD
+├── config/              # AppConfig / Provider CRUD / 全局配置（存储根、外挂服务、发布桥）
+│   ├── mod.rs           # AppConfig、GeneralSettings
+│   ├── paths.rs         # resolve_data_root / resolve_bridge_port
+│   └── commands.rs      # config_* / provider_* / general_config_*
+├── crawler/             # 采集器（chatcms-collect worker）HTTP 客户端 + 任务 CRUD；base_url 与 AppConfig.general 同步
 │   ├── mod.rs
+│   ├── repository.rs
+│   ├── service.rs
 │   └── commands.rs
-├── crawler/             # 采集器（chatcms-collect worker）HTTP 客户端
-│   ├── mod.rs
-│   └── commands.rs
-├── images/              # AI 生图 + 本地落盘
+├── images/              # AI 生图 + 本地落盘（目录走 resolve_data_root）
 │   ├── mod.rs
 │   └── commands.rs
 ├── kbase/               # 知识库（笔记 / 公开 feed / 检索）
@@ -212,7 +217,7 @@ src-tauri/src/
 ├── medias/              # 媒体平台 + 稿件（发布 / 采集脚本）
 │   ├── mod.rs
 │   └── commands.rs
-├── mpt/                 # MoneyPrinterTurbo 客户端
+├── mpt/                 # chatcms-video 客户端；base_url 与 AppConfig.general 同步
 │   ├── mod.rs
 │   └── commands.rs      # mpt_* Tauri commands
 ├── persist/             # 持久化层（SQLite + tauri-plugin-store）；有独立 repository 的域不在此处
@@ -233,13 +238,13 @@ src-tauri/src/
 │   ├── business_map.rs  # store JSON
 │   ├── bridge.rs        # store JSON
 │   └── crawler.rs       # store JSON
-├── publish/             # 本机发布桥 axum server
+├── publish/             # 本机发布桥 axum server（端口读 AppConfig.general.publish_bridge_port）
 │   ├── mod.rs
 │   └── commands.rs
-├── schedules/           # 任务调度项目 + 工作流图 CRUD
+├── schedules/           # 调度中心项目 + 工作流图 CRUD
 │   ├── mod.rs
 │   └── commands.rs
-└── videos/              # AI 生视频（Videos API）+ 本地落盘
+└── videos/              # AI 生视频（Videos API）+ 本地落盘（目录走 resolve_data_root）
     ├── mod.rs
     └── commands.rs
 ```

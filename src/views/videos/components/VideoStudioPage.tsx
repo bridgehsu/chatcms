@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { App as AntdApp } from "antd";
 import { Select } from "@/components/Select";
 import {
   IconMptSubtitle,
@@ -7,6 +8,7 @@ import {
   IconMptVoice,
   IconSettings,
 } from "@/components/icons";
+import { PageShell } from "@/layout/components/PageShell";
 import { convertFileSrc, invoke } from "@/hooks/useTauri";
 import type { GeneratedVideo } from "../types";
 import {
@@ -52,6 +54,7 @@ const PARAM_MENUS = [
 ];
 
 export const VideoStudioPage = () => {
+  const { message } = AntdApp.useApp();
   const cancelled = useRef(false);
 
   const [baseUrl, setBaseUrl] = useState("http://127.0.0.1:6060");
@@ -92,6 +95,12 @@ export const VideoStudioPage = () => {
       new CustomEvent("mpt:health", { detail: { ok } }),
     );
   }, []);
+
+  useEffect(() => {
+    if (!error) return;
+    message.error(error);
+    setError("");
+  }, [error, message]);
 
   useEffect(() => {
     const openSettings = () => setSettingsOpen(true);
@@ -498,7 +507,34 @@ export const VideoStudioPage = () => {
     !anyBusy &&
     (!!params.video_subject.trim() || !!params.video_script.trim());
 
+  useEffect(() => {
+    const emit = () => {
+      window.dispatchEvent(
+        new CustomEvent("mpt:topbar-state", {
+          detail: { busy, canGenerate, progress },
+        }),
+      );
+    };
+    emit();
+    const onRequest = () => emit();
+    const onGen = () => {
+      void onGenerate();
+    };
+    const onCancel = () => {
+      cancelled.current = true;
+    };
+    window.addEventListener("mpt:topbar-request", onRequest);
+    window.addEventListener("mpt:generate", onGen);
+    window.addEventListener("mpt:cancel-generate", onCancel);
+    return () => {
+      window.removeEventListener("mpt:topbar-request", onRequest);
+      window.removeEventListener("mpt:generate", onGen);
+      window.removeEventListener("mpt:cancel-generate", onCancel);
+    };
+  }, [busy, canGenerate, progress]);
+
   return (
+    <PageShell scroll={false}>
     <>
     <div className="page mpt-page">
       <div className="mpt-shell">
@@ -648,7 +684,7 @@ export const VideoStudioPage = () => {
                   </button>
                 ) : null}
                 <Link className="mpt-results__link" to="/videos">
-                  视频管理
+                  视频工厂
                 </Link>
               </div>
             </div>
@@ -754,68 +790,6 @@ export const VideoStudioPage = () => {
             </div>
           </section>
         </div>
-
-        <footer className="mpt-dock">
-          <div className="mpt-dock__meta">
-            {error ? (
-              <div className="images-generate__error">{error}</div>
-            ) : (
-              <p className="mpt-dock__summary">
-                <span className="mpt-dock__chip">
-                  {params.video_aspect || "9:16"}
-                </span>
-                <span className="mpt-dock__chip">
-                  {params.video_source || "pexels"}
-                </span>
-                <span className="mpt-dock__chip">
-                  {params.voice_name
-                    ? params.voice_name.replace(/-Female|-Male$/g, "")
-                    : "未选音色"}
-                </span>
-                {scriptChars ? (
-                  <span className="mpt-dock__chip">{scriptChars} 字</span>
-                ) : null}
-              </p>
-            )}
-            {statusText ? (
-              <p className="mpt-studio__status">{statusText}</p>
-            ) : null}
-            {taskId ? (
-              <p className="mpt-studio__hint">Task {taskId.slice(0, 8)}</p>
-            ) : null}
-            {busy ? (
-              <div className="mpt-studio__progress">
-                <div
-                  className="mpt-studio__progress-bar"
-                  style={{
-                    width: `${Math.min(100, Math.max(progress, 4))}%`,
-                  }}
-                />
-              </div>
-            ) : null}
-          </div>
-          <div className="mpt-dock__actions">
-            {busy ? (
-              <button
-                type="button"
-                className="btn-mcp-remove"
-                onClick={() => {
-                  cancelled.current = true;
-                }}
-              >
-                取消
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="btn-new-session images-generate__btn mpt-dock__cta"
-              disabled={!canGenerate}
-              onClick={() => void onGenerate()}
-            >
-              {busy ? `生成中 ${Math.round(progress)}%` : "生成视频并入库"}
-            </button>
-          </div>
-        </footer>
       </div>
 
       <aside className="mpt-rail" aria-label="成片参数菜单">
@@ -1402,7 +1376,7 @@ export const VideoStudioPage = () => {
           >
             <div className="model-modal__header">
               <h2 id="mpt-settings-title" className="model-modal__title">
-                视频工程设置
+                制片设置
               </h2>
               <button
                 type="button"
@@ -1662,5 +1636,6 @@ export const VideoStudioPage = () => {
         </div>
       ) : null}
     </>
+    </PageShell>
   );
 };

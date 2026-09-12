@@ -211,7 +211,7 @@ export const MediaPlatformsPage = () => {
             <CabinX
                 api={api}
                 columns={columns}
-                pageTitle="媒体平台"
+                pageTitle="插件脚本"
                 rowKey="id"
                 formatRecordForEdit={formatRecordForEdit}
                 formType="D"

@@ -1,4 +1,4 @@
-/** 媒体管理 — 发布平台与填表脚本 */
+/** 插件脚本 — 发布平台与填表脚本 */
 export const IconMedia = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <rect

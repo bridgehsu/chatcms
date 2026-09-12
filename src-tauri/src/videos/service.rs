@@ -4,7 +4,7 @@ use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::time::sleep;
 use uuid::Uuid;
 
@@ -20,11 +20,7 @@ fn now_ms() -> i64 {
 }
 
 fn videos_dir(app: &AppHandle) -> Result<PathBuf> {
-    let dir = app
-        .path()
-        .app_data_dir()
-        .context("无法获取应用数据目录")?
-        .join("videos");
+    let dir = crate::config::resolve_data_root(app).join("videos");
     fs::create_dir_all(&dir).context("创建视频目录失败")?;
     Ok(dir)
 }

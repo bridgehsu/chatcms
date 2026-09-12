@@ -48,7 +48,7 @@ src/
 | 色板 | `styles/tokens.css` | `styles/tokens.css` |
 | 状态 | `stores/` | `stores/` |
 
-侧栏：**干活区一级平铺**；**智能配置**（Agent / 模型 / Skill / MCP）、**系统设置**（权限 / 记忆 / 渠道）为可展开二级。会话列表在 `views/chat/`；业务地图在 `views/map/`；内容管理在 `views/content/`；图片 / 视频 / 账号 / 任务调度同前；系统设置页在 `views/settings/`。
+侧栏：**干活区一级平铺**；**智能配置**（代理 / 技能 / MCP / 模型 / 意图 / 知识库）、**系统设置**（权限管理 / 意图评测 / 运行观测 / 渠道列表）为可展开二级。会话列表在 `views/chat/`；业务地图在 `views/map/`；内容管理在 `views/content/`；图片 / 视频 / 账号 / 调度中心同前；系统设置页在 `views/settings/`（知识库页面文件亦在此目录，导航挂在智能配置）。
 
 ## 组件放哪里
 
@@ -114,7 +114,7 @@ src/
 
 ## CRUD 列表页布局（强制）
 
-适用：技能 / 代理 / MCP / 模型配置，以及同结构的账号、任务调度等「表格 + 筛选 + 新增」管理页。参考：`views/skills/components/SkillsPanel.tsx`。
+适用：技能 / 代理 / MCP / 模型配置，以及同结构的账号、调度中心等「表格 + 筛选 + 新增」管理页。参考：`views/skills/components/SkillsPanel.tsx`。
 
 ### 页面结构
 

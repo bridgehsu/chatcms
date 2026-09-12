@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Select } from "@/components/Select";
 import { invoke } from "@/hooks/useTauri";
+import type { CrawlerTask } from "@/types";
 
 type CrawlerConfig = {
   base_url: string;
@@ -41,6 +43,20 @@ type StartForm = {
   save_option: string;
   headless: boolean;
   max_notes_count: string;
+};
+
+const DEFAULT_FORM: StartForm = {
+  platform: "xhs",
+  login_type: "qrcode",
+  crawler_type: "search",
+  keywords: "编程副业",
+  specified_ids: "",
+  creator_ids: "",
+  enable_comments: true,
+  enable_sub_comments: false,
+  save_option: "jsonl",
+  headless: false,
+  max_notes_count: "15",
 };
 
 const PLATFORMS = [
@@ -92,7 +108,27 @@ const formatSize = (n: number) => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
-export const CrawlerPanel = () => {
+const formFromTask = (t: CrawlerTask): StartForm => ({
+  platform: t.platform || "xhs",
+  login_type: t.login_type || "qrcode",
+  crawler_type: t.crawler_type || "search",
+  keywords: t.keywords || "",
+  specified_ids: t.specified_ids || "",
+  creator_ids: t.creator_ids || "",
+  enable_comments: t.enable_comments,
+  enable_sub_comments: t.enable_sub_comments,
+  save_option: t.save_option || "jsonl",
+  headless: t.headless,
+  max_notes_count: t.max_notes_count || "15",
+});
+
+type Props = {
+  /** null = 新增；有值 = 编辑已有任务 */
+  taskId: string | null;
+};
+
+export const CrawlerPanel = ({ taskId }: Props) => {
+  const navigate = useNavigate();
   const [baseUrl, setBaseUrl] = useState("http://127.0.0.1:8080");
   const [health, setHealth] = useState("");
   const [status, setStatus] = useState<CrawlerStatus | null>(null);
@@ -100,23 +136,32 @@ export const CrawlerPanel = () => {
   const [files, setFiles] = useState<DataFileInfo[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [currentId, setCurrentId] = useState<string | null>(taskId);
   const logEndRef = useRef<HTMLDivElement>(null);
 
-  const [form, setForm] = useState<StartForm>({
-    platform: "xhs",
-    login_type: "qrcode",
-    crawler_type: "search",
-    keywords: "编程副业",
-    specified_ids: "",
-    creator_ids: "",
-    enable_comments: true,
-    enable_sub_comments: false,
-    save_option: "jsonl",
-    headless: false,
-    max_notes_count: "15",
-  });
+  const [form, setForm] = useState<StartForm>(DEFAULT_FORM);
 
   const running = status?.status === "running" || status?.status === "stopping";
+
+  const emitTopbarState = useCallback((nextBusy: boolean, nextRunning: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("crawler:topbar-state", {
+        detail: { busy: nextBusy, running: nextRunning },
+      }),
+    );
+  }, []);
+
+  useEffect(() => {
+    emitTopbarState(busy, running);
+  }, [busy, running, emitTopbarState]);
+
+  useEffect(() => {
+    const onRequest = () => emitTopbarState(busy, running);
+    window.addEventListener("crawler:topbar-request", onRequest);
+    return () => window.removeEventListener("crawler:topbar-request", onRequest);
+  }, [busy, running, emitTopbarState]);
 
   const patchForm = <K extends keyof StartForm>(key: K, value: StartForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -143,6 +188,13 @@ export const CrawlerPanel = () => {
   useEffect(() => {
     const boot = async () => {
       try {
+        if (taskId) {
+          const task = await invoke<CrawlerTask>("crawler_task_get", { id: taskId });
+          setCurrentId(task.id);
+          setName(task.name);
+          setDescription(task.description || "");
+          setForm(formFromTask(task));
+        }
         const cfg = await invoke<CrawlerConfig>("crawler_config_get");
         if (cfg?.base_url) setBaseUrl(cfg.base_url);
         try {
@@ -160,9 +212,8 @@ export const CrawlerPanel = () => {
       }
     };
     void boot();
-  }, [refreshFiles, refreshLogs, refreshStatus]);
+  }, [taskId, refreshFiles, refreshLogs, refreshStatus]);
 
-  // 运行中轮询状态与日志（HTTP Worker）
   useEffect(() => {
     if (!running) return;
     const timer = window.setInterval(() => {
@@ -184,6 +235,38 @@ export const CrawlerPanel = () => {
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  const buildTaskPayload = (): CrawlerTask => ({
+    id: currentId || "",
+    name: name.trim() || "未命名采集",
+    description: description.trim(),
+    ...form,
+    updated: 0,
+    created: 0,
+  });
+
+  const persistTask = async (): Promise<CrawlerTask> => {
+    const payload = buildTaskPayload();
+    if (currentId) {
+      return invoke<CrawlerTask>("crawler_task_update", { task: { ...payload, id: currentId } });
+    }
+    const created = await invoke<CrawlerTask>("crawler_task_add", { task: payload });
+    setCurrentId(created.id);
+    navigate(`/crawler/${created.id}`, { replace: true });
+    return created;
+  };
+
+  const saveTask = async () => {
+    setError("");
+    setBusy(true);
+    try {
+      await persistTask();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const saveConfig = async () => {
     setError("");
@@ -208,6 +291,7 @@ export const CrawlerPanel = () => {
     setError("");
     setBusy(true);
     try {
+      await persistTask();
       await invoke("crawler_config_set", { baseUrl });
       const maxNotes = form.max_notes_count.trim()
         ? Number(form.max_notes_count)
@@ -257,6 +341,20 @@ export const CrawlerPanel = () => {
     }
   };
 
+  useEffect(() => {
+    const onSave = () => void saveTask();
+    const onStart = () => void start();
+    const onStop = () => void stop();
+    window.addEventListener("crawler:save-task", onSave);
+    window.addEventListener("crawler:start", onStart);
+    window.addEventListener("crawler:stop", onStop);
+    return () => {
+      window.removeEventListener("crawler:save-task", onSave);
+      window.removeEventListener("crawler:start", onStart);
+      window.removeEventListener("crawler:stop", onStop);
+    };
+  });
+
   const typeHint = useMemo(() => {
     if (form.crawler_type === "detail") return "填写帖子/视频 ID，逗号分隔";
     if (form.crawler_type === "creator") return "填写创作者 ID 或主页链接，逗号分隔";
@@ -265,140 +363,149 @@ export const CrawlerPanel = () => {
 
   return (
     <div className="crawler-panel">
-      <section className="crawler-card">
-        <div className="crawler-card__head">
-          <h2>Worker 连接（HTTP）</h2>
-          <span className={`crawler-badge crawler-badge--${status?.status || "idle"}`}>
-            {statusLabel(status?.status || "idle")}
-          </span>
-        </div>
-        <p className="crawler-muted">
-          连接 chatcms-collect FastAPI。请先在 collect 项目执行：
-          <code> uv run uvicorn api.main:app --port 8080 --reload</code>
-        </p>
-        <div className="mcp-form-row">
-          <label>Base URL</label>
-          <input
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="http://127.0.0.1:8080"
-          />
-        </div>
-        <div className="crawler-actions">
-          <button type="button" className="btn-primary" disabled={busy} onClick={() => void saveConfig()}>
-            保存并检测
-          </button>
-          {health ? <span className="crawler-health">{health}</span> : null}
+      <section className="crawler-card crawler-card--conn">
+        <div className="crawler-conn">
+          <div className="crawler-conn__main">
+            <span className="crawler-conn__label">Worker</span>
+            <input
+              className="crawler-conn__url"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="http://127.0.0.1:8080"
+              aria-label="Base URL"
+            />
+            <button type="button" className="btn-primary" disabled={busy} onClick={() => void saveConfig()}>
+              检测
+            </button>
+          </div>
+          <div className="crawler-conn__meta">
+            <span className={`crawler-badge crawler-badge--${status?.status || "idle"}`}>
+              {statusLabel(status?.status || "idle")}
+            </span>
+            {health ? (
+              <span className="crawler-health">{health}</span>
+            ) : (
+              <span className="crawler-muted">
+                未连接 · uv run uvicorn api.main:app --port 8080
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
-      <section className="crawler-card">
+      <section className="crawler-card crawler-card--main">
         <div className="crawler-card__head">
-          <h2>任务配置</h2>
+          <h2>任务与参数</h2>
         </div>
-        <div className="crawler-grid">
-          <div className="mcp-form-row">
-            <label>平台</label>
-            <Select
-              aria-label="平台"
-              value={form.platform}
-              options={PLATFORMS}
-              onChange={(v) => patchForm("platform", v)}
-            />
+        <div className="crawler-card__body">
+          <div className="crawler-grid">
+            <div className="mcp-form-row">
+              <label>名称</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="例如：小红书·编程副业"
+              />
+            </div>
+            <div className="mcp-form-row">
+              <label>备注</label>
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="可选"
+              />
+            </div>
+            <div className="mcp-form-row">
+              <label>平台</label>
+              <Select
+                aria-label="平台"
+                value={form.platform}
+                options={PLATFORMS}
+                onChange={(v) => patchForm("platform", v)}
+              />
+            </div>
+            <div className="mcp-form-row">
+              <label>登录</label>
+              <Select
+                aria-label="登录"
+                value={form.login_type}
+                options={LOGIN_TYPES}
+                onChange={(v) => patchForm("login_type", v)}
+              />
+            </div>
+            <div className="mcp-form-row">
+              <label>类型</label>
+              <Select
+                aria-label="类型"
+                value={form.crawler_type}
+                options={CRAWLER_TYPES}
+                onChange={(v) => patchForm("crawler_type", v)}
+              />
+            </div>
+            <div className="mcp-form-row">
+              <label>存储</label>
+              <Select
+                aria-label="存储"
+                value={form.save_option}
+                options={SAVE_OPTIONS}
+                onChange={(v) => patchForm("save_option", v)}
+              />
+            </div>
           </div>
-          <div className="mcp-form-row">
-            <label>登录</label>
-            <Select
-              aria-label="登录"
-              value={form.login_type}
-              options={LOGIN_TYPES}
-              onChange={(v) => patchForm("login_type", v)}
-            />
-          </div>
-          <div className="mcp-form-row">
-            <label>类型</label>
-            <Select
-              aria-label="类型"
-              value={form.crawler_type}
-              options={CRAWLER_TYPES}
-              onChange={(v) => patchForm("crawler_type", v)}
-            />
-          </div>
-          <div className="mcp-form-row">
-            <label>存储</label>
-            <Select
-              aria-label="存储"
-              value={form.save_option}
-              options={SAVE_OPTIONS}
-              onChange={(v) => patchForm("save_option", v)}
-            />
-          </div>
-        </div>
 
-        <div className="mcp-form-row">
-          <label>{typeHint}</label>
-          {form.crawler_type === "search" ? (
-            <input
-              value={form.keywords}
-              onChange={(e) => patchForm("keywords", e.target.value)}
-            />
-          ) : form.crawler_type === "detail" ? (
-            <input
-              value={form.specified_ids}
-              onChange={(e) => patchForm("specified_ids", e.target.value)}
-            />
-          ) : (
-            <input
-              value={form.creator_ids}
-              onChange={(e) => patchForm("creator_ids", e.target.value)}
-            />
-          )}
-        </div>
-
-        <div className="crawler-grid crawler-grid--checks">
-          <label className="crawler-check">
-            <input
-              type="checkbox"
-              checked={form.enable_comments}
-              onChange={(e) => patchForm("enable_comments", e.target.checked)}
-            />
-            爬评论
-          </label>
-          <label className="crawler-check">
-            <input
-              type="checkbox"
-              checked={form.enable_sub_comments}
-              onChange={(e) => patchForm("enable_sub_comments", e.target.checked)}
-            />
-            二级评论
-          </label>
-          <label className="crawler-check">
-            <input
-              type="checkbox"
-              checked={form.headless}
-              onChange={(e) => patchForm("headless", e.target.checked)}
-            />
-            无头模式
-          </label>
           <div className="mcp-form-row">
-            <label>最大帖子数</label>
-            <input
-              value={form.max_notes_count}
-              onChange={(e) => patchForm("max_notes_count", e.target.value)}
-            />
+            <label>{typeHint}</label>
+            {form.crawler_type === "search" ? (
+              <input
+                value={form.keywords}
+                onChange={(e) => patchForm("keywords", e.target.value)}
+              />
+            ) : form.crawler_type === "detail" ? (
+              <input
+                value={form.specified_ids}
+                onChange={(e) => patchForm("specified_ids", e.target.value)}
+              />
+            ) : (
+              <input
+                value={form.creator_ids}
+                onChange={(e) => patchForm("creator_ids", e.target.value)}
+              />
+            )}
           </div>
-        </div>
 
-        <div className="crawler-actions">
-          {!running ? (
-            <button type="button" className="btn-primary" disabled={busy} onClick={() => void start()}>
-              开始采集
-            </button>
-          ) : (
-            <button type="button" className="btn-danger" disabled={busy} onClick={() => void stop()}>
-              停止
-            </button>
-          )}
+          <div className="crawler-grid crawler-grid--checks">
+            <label className="crawler-check">
+              <input
+                type="checkbox"
+                checked={form.enable_comments}
+                onChange={(e) => patchForm("enable_comments", e.target.checked)}
+              />
+              爬评论
+            </label>
+            <label className="crawler-check">
+              <input
+                type="checkbox"
+                checked={form.enable_sub_comments}
+                onChange={(e) => patchForm("enable_sub_comments", e.target.checked)}
+              />
+              二级评论
+            </label>
+            <label className="crawler-check">
+              <input
+                type="checkbox"
+                checked={form.headless}
+                onChange={(e) => patchForm("headless", e.target.checked)}
+              />
+              无头模式
+            </label>
+            <div className="mcp-form-row">
+              <label>最大帖子数</label>
+              <input
+                value={form.max_notes_count}
+                onChange={(e) => patchForm("max_notes_count", e.target.value)}
+              />
+            </div>
+          </div>
         </div>
         {error ? <p className="crawler-error">{error}</p> : null}
       </section>
@@ -425,7 +532,7 @@ export const CrawlerPanel = () => {
         </div>
       </section>
 
-      <section className="crawler-card">
+      <section className="crawler-card crawler-card--files">
         <div className="crawler-card__head">
           <h2>数据文件</h2>
           <button type="button" className="btn-ghost" onClick={() => void refreshFiles()}>
@@ -438,7 +545,9 @@ export const CrawlerPanel = () => {
           <ul className="crawler-files">
             {files.slice(0, 30).map((f) => (
               <li key={f.path}>
-                <span className="crawler-files__name">{f.path}</span>
+                <span className="crawler-files__name" title={f.path}>
+                  {f.name || f.path}
+                </span>
                 <span className="crawler-files__meta">{formatSize(f.size)}</span>
               </li>
             ))}

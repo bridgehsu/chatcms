@@ -13,7 +13,7 @@ pub struct ScoredCandidate {
 }
 
 /// 对规范化输入套启用中的规则，返回各意图得分。
-pub fn score_all(input: &NormalizedInput) -> Vec<ScoredCandidate> {
+pub fn evaluate(input: &NormalizedInput) -> Vec<ScoredCandidate> {
     cache::enabled_rules()
         .into_iter()
         .map(|rule| {

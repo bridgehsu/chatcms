@@ -67,6 +67,12 @@ export const ChannelPanel = () => {
     setMode("add");
   };
 
+  useEffect(() => {
+    const onAdd = () => openAdd();
+    window.addEventListener("settings-channels:add", onAdd);
+    return () => window.removeEventListener("settings-channels:add", onAdd);
+  }, [availableKinds.length]);
+
   const openEdit = (c: ChannelInfo) => {
     setError("");
     setEditing(c);
@@ -113,26 +119,22 @@ export const ChannelPanel = () => {
 
   return (
     <div className="model-panel">
-      <div className="model-toolbar">
-        <div className="model-filters">
-          <div className="model-search">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索渠道…"
-              aria-label="搜索渠道"
-            />
-          </div>
-        </div>
-        <button className="model-btn-add" onClick={openAdd} type="button">
-          + 新增渠道
-        </button>
-      </div>
-
       {error ? <div className="mcp-form-error">{error}</div> : null}
 
       <div className="model-table-wrap">
+        <div className="model-toolbar" style={{ marginBottom: 12 }}>
+          <div className="model-filters">
+            <div className="model-search">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="搜索渠道…"
+                aria-label="搜索渠道"
+              />
+            </div>
+          </div>
+        </div>
         <table className="model-table">
           <thead>
             <tr>

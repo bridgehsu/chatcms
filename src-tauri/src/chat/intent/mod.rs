@@ -15,6 +15,7 @@ mod classify;
 pub mod commands;
 mod confidence;
 mod enrich;
+mod eval;
 mod fallback;
 mod fusion;
 mod inject;
@@ -33,13 +34,13 @@ pub use service::ensure_seeded;
 /// 意图识别入口：串联全流水线，返回最终 [`Intent`]。
 pub fn run(input: &str) -> Intent {
     let started = std::time::Instant::now();
-    let norm = normalize::normalize(input);
+    let norm = normalize::prepare(input);
     if norm.is_empty() {
         log::debug!(target: "chatcms_lib::chat::intent", "intent empty input");
         return Intent::unknown();
     }
 
-    let scored = score::score_all(&norm);
+    let scored = score::evaluate(&norm);
     let assessment = confidence::assess(&scored);
 
     let local_hit = if assessment.is_high {

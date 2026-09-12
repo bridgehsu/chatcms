@@ -147,7 +147,7 @@ export const MediaScriptPage = ({ scriptKind: kindProp }: Props) => {
           ) : (
             <p className="model-status-idle">加载中…</p>
           )}
-          <Link to="/media-platforms">← 返回媒体管理</Link>
+          <Link to="/media-platforms">← 返回插件脚本</Link>
         </div>
       </div>
     );
@@ -159,7 +159,7 @@ export const MediaScriptPage = ({ scriptKind: kindProp }: Props) => {
         <div className="model-toolbar">
           <div>
             <Link to="/media-platforms" className="media-script-back">
-              ← 返回媒体管理
+              ← 返回插件脚本
             </Link>
             <h2 className="media-script-title">{heading}</h2>
             <p className="media-script-meta">

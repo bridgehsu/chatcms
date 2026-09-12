@@ -1,4 +1,6 @@
-use super::{CrawlerConfig, CrawlerStartRequest, CrawlerStatus, DataFileInfo, LogEntry};
+use super::{
+    CrawlerConfig, CrawlerStartRequest, CrawlerStatus, CrawlerTask, DataFileInfo, LogEntry,
+};
 use tauri::AppHandle;
 
 #[tauri::command]
@@ -61,4 +63,29 @@ pub async fn crawler_list_data(
     platform: Option<String>,
 ) -> Result<Vec<DataFileInfo>, String> {
     super::list_data_files(&app, platform).await
+}
+
+#[tauri::command]
+pub fn crawler_task_list(app: AppHandle) -> Vec<CrawlerTask> {
+    super::task_list(&app)
+}
+
+#[tauri::command]
+pub fn crawler_task_get(app: AppHandle, id: String) -> Result<CrawlerTask, String> {
+    super::task_get(&app, &id)
+}
+
+#[tauri::command]
+pub fn crawler_task_add(app: AppHandle, task: CrawlerTask) -> Result<CrawlerTask, String> {
+    super::task_add(&app, task)
+}
+
+#[tauri::command]
+pub fn crawler_task_update(app: AppHandle, task: CrawlerTask) -> Result<CrawlerTask, String> {
+    super::task_update(&app, task)
+}
+
+#[tauri::command]
+pub fn crawler_task_remove(app: AppHandle, id: String) -> Result<(), String> {
+    super::task_remove(&app, id)
 }
