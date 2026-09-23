@@ -1,100 +1,250 @@
 <script setup lang="ts">
 import { withBase } from "vitepress";
+
+const faqs = [
+  {
+    q: "ChatCMS 是什么？",
+    a: "面向新媒体种草的开源桌面 Agent。把采集、写作、生图生视频、多平台发布放进本机工作台，数据与账号留在你自己的机器上。",
+  },
+  {
+    q: "适合谁用？",
+    a: "品牌与电商运营、达人工作室、独立创作者，以及需要私有化 / 二开的技术团队。只要你在做种草与内容增长，都能上手。",
+  },
+  {
+    q: "和网页 SaaS 有什么区别？",
+    a: "本地优先：会话、素材、账号保险柜落在本机；权限与审计可查。敏感品类与账号策略不必上云，也更适合商业落地。",
+  },
+  {
+    q: "能否二开和私有化？",
+    a: "可以。源码开放，Skills / MCP / 模型可插拔，可对接自有素材库与发布流水线，按品类扩展 Agent 角色。",
+  },
+  {
+    q: "怎么开始？",
+    a: "安装桌面端后配置模型与 Agent，用 Agent 模式跑通「采 → 写 → 成片 → 发」一条链路，再按平台拆分角色即可。",
+  },
+];
 </script>
 
 <template>
   <div class="lp">
     <div class="lp-glow" aria-hidden="true" />
 
+    <!-- Hero：左文案 + 右演示板（参考 cmschat.ai） -->
     <header class="lp-hero">
-      <p class="lp-brand">ChatCMS</p>
-      <h1 class="lp-title">
-        新媒体种草
-        <span>Agent</span>
-      </h1>
-      <p class="lp-sub">
-        开源桌面端 · 本地优先<br />
-        选题、文案、成片、发布——一条链路种下去
-      </p>
-      <div class="lp-actions">
-        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">开始种草</a>
-        <a
-          class="lp-btn lp-btn--ghost"
-          href="https://github.com/bridgehsu/chatcms"
-          target="_blank"
-          rel="noreferrer"
-        >查看源码</a>
+      <div class="lp-hero__copy">
+        <p class="lp-eyebrow">为受够工具碎片化的种草团队而做</p>
+        <h1 class="lp-title">
+          让 Agent 帮你种草。<br />
+          <span>你掌控节奏与数据。</span>
+        </h1>
+        <p class="lp-sub">
+          ChatCMS 是开源桌面端新媒体种草 Agent：选题、文案、配图配视频、采集竞品、多平台发布——一条链路完成，全部留在本地。
+        </p>
+        <div class="lp-actions">
+          <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">开始种草</a>
+          <a
+            class="lp-btn lp-btn--ghost"
+            href="https://github.com/bridgehsu/chatcms"
+            target="_blank"
+            rel="noreferrer"
+          >星标 GitHub</a>
+        </div>
+        <p class="lp-note">开源免费 · 本地优先 · 可私有化部署</p>
+        <ul class="lp-chips">
+          <li>智能会话</li>
+          <li>多 Agent</li>
+          <li>媒体工厂</li>
+          <li>采集发布</li>
+        </ul>
       </div>
+
+      <aside class="lp-demo" aria-label="产品示意">
+        <div class="lp-demo__chrome">
+          <span /><span /><span />
+          <em>ChatCMS · Agent</em>
+        </div>
+        <div class="lp-demo__body">
+          <div class="lp-demo__side">
+            <b>种草主脑</b>
+            <i>文案 Agent</i>
+            <i>视觉 Agent</i>
+            <i>剪辑 Agent</i>
+          </div>
+          <div class="lp-demo__main">
+            <div class="lp-demo__bubble lp-demo__bubble--user">
+              帮我做一篇小红书种草：春季防晒，语气真实一点
+            </div>
+            <div class="lp-demo__bubble lp-demo__bubble--ai">
+              已选定「文案 Agent」· 正在检索知识库爆款结构…
+              <div class="lp-demo__tags">
+                <span>洞察</span><span>大纲</span><span>成稿</span>
+              </div>
+            </div>
+            <div class="lp-demo__preview">
+              <strong>春日轻薄防晒｜真的不假白</strong>
+              <p>通勤党实测一周：成膜快、不搓泥，妆前也能叠…</p>
+            </div>
+          </div>
+        </div>
+      </aside>
     </header>
 
-    <section class="lp-proof" aria-label="产品要点">
-      <p><strong>本地可控</strong> 数据与账号留在本机</p>
-      <p><strong>多 Agent</strong> 策划 / 文案 / 视觉协作</p>
-      <p><strong>全链路</strong> 采集到发布不断线</p>
-      <p><strong>可私有化</strong> 开源二开无锁云</p>
-    </section>
-
-    <section class="lp-section">
-      <p class="lp-kicker">流水线</p>
-      <h2 class="lp-h2">从灵感到发布</h2>
-      <div class="lp-rail">
-        <div class="lp-rail__item">
-          <span>01</span>
-          <strong>洞察</strong>
-          <p>采集竞品与平台动态，沉淀可复用话术</p>
-        </div>
-        <div class="lp-rail__item">
-          <span>02</span>
-          <strong>创作</strong>
-          <p>会话 Agent 写稿，笔记 / 生图 / 成片一体</p>
-        </div>
-        <div class="lp-rail__item">
-          <span>03</span>
-          <strong>发布</strong>
-          <p>多平台桥接发稿，账号保险柜本机保管</p>
-        </div>
-        <div class="lp-rail__item">
-          <span>04</span>
-          <strong>复盘</strong>
-          <p>会话链路可观测，下一轮种草更快</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="lp-section lp-section--split">
-      <div class="lp-split__copy">
-        <p class="lp-kicker">为谁而做</p>
-        <h2 class="lp-h2">真正在跑种草的人</h2>
-        <p class="lp-body">
-          不是又一个聊天窗口，而是把新媒体生产装进桌面工作台——少切换工具，多产出内容。
-        </p>
-      </div>
-      <ul class="lp-who">
-        <li>
-          <strong>品牌 / 电商运营</strong>
-          <span>可复制的采 → 写 → 出片 → 发</span>
-        </li>
-        <li>
-          <strong>达人 / 工作室</strong>
-          <span>多角色并行，本机控素材与账号</span>
-        </li>
-        <li>
-          <strong>独立创作者</strong>
-          <span>一个人也能跑完整套种草</span>
-        </li>
-        <li>
-          <strong>技术负责人</strong>
-          <span>开源可改，私有化不锁死</span>
-        </li>
+    <!-- 能力条 -->
+    <section class="lp-strip">
+      <p>打通种草全链路</p>
+      <ul>
+        <li>Ask / Agent / Search</li>
+        <li>多角色协作</li>
+        <li>笔记 · 生图 · 成片</li>
+        <li>采集 Worker</li>
+        <li>发布桥接</li>
+        <li>权限审计</li>
       </ul>
     </section>
 
+    <!-- 痛点陈述 -->
+    <section class="lp-case">
+      <p class="lp-kicker">The case</p>
+      <h2 class="lp-h2">别再当「人肉内容中台」。</h2>
+      <p class="lp-body lp-body--wide">
+        选题在一个表、文案在另一个文档、出图换工具、发稿又开插件——一场种草被拆成十几步。
+        如果日常生产不再靠人肉串联，团队只处理真正值得拍板的决策呢？
+      </p>
+    </section>
+
+    <!-- 交替功能区 -->
+    <section class="lp-feature">
+      <div class="lp-feature__copy">
+        <p class="lp-kicker">Self-serve production</p>
+        <h2 class="lp-h2">你的种草搭档，不只是聊天</h2>
+        <p class="lp-body">
+          Agent 模式带工具与技能上场：写稿、查知识库、调度子代理。主脑负责节奏，角色各司其职。
+        </p>
+      </div>
+      <div class="lp-panel">
+        <div class="lp-panel__row"><span>模式</span><b>Agent</b></div>
+        <div class="lp-panel__row"><span>角色</span><b>种草文案 · 已绑定</b></div>
+        <div class="lp-panel__row"><span>技能</span><b>content-publish · image-brief</b></div>
+        <div class="lp-panel__row lp-panel__row--ok"><span>状态</span><b>工具授权 · 会话可审计</b></div>
+      </div>
+    </section>
+
+    <section class="lp-feature lp-feature--rev">
+      <div class="lp-feature__copy">
+        <p class="lp-kicker">From insight to ship</p>
+        <h2 class="lp-h2">从灵感到成片，不断线</h2>
+        <p class="lp-body">
+          采集盯竞品，笔记沉淀话术，图片工厂与口播 / 模型生视频接上发布桥接——少切换，多产出。
+        </p>
+        <a class="lp-text-link" :href="withBase('/guide/overview')">了解产品能力 →</a>
+      </div>
+      <div class="lp-steps-card">
+        <div><span>01</span><strong>洞察</strong><em>采集 · 知识库</em></div>
+        <div><span>02</span><strong>创作</strong><em>会话 · 笔记 · 成片</em></div>
+        <div><span>03</span><strong>发布</strong><em>桥接 · 多平台</em></div>
+        <div><span>04</span><strong>复盘</strong><em>链路 · 权限</em></div>
+      </div>
+    </section>
+
+    <section class="lp-feature">
+      <div class="lp-feature__copy">
+        <p class="lp-kicker">Local-first</p>
+        <h2 class="lp-h2">本地优先，账号更安心</h2>
+        <p class="lp-body">
+          会话、素材、账号保险柜落在本机。权限模式可 allow / ask / deny，商业内容不必交给第三方 SaaS。
+        </p>
+      </div>
+      <div class="lp-zones">
+        <div class="lp-zones__item"><b>本机会话</b><span>可控</span></div>
+        <div class="lp-zones__item"><b>素材库</b><span>可控</span></div>
+        <div class="lp-zones__item"><b>账号保险柜</b><span>加密</span></div>
+        <div class="lp-zones__item lp-zones__item--warn"><b>工具执行</b><span>需授权</span></div>
+        <div class="lp-zones__item lp-zones__item--lock"><b>系统目录</b><span>隔离</span></div>
+        <div class="lp-zones__item lp-zones__item--ok"><b>开源二开</b><span>可扩展</span></div>
+      </div>
+    </section>
+
+    <!-- 三步上手 -->
+    <section class="lp-setup">
+      <p class="lp-kicker">60-second mindset</p>
+      <h2 class="lp-h2">安装。配角色。开始种草。</h2>
+      <p class="lp-body">三步跑通主路径，再按平台拆分 Agent 人设与 Skills。</p>
+      <ol class="lp-setup__list">
+        <li>
+          <strong>安装桌面端</strong>
+          <p>按文档启动 ChatCMS，连上你的模型供应商。</p>
+        </li>
+        <li>
+          <strong>配置种草角色</strong>
+          <p>为文案 / 视觉 / 剪辑建立 Agent，挂上技能白名单。</p>
+        </li>
+        <li>
+          <strong>跑通一条链路</strong>
+          <p>Agent 模式下达种草任务，从洞察到发布一次走完。</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 示例对话 -->
+    <section class="lp-examples">
+      <p class="lp-kicker">Example prompts</p>
+      <h2 class="lp-h2">这些事，以前要开五个软件</h2>
+      <p class="lp-body">示意请求——ChatCMS 要解决的是这类日常种草生产，而不是又一次闲聊。</p>
+      <div class="lp-examples__grid">
+        <article>
+          <span>文案</span>
+          <q>写一篇小红书种草：气垫粉底，避雷假白，语气真实</q>
+          <p>大纲 + 成稿，可进笔记继续改</p>
+        </article>
+        <article>
+          <span>视觉</span>
+          <q>按这篇文案出图 brief，竖版 3:4，偏清透妆感</q>
+          <p>图片工厂可接着出图</p>
+        </article>
+        <article>
+          <span>视频</span>
+          <q>把口播稿做成 9:16，8 秒，字幕偏大</q>
+          <p>口播 / 模型生视频同一入口</p>
+        </article>
+        <article>
+          <span>采集</span>
+          <q>盯一下竞品账号近一周爆款标题结构</q>
+          <p>采集任务 + 知识库沉淀</p>
+        </article>
+        <article>
+          <span>协作</span>
+          <q>让视觉 Agent 根据文案出三套封面方向</q>
+          <p>主脑 spawn 子代理并行</p>
+        </article>
+        <article>
+          <span>发布</span>
+          <q>这篇稿对接发布桥接，准备发到小红书</q>
+          <p>插件脚本自动填表</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="lp-faq">
+      <p class="lp-kicker">FAQ</p>
+      <h2 class="lp-h2">常见问题</h2>
+      <div class="lp-faq__list">
+        <details v-for="item in faqs" :key="item.q" class="lp-faq__item">
+          <summary>{{ item.q }}</summary>
+          <p>{{ item.a }}</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- 终局 CTA -->
     <section class="lp-finale">
-      <h2 class="lp-h2">把下一场种草，交给 Agent</h2>
-      <p class="lp-body">免费开源，安装即用。先跑通一条链路，再按品类扩展角色。</p>
+      <h2 class="lp-h2">别再为排期和工具切换买单。</h2>
+      <p class="lp-body">
+        告诉 Agent 你的下一场种草。开源、本机、可扩展——你保留对数据和节奏的最终决定权。
+      </p>
       <div class="lp-actions">
-        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">免费开始</a>
-        <a class="lp-btn lp-btn--ghost" :href="withBase('/guide/overview')">产品能力</a>
+        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">免费开始种草</a>
+        <a class="lp-btn lp-btn--ghost" :href="withBase('/concepts/agent-loop')">看 Agent Loop →</a>
       </div>
     </section>
   </div>
@@ -112,95 +262,63 @@ import { withBase } from "vitepress";
 
 .lp-glow {
   position: absolute;
-  inset: -8% -30% auto;
-  height: 70vh;
+  inset: -6% -25% auto;
+  height: 62vh;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 50% 42% at 50% 0%, rgba(255, 92, 92, 0.22), transparent 70%),
-    radial-gradient(ellipse 40% 36% at 12% 30%, rgba(20, 184, 166, 0.1), transparent 65%),
-    radial-gradient(ellipse 36% 30% at 90% 20%, rgba(255, 255, 255, 0.04), transparent 60%);
-  animation: lp-glow 16s ease-in-out infinite alternate;
+    radial-gradient(ellipse 48% 40% at 20% 10%, rgba(255, 92, 92, 0.2), transparent 70%),
+    radial-gradient(ellipse 42% 36% at 85% 0%, rgba(20, 184, 166, 0.12), transparent 68%);
 }
 
-@keyframes lp-glow {
-  from {
-    opacity: 0.85;
-    transform: scale(1);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1.06);
-  }
-}
-
+/* ——— Hero ——— */
 .lp-hero {
-  min-height: min(78vh, 720px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 72px 0 48px;
-  animation: lp-rise 0.8s ease both;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 40px;
+  align-items: center;
+  padding: 56px 0 40px;
+  min-height: min(78vh, 680px);
 }
 
-@keyframes lp-rise {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.lp-brand {
-  margin: 0 0 1.25rem;
+.lp-eyebrow {
+  margin: 0 0 1rem;
   font-family: var(--font-display);
-  font-size: clamp(1.15rem, 2.2vw, 1.45rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  background: linear-gradient(105deg, #fff 10%, #ffb4b4 50%, #ff5c5c 85%, #5eead4 130%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--oc-accent-hover);
 }
 
 .lp-title {
   margin: 0;
-  max-width: 11em;
   font-family: var(--font-display);
-  font-size: clamp(2.75rem, 8vw, 5.25rem);
+  font-size: clamp(2.4rem, 5.2vw, 3.75rem);
   font-weight: 700;
-  line-height: 1.02;
-  letter-spacing: -0.045em;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
   color: var(--vp-c-text-1);
 }
 
 .lp-title span {
-  display: inline-block;
-  background: linear-gradient(105deg, #ff8585, #ff5c5c 55%, #14b8a6);
+  background: linear-gradient(105deg, #ffb4b4, #ff5c5c 50%, #14b8a6);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .lp-sub {
-  margin: 1.5rem 0 0;
-  max-width: 22em;
-  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  margin: 1.25rem 0 0;
+  max-width: 34em;
+  font-size: 1.08rem;
   line-height: 1.7;
   color: var(--vp-c-text-2);
-  animation: lp-rise 0.9s 0.08s ease both;
 }
 
 .lp-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 2rem;
-  animation: lp-rise 0.9s 0.14s ease both;
+  margin-top: 1.75rem;
 }
 
 .lp-btn {
@@ -208,7 +326,7 @@ import { withBase } from "vitepress";
   align-items: center;
   justify-content: center;
   min-height: 48px;
-  padding: 0 1.5rem;
+  padding: 0 1.4rem;
   border-radius: 10px;
   font-family: var(--font-display);
   font-size: 0.98rem;
@@ -234,55 +352,215 @@ import { withBase } from "vitepress";
 .lp-btn--ghost {
   color: var(--vp-c-text-1) !important;
   border: 1px solid var(--vp-c-border);
-  background: color-mix(in srgb, var(--oc-bg-elevated) 40%, transparent);
+  background: color-mix(in srgb, var(--oc-bg-elevated) 45%, transparent);
 }
 
-.lp-btn--ghost:hover {
-  border-color: color-mix(in srgb, var(--oc-accent) 45%, var(--vp-c-border));
-}
-
-.lp-proof {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  margin: 8px 0 64px;
-  border-top: 1px solid var(--vp-c-divider);
-  border-bottom: 1px solid var(--vp-c-divider);
-  animation: lp-rise 0.9s 0.2s ease both;
-}
-
-.lp-proof p {
-  margin: 0;
-  padding: 1.35rem 1.1rem;
-  font-size: 0.92rem;
-  line-height: 1.55;
+.lp-note {
+  margin: 0.9rem 0 0;
+  font-size: 0.88rem;
   color: var(--vp-c-text-3);
 }
 
-.lp-proof p + p {
-  border-left: 1px solid var(--vp-c-divider);
+.lp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
 }
 
-.lp-proof strong {
+.lp-chips li {
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-border);
+  font-size: 0.82rem;
+  color: var(--vp-c-text-2);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Demo panel */
+.lp-demo {
+  border-radius: 16px;
+  border: 1px solid var(--vp-c-border);
+  background: color-mix(in srgb, var(--oc-card) 88%, transparent);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.lp-demo__chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--oc-bg-elevated);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.lp-demo__chrome span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #2e3040;
+}
+
+.lp-demo__chrome span:nth-child(1) {
+  background: #ff5c5c;
+}
+.lp-demo__chrome span:nth-child(2) {
+  background: #f59e0b;
+}
+.lp-demo__chrome span:nth-child(3) {
+  background: #14b8a6;
+}
+
+.lp-demo__chrome em {
+  margin-left: 8px;
+  font-style: normal;
+  font-size: 0.78rem;
+  color: var(--vp-c-text-3);
+}
+
+.lp-demo__body {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  min-height: 300px;
+}
+
+.lp-demo__side {
+  padding: 14px 10px;
+  border-right: 1px solid var(--vp-c-divider);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.lp-demo__side b,
+.lp-demo__side i {
   display: block;
-  margin-bottom: 0.3rem;
-  font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-style: normal;
+  font-size: 0.78rem;
+  padding: 8px 8px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.lp-demo__side b {
+  color: #fff;
+  background: color-mix(in srgb, var(--oc-accent) 28%, transparent);
   font-weight: 650;
-  letter-spacing: -0.02em;
+}
+
+.lp-demo__side i {
+  color: var(--vp-c-text-3);
+}
+
+.lp-demo__main {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lp-demo__bubble {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.lp-demo__bubble--user {
+  align-self: flex-end;
+  max-width: 92%;
+  background: color-mix(in srgb, var(--oc-accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oc-accent) 35%, transparent);
   color: var(--vp-c-text-1);
 }
 
-.lp-section {
-  margin-bottom: 72px;
+.lp-demo__bubble--ai {
+  align-self: flex-start;
+  max-width: 95%;
+  background: var(--oc-bg-elevated);
+  border: 1px solid var(--vp-c-border);
+  color: var(--vp-c-text-2);
 }
 
+.lp-demo__tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.lp-demo__tags span {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  background: rgba(20, 184, 166, 0.15);
+  color: #5eead4;
+}
+
+.lp-demo__preview {
+  margin-top: auto;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--vp-c-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.lp-demo__preview strong {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--vp-c-text-1);
+  margin-bottom: 6px;
+}
+
+.lp-demo__preview p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--vp-c-text-3);
+  line-height: 1.5;
+}
+
+/* Strip */
+.lp-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+  padding: 22px 0;
+  border-top: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
+  margin-bottom: 64px;
+}
+
+.lp-strip > p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--vp-c-text-3);
+  white-space: nowrap;
+}
+
+.lp-strip ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lp-strip li {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+}
+
+/* Shared */
 .lp-kicker {
   margin: 0 0 0.75rem;
   font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--oc-accent-hover);
 }
@@ -290,7 +568,7 @@ import { withBase } from "vitepress";
 .lp-h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-size: clamp(1.7rem, 3.2vw, 2.45rem);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.15;
@@ -299,111 +577,337 @@ import { withBase } from "vitepress";
 
 .lp-body {
   margin: 1rem 0 0;
-  max-width: 32rem;
+  max-width: 34rem;
   font-size: 1.05rem;
   line-height: 1.75;
   color: var(--vp-c-text-2);
 }
 
-.lp-rail {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 28px;
-  margin-top: 2.25rem;
-  padding-top: 1.75rem;
-  border-top: 1px solid var(--vp-c-divider);
+.lp-body--wide {
+  max-width: 42rem;
 }
 
-.lp-rail__item span {
-  display: block;
-  margin-bottom: 0.85rem;
+.lp-text-link {
+  display: inline-block;
+  margin-top: 1.1rem;
   font-family: var(--font-display);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--oc-accent);
-}
-
-.lp-rail__item strong {
-  display: block;
-  margin-bottom: 0.55rem;
-  font-family: var(--font-display);
-  font-size: 1.25rem;
   font-weight: 650;
-  letter-spacing: -0.025em;
-  color: var(--vp-c-text-1);
+  font-size: 0.95rem;
+  color: var(--oc-accent-hover) !important;
+  text-decoration: none !important;
 }
 
-.lp-rail__item p {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.65;
+.lp-text-link:hover {
+  color: var(--oc-accent) !important;
+}
+
+.lp-case {
+  margin-bottom: 72px;
+  max-width: 46rem;
+}
+
+/* Feature rows */
+.lp-feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+  margin-bottom: 80px;
+}
+
+.lp-feature--rev .lp-feature__copy {
+  order: 2;
+}
+.lp-feature--rev .lp-steps-card {
+  order: 1;
+}
+
+.lp-panel,
+.lp-steps-card,
+.lp-zones {
+  border-radius: 16px;
+  border: 1px solid var(--vp-c-border);
+  background: color-mix(in srgb, var(--oc-card) 80%, transparent);
+  overflow: hidden;
+}
+
+.lp-panel__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  font-size: 0.92rem;
+}
+
+.lp-panel__row:last-child {
+  border-bottom: none;
+}
+
+.lp-panel__row span {
   color: var(--vp-c-text-3);
 }
 
-.lp-section--split {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 48px;
-  align-items: start;
+.lp-panel__row b {
+  font-weight: 600;
+  color: var(--vp-c-text-1);
 }
 
-.lp-who {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--vp-c-divider);
+.lp-panel__row--ok b {
+  color: #5eead4;
 }
 
-.lp-who li {
+.lp-steps-card {
   display: grid;
-  gap: 0.25rem;
-  padding: 1.15rem 0;
+  grid-template-columns: 1fr 1fr;
+}
+
+.lp-steps-card > div {
+  padding: 20px 18px;
+  border-right: 1px solid var(--vp-c-divider);
   border-bottom: 1px solid var(--vp-c-divider);
 }
 
-.lp-who strong {
+.lp-steps-card > div:nth-child(2n) {
+  border-right: none;
+}
+
+.lp-steps-card > div:nth-child(n + 3) {
+  border-bottom: none;
+}
+
+.lp-steps-card span {
+  display: block;
+  margin-bottom: 0.55rem;
   font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--oc-accent);
+}
+
+.lp-steps-card strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin-bottom: 0.35rem;
   color: var(--vp-c-text-1);
 }
 
-.lp-who span {
-  font-size: 0.95rem;
-  line-height: 1.55;
+.lp-steps-card em {
+  font-style: normal;
+  font-size: 0.88rem;
   color: var(--vp-c-text-3);
 }
 
-.lp-finale {
-  margin-top: 24px;
-  padding: 56px 0 8px;
-  text-align: left;
+.lp-zones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.lp-zones__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-right: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
+  font-size: 0.9rem;
+}
+
+.lp-zones__item:nth-child(2n) {
+  border-right: none;
+}
+
+.lp-zones__item:nth-child(n + 5) {
+  border-bottom: none;
+}
+
+.lp-zones__item b {
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.lp-zones__item span {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.14);
+  color: #5eead4;
+}
+
+.lp-zones__item--warn span {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+}
+
+.lp-zones__item--lock span {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--vp-c-text-3);
+}
+
+.lp-zones__item--ok span {
+  background: color-mix(in srgb, var(--oc-accent) 18%, transparent);
+  color: #ffb4b4;
+}
+
+/* Setup */
+.lp-setup {
+  margin-bottom: 80px;
+}
+
+.lp-setup__list {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  counter-reset: setup;
+}
+
+.lp-setup__list li {
+  padding: 1.35rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid var(--vp-c-border);
+  background: color-mix(in srgb, var(--oc-card) 70%, transparent);
+  counter-increment: setup;
+}
+
+.lp-setup__list li::before {
+  content: counter(setup, decimal-leading-zero);
+  display: block;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--oc-accent);
+}
+
+.lp-setup__list strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  margin-bottom: 0.45rem;
+  color: var(--vp-c-text-1);
+}
+
+.lp-setup__list p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--vp-c-text-3);
+}
+
+/* Examples */
+.lp-examples {
+  margin-bottom: 80px;
+}
+
+.lp-examples__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 1.75rem;
+}
+
+.lp-examples__grid article {
+  padding: 1.2rem 1.15rem 1.3rem;
+  border-radius: 14px;
+  border: 1px solid var(--vp-c-border);
+  background: color-mix(in srgb, var(--oc-card) 65%, transparent);
+}
+
+.lp-examples__grid span {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--oc-accent-hover);
+}
+
+.lp-examples__grid q {
+  display: block;
+  quotes: "“" "”";
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--vp-c-text-1);
+}
+
+.lp-examples__grid p {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--vp-c-text-3);
+}
+
+/* FAQ */
+.lp-faq {
+  margin-bottom: 72px;
+  max-width: 720px;
+}
+
+.lp-faq__list {
+  margin-top: 1.5rem;
   border-top: 1px solid var(--vp-c-divider);
 }
 
-.lp-finale .lp-actions {
-  justify-content: flex-start;
+.lp-faq__item {
+  border-bottom: 1px solid var(--vp-c-divider);
 }
 
-@media (max-width: 900px) {
-  .lp-proof,
-  .lp-rail,
-  .lp-section--split {
+.lp-faq__item summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 1.15rem 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--vp-c-text-1);
+}
+
+.lp-faq__item summary::-webkit-details-marker {
+  display: none;
+}
+
+.lp-faq__item p {
+  margin: 0 0 1.15rem;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+}
+
+/* Finale */
+.lp-finale {
+  padding: 48px 0 8px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+@media (max-width: 960px) {
+  .lp-hero,
+  .lp-feature,
+  .lp-feature--rev .lp-feature__copy,
+  .lp-feature--rev .lp-steps-card,
+  .lp-setup__list,
+  .lp-examples__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-feature--rev .lp-feature__copy,
+  .lp-feature--rev .lp-steps-card {
+    order: initial;
+  }
+
+  .lp-hero {
+    min-height: auto;
+    padding-top: 36px;
+  }
+
+  .lp-examples__grid {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .lp-proof p + p {
-    border-left: none;
-  }
-
-  .lp-proof p:nth-child(odd) {
-    border-right: 1px solid var(--vp-c-divider);
-  }
-
-  .lp-proof p:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--vp-c-divider);
   }
 }
 
@@ -412,46 +916,43 @@ import { withBase } from "vitepress";
     padding: 0 18px 72px;
   }
 
-  .lp-hero {
-    min-height: auto;
-    padding: 48px 0 36px;
-  }
-
-  .lp-proof,
-  .lp-rail,
-  .lp-section--split {
+  .lp-demo__body {
     grid-template-columns: 1fr;
   }
 
-  .lp-proof p,
-  .lp-proof p:nth-child(odd) {
+  .lp-demo__side {
+    display: flex;
+    gap: 6px;
     border-right: none;
-    border-left: none;
     border-bottom: 1px solid var(--vp-c-divider);
+    overflow-x: auto;
   }
 
-  .lp-proof p:last-child {
-    border-bottom: none;
+  .lp-demo__side b,
+  .lp-demo__side i {
+    white-space: nowrap;
+    margin: 0;
   }
 
-  .lp-section {
-    margin-bottom: 56px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lp-glow,
-  .lp-hero,
-  .lp-sub,
-  .lp-actions,
-  .lp-proof {
-    animation: none;
+  .lp-examples__grid,
+  .lp-setup__list {
+    grid-template-columns: 1fr;
   }
 }
 
-:global(html:not(.dark)) .lp-brand {
-  background: linear-gradient(105deg, #0f1218 0%, #be123c 55%, #0d9488 120%);
+:global(html:not(.dark)) .lp-title span {
+  background: linear-gradient(105deg, #0f1218, #e11d48 55%, #0d9488);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+:global(html:not(.dark)) .lp-demo,
+:global(html:not(.dark)) .lp-panel,
+:global(html:not(.dark)) .lp-steps-card,
+:global(html:not(.dark)) .lp-zones,
+:global(html:not(.dark)) .lp-setup__list li,
+:global(html:not(.dark)) .lp-examples__grid article {
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
 }
 </style>
