@@ -246,3 +246,141 @@ body {
   border-top-color: var(--vp-c-divider) !important;
   background: var(--vp-c-bg-alt) !important;
 }
+
+/* —— 首页：开源产品向 —— */
+.VPHome {
+  padding-bottom: 2rem;
+}
+
+.VPHomeHero {
+  padding: 48px 0 36px !important;
+}
+
+.VPHomeHero .tagline {
+  max-width: 36rem;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  opacity: 0.92;
+}
+
+.VPHomeHero .actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.VPFeatures {
+  padding-top: 12px !important;
+}
+
+.VPFeature .title {
+  font-size: 1.05rem;
+}
+
+.VPFeature .details {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.home-pitch {
+  max-width: 960px;
+  margin: 2.5rem auto 3rem;
+  padding: 0 24px;
+}
+
+.home-pitch h2 {
+  margin: 2.25rem 0 1rem;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--vp-c-text-1);
+}
+
+.home-pitch ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--vp-c-text-2);
+  line-height: 1.7;
+}
+
+.home-pitch li + li {
+  margin-top: 0.35rem;
+}
+
+.home-pitch table {
+  width: 100%;
+  display: table;
+  margin: 0.75rem 0 0;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.home-pitch th,
+.home-pitch td {
+  border: 1px solid var(--vp-c-border);
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.home-pitch th {
+  background: var(--oc-bg-elevated);
+  color: var(--vp-c-text-1);
+  font-weight: 600;
+}
+
+.home-pitch td {
+  background: color-mix(in srgb, var(--oc-card) 80%, transparent);
+  color: var(--vp-c-text-2);
+}
+
+.home-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 2rem 0 0;
+  align-items: center;
+}
+
+.home-cta-primary,
+.home-cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none !important;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.home-cta-primary {
+  color: #fff !important;
+  background: var(--oc-accent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--oc-accent) 35%, transparent);
+}
+
+.home-cta-primary:hover {
+  background: var(--oc-accent-hover);
+  transform: translateY(-1px);
+}
+
+.home-cta-ghost {
+  color: var(--vp-c-text-1) !important;
+  background: var(--oc-bg-elevated);
+  border: 1px solid var(--vp-c-border);
+}
+
+.home-cta-ghost:hover {
+  border-color: color-mix(in srgb, var(--oc-accent) 45%, var(--vp-c-border));
+}
+
+@media (max-width: 640px) {
+  .home-pitch {
+    padding: 0 16px;
+  }
+
+  .VPHomeHero .tagline {
+    font-size: 0.98rem;
+  }
+}

@@ -12,7 +12,7 @@ const githubIoRedirect = `(function(){var h=location.hostname;if(h!=="bridgehsu.
 
 export default defineConfig({
   title: "ChatCMS",
-  description: "Tauri + React 桌面 Agent · 内容生产与智能会话",
+  description: "开源桌面内容 Agent：本地优先，采集·写作·生图生视频·发布一体",
   lang: "zh-CN",
   base,
   cleanUrls: true,
@@ -44,6 +44,7 @@ export default defineConfig({
     logo: { src: "/logo.svg", alt: "ChatCMS" },
     siteTitle: "ChatCMS",
     nav: [
+      { text: "开始", link: "/guide/getting-started" },
       { text: "指南", link: "/guide/overview" },
       { text: "概念", link: "/concepts/agent-loop" },
       { text: "功能", link: "/features/video" },
@@ -82,7 +83,7 @@ export default defineConfig({
       { icon: "github", link: "https://github.com/bridgehsu/chatcms" },
     ],
     footer: {
-      message: "Released under the project license.",
+      message: "开源桌面内容 Agent · 本地优先 · 可私有化",
       copyright: "Copyright © ChatCMS contributors",
     },
     search: { provider: "local" },
