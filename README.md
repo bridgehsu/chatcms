@@ -4,13 +4,22 @@ Tauri + React 桌面 Agent。侧栏「媒体采集 → 采集任务」通过 HTT
 
 ## 文档
 
-- 在线文档站：[https://chatcms.org/](https://chatcms.org/)
-- 请勿用 `https://bridgehsu.github.io/chatcms/`（会自动跳到上面；该路径下样式会错乱）
-- 本地预览：在**仓库根目录**执行 `pnpm docs:dev` → [http://localhost:5173/](http://localhost:5173/)  
-  （也可 `cd docs && pnpm dev`；不要在 docs 里跑 `pnpm run dev`，那是桌面应用）
-- 流程图源文件：[`docs/drawio/`](./docs/drawio/)
+- 正式地址：[https://chatcms.org/](https://chatcms.org/)
+- 本地预览：仓库根目录 `pnpm docs:dev` → http://localhost:5173/  
+  （不要在 `docs/` 里跑 `pnpm run dev`，那是桌面应用）
+- 流程图源：[`docs/drawio/`](./docs/drawio/)
 
-自定义域名 `chatcms.org`（`docs/public/CNAME`）；CI 使用 `DOCS_BASE=/`。Pages **Source 须为 GitHub Actions**。
+### GitHub Pages 设置（重要）
+
+仓库 **Settings → Pages**：
+
+1. **Source** 选 **Deploy from a branch**
+2. **Branch** 选 **`gh-pages`** / `/ (root)` → Save  
+
+不要选 `main`：选 main 会用 Jekyll 渲染 README，页面只剩一个「chatcms」标题。  
+CI（`Deploy Docs`）会把 VitePress 构建推到 `gh-pages`，并写入域名 `chatcms.org`。
+
+自定义域名在 Pages 里填 `chatcms.org`，勾选 Enforce HTTPS。
 
 ## 启动
 
