@@ -21,6 +21,37 @@ const faqs = [
   },
 ];
 
+/** 首页媒体平台：按场景分组（静态，不滚动） */
+const platformGroups = [
+  {
+    title: "图文种草",
+    items: [
+      { logo: "xiaohongshu", name: "小红书" },
+      { logo: "wechat", name: "微信公众号" },
+      { logo: "zhihu", name: "知乎" },
+      { logo: "weibo", name: "微博" },
+    ],
+  },
+  {
+    title: "短视频",
+    items: [
+      { logo: "douyin", name: "抖音" },
+      { logo: "wechat-channels", name: "视频号" },
+      { logo: "kuaishou", name: "快手" },
+      { logo: "bilibili", name: "哔哩哔哩" },
+    ],
+  },
+  {
+    title: "海外渠道",
+    items: [
+      { logo: "x", name: "X / Twitter" },
+      { logo: "linkedin", name: "LinkedIn" },
+    ],
+  },
+];
+
+const platformLogo = (id: string) => withBase(`/platforms/${id}.svg`);
+
 onMounted(() => {
   document.documentElement.classList.add("is-landing");
 });
@@ -117,6 +148,29 @@ onUnmounted(() => {
       <p>可私有化</p>
       <p>多 Agent 协作</p>
       <p>采集到发布一体</p>
+    </section>
+
+    <!-- 媒体平台覆盖：按场景分组 -->
+    <section class="lp-platforms" aria-label="支持的媒体平台">
+      <p class="lp-platforms__label">覆盖你每天在用的平台</p>
+      <div class="lp-platforms__groups">
+        <div v-for="group in platformGroups" :key="group.title" class="lp-platforms__group">
+          <h3 class="lp-platforms__group-title">{{ group.title }}</h3>
+          <ul class="lp-platforms__list">
+            <li v-for="p in group.items" :key="p.name">
+              <span
+                class="lp-platforms__logo"
+                :style="{
+                  maskImage: `url(${platformLogo(p.logo)})`,
+                  WebkitMaskImage: `url(${platformLogo(p.logo)})`,
+                }"
+                aria-hidden="true"
+              />
+              {{ p.name }}
+            </li>
+          </ul>
+        </div>
+      </div>
     </section>
 
     <section class="lp-case">
@@ -742,7 +796,7 @@ onUnmounted(() => {
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px 32px;
-  margin: 64px 0 96px;
+  margin: 64px 0 48px;
   padding: 24px 0;
   border-top: 1px solid var(--vp-c-divider);
   border-bottom: 1px solid var(--vp-c-divider);
@@ -753,6 +807,83 @@ onUnmounted(() => {
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--vp-c-text-3);
+}
+
+/* Platforms — scene groups */
+.lp-platforms {
+  margin: 0 0 88px;
+  text-align: center;
+}
+
+.lp-platforms__label {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  color: var(--vp-c-text-3);
+}
+
+.lp-platforms__groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 28px;
+  text-align: left;
+}
+
+.lp-platforms__group-title {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  color: var(--oc-accent-hover);
+}
+
+.lp-platforms__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-platforms__list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem 0.5rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--vp-c-border);
+  background: color-mix(in srgb, var(--vp-c-bg-elv) 55%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  white-space: nowrap;
+}
+
+.lp-platforms__logo {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  background: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  opacity: 0.92;
+}
+
+@media (max-width: 860px) {
+  .lp-platforms__groups {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
 }
 
 .lp-kicker {

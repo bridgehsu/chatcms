@@ -2,6 +2,7 @@ import DefaultTheme from "vitepress/theme";
 import { nextTick, onMounted, watch } from "vue";
 import { useRoute } from "vitepress";
 import mermaid from "mermaid";
+import Layout from "./Layout.vue";
 import "./custom.css";
 
 async function renderMermaid() {
@@ -21,7 +22,8 @@ async function renderMermaid() {
           lineColor: "#8b8b94",
           secondaryColor: "#191c24",
           tertiaryColor: "#0e1015",
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily:
+            '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif',
         }
       : {
           primaryColor: "#eef0f3",
@@ -30,14 +32,16 @@ async function renderMermaid() {
           lineColor: "#6b7280",
           secondaryColor: "#ffffff",
           tertiaryColor: "#f3f4f6",
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily:
+            '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif',
         },
   });
   await mermaid.run({ nodes });
 }
 
 export default {
-  ...DefaultTheme,
+  extends: DefaultTheme,
+  Layout,
   setup() {
     const route = useRoute();
     onMounted(() => {

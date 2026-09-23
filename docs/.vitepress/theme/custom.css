@@ -15,8 +15,11 @@
   --oc-accent-hover: #ff7070;
   --oc-accent-subtle: rgba(255, 92, 92, 0.1);
   --oc-accent-2: #14b8a6;
-  --font-display: "Outfit", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
-  --font-body: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Segoe UI", sans-serif;
+  /* 系统中文字体栈：零网字体积，Mac/Win 观感更干净 */
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei",
+    "Noto Sans SC", "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --font-body: var(--font-sans);
 
   --vp-font-family-base: var(--font-body);
   --vp-c-bg: var(--oc-bg);
@@ -241,9 +244,8 @@ body {
   background: var(--oc-card);
 }
 
-.VPFooter {
-  border-top-color: var(--vp-c-divider) !important;
-  background: transparent !important;
+.site-footer {
+  border-top-color: var(--vp-c-divider);
 }
 
 /* 首页 Landing（layout: page）拉满视觉宽度 */

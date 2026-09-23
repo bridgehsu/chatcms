@@ -24,13 +24,6 @@ export default defineConfig({
   head: [
     ["link", { rel: "icon", href: `${base}favicon.svg` }],
     ["script", {}, githubIoRedirect],
-    [
-      "link",
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap",
-      },
-    ],
   ],
 
   markdown: {
@@ -86,12 +79,8 @@ export default defineConfig({
       ],
     },
     socialLinks: [
-      { icon: "github", link: "https://github.com/bridgehsu/chatcms" },
+      { icon: "github", link: "https://github.com/bridgehsu/chatcms", ariaLabel: "GitHub" },
     ],
-    footer: {
-      message: "开源新媒体种草 Agent · 本地优先 · 可私有化",
-      copyright: "Copyright © ChatCMS contributors",
-    },
     search: { provider: "local" },
     outline: { label: "本页目录", level: [2, 3] },
     docFooter: { prev: "上一页", next: "下一页" },
