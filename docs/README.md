@@ -1,5 +1,7 @@
 # 文档站（VitePress）
 
+正文在 `guide/` · `concepts/` · `features/`；分层流程图源在 `drawio/`（可导出 SVG 放到 `public/`）。
+
 ## 推荐：在仓库根目录启动
 
 ```bash

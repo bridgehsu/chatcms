@@ -89,4 +89,4 @@ flowchart TD
 | 响应生成 | `src-tauri/src/core/response/` |
 | 编排入口 | `src-tauri/src/chat/service.rs` |
 
-分层流程图源文件仍在仓库 `doc/drawio/`（可导出 SVG 后挂到本站）。
+分层流程图源文件在仓库 [`docs/drawio/`](../drawio/)（可导出 SVG 后挂到本站）。

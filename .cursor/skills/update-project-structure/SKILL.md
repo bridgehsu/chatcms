@@ -20,7 +20,7 @@ Update the rule if **any** of these happened in this task:
 - Added / removed / renamed files under `src/` or `src-tauri/src/`
 - Split or merged a module (e.g. agent submodules)
 - Moved a responsibility between crates/modules (even if filenames stay)
-- Added a new top-level dir that agents should know about (`doc/`, scripts, etc.)
+- Added a new top-level dir that agents should know about (`docs/`, scripts, etc.)
 
 **Do not** update for pure logic refactors with no path/responsibility change.
 
@@ -29,7 +29,7 @@ Update the rule if **any** of these happened in this task:
 1. Scan the live tree (ignore `node_modules`, `src-tauri/target`, `dist`, `.git`):
 
 ```bash
-find src src-tauri/src doc .cursor -type f 2>/dev/null | sort
+find src src-tauri/src docs .cursor -type f 2>/dev/null | sort
 ```
 
 2. Open `.cursor/rules/project-structure.mdc`.
@@ -45,7 +45,7 @@ alwaysApply: true
 
 5. Keep sections: 维护约定 · 顶层 · 前端 · 后端 · 关键数据流 · 改结构时怎么动本文件.
 6. One-line duties next to important files; do not paste large code.
-7. If `doc/how-it-works.md` names modules that no longer exist, fix those names too (light touch).
+7. If `docs/concepts/*.md` names modules that no longer exist, fix those names too (light touch).
 
 ## Done checklist
 

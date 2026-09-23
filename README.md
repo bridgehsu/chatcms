@@ -7,7 +7,7 @@ Tauri + React 桌面 Agent。侧栏「媒体采集 → 采集任务」通过 HTT
 - 在线文档站（GitHub Pages）：[https://bridgehsu.github.io/chatcms/](https://bridgehsu.github.io/chatcms/)
 - 本地预览：在**仓库根目录**执行 `pnpm docs:dev` → [http://localhost:5173/](http://localhost:5173/)  
   （也可 `cd docs && pnpm dev`；不要在 docs 里跑 `pnpm run dev`，那是桌面应用）
-- 工程流程图源文件：[`doc/`](./doc/)（非站点）
+- 流程图源文件：[`docs/drawio/`](./docs/drawio/)
 
 自定义域名：在仓库 Settings → Pages 绑定域名，并将构建改为 `DOCS_BASE=/ pnpm docs:build`（见 `.github/workflows/docs.yml`）。
 

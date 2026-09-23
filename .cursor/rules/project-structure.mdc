@@ -27,13 +27,13 @@ chatcms/
 │       ├── image-brief.md
 │       └── skill-creator.md
 ├── bin/                 # 打包脚本（mac / windows）
-├── docs/                # VitePress 文档站（对外；pnpm docs:dev / docs:build）
+├── docs/                # VitePress 文档站（pnpm docs:dev / docs:build）
 │   ├── .vitepress/      # 站点配置
 │   ├── guide/           # 概览 / 启动
 │   ├── concepts/        # Agent Loop、多 Agent
 │   ├── features/        # 功能说明
+│   ├── drawio/          # 分层流程图源（.drawio）
 │   └── public/          # 静态资源
-├── doc/                 # 工程文稿与 drawio 源（非站点；对外内容同步到 docs/）
 ├── resume/              # 简历用项目经历文稿（非运行时）
 ├── .github/workflows/   # CI（含 docs.yml → GitHub Pages）
 ├── .cursor/rules/       # Cursor rules（含本文件）
@@ -235,7 +235,7 @@ workspace 绑定规则：
  整个会话生命周期内路径不变，切换 Agent 不影响历史会话的 workspace
 ```
 
-工具分流见 `agents/dispatch.rs`；原理文档：`doc/how-it-works.md`、`doc/agent-loop.md`。
+工具分流见 `agents/dispatch.rs`；原理文档：`docs/concepts/agent-loop.md`、`docs/concepts/multi-agent.md`。
 
 ## 改结构时怎么动本文件
 
