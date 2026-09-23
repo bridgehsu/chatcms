@@ -425,7 +425,7 @@ export const ChatWindow = () => {
             <div className="empty-state">
               <p className="empty-state__title">有什么可以帮你的？</p>
               <p className="empty-state__hint">
-                左侧可选角色；下方可切换 Ask / Agent / Search
+                顶栏可选角色（含自动选角）；下方可切换 Ask / Agent / Search
               </p>
             </div>
           )}

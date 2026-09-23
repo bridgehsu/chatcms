@@ -3,7 +3,6 @@ import { App as AntdApp } from "antd";
 import { IconChevron, IconMore, IconPencil, IconPin, IconPlus, IconTrash } from "@/components/icons";
 import { useChatStore } from "@/stores/useChatStore";
 import type { SessionGroup as PersistedGroup, SessionSummary } from "@/types";
-import { SessionAgentBar } from "./SessionAgentBar";
 import { SessionDeleteDialog } from "./SessionDeleteDialog";
 
 type PendingDelete = { id: string; title: string };
@@ -679,7 +678,6 @@ export const SessionList = () => {
   return (
     <aside className="session-pane" style={{ width: paneWidth, minWidth: paneWidth }}>
       <div className="session-pane-header">
-        <SessionAgentBar />
         <label className="session-pane-search-wrap">
           <span className="session-pane-search-icon" aria-hidden>
             <SearchIcon />

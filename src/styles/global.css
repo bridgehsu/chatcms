@@ -700,17 +700,6 @@ body.is-resizing-session-pane {
   background: color-mix(in srgb, var(--bg-2) 70%, var(--bg-1));
 }
 
-.session-agent-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.session-agent-bar .agent-picker {
-  width: 100%;
-  z-index: 30;
-}
-
 .session-pane-folder-btn {
   display: inline-flex;
   align-items: center;
