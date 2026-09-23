@@ -1,185 +1,214 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from "vue";
 import { withBase } from "vitepress";
 
 const faqs = [
   {
     q: "ChatCMS 是什么？",
-    a: "面向新媒体种草的开源桌面 Agent。把采集、写作、生图生视频、多平台发布放进本机工作台，数据与账号留在你自己的机器上。",
+    a: "面向新媒体种草的开源桌面 Agent：采集、写作、生图生视频、多平台发布在同一本机工作台完成，数据与账号留在你自己的机器上。",
   },
   {
     q: "适合谁用？",
-    a: "品牌与电商运营、达人工作室、独立创作者，以及需要私有化 / 二开的技术团队。",
+    a: "品牌与电商运营、达人工作室、独立创作者，以及需要私有化或二开的技术团队。",
   },
   {
-    q: "和网页 SaaS 有什么区别？",
-    a: "本地优先：会话、素材、账号保险柜落在本机；权限与审计可查。敏感内容不必上云。",
+    q: "和云端 SaaS 有什么不同？",
+    a: "本地优先。会话、素材、账号保险柜落在本机，权限与审计可查，敏感品类与账号策略不必上云。",
   },
   {
-    q: "能否二开和私有化？",
-    a: "可以。源码开放，Skills / MCP / 模型可插拔，可按品类扩展 Agent 角色与流水线。",
+    q: "可以二开和私有化吗？",
+    a: "可以。源码开放，Skills / MCP / 模型可插拔，可按品类扩展 Agent 角色与发布流水线。",
   },
 ];
+
+onMounted(() => {
+  document.documentElement.classList.add("is-landing");
+});
+onUnmounted(() => {
+  document.documentElement.classList.remove("is-landing");
+});
 </script>
 
 <template>
   <div class="lp">
     <div class="lp-glow" aria-hidden="true" />
 
+    <!-- Hero：只留主张 + 主次 CTA + 大示意 -->
     <header class="lp-hero">
-      <div class="lp-hero__copy">
-        <p class="lp-eyebrow">为受够工具碎片化的种草团队而做</p>
-        <h1 class="lp-title">
-          让 Agent 帮你种草。<br />
-          <span>你掌控节奏与数据。</span>
-        </h1>
-        <p class="lp-sub">
-          开源桌面端新媒体种草 Agent。选题、文案、成片、发布——一条链路完成，全部留在本地。
-        </p>
-        <div class="lp-actions">
-          <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">开始种草</a>
-          <a
-            class="lp-btn lp-btn--ghost"
-            href="https://github.com/bridgehsu/chatcms"
-            target="_blank"
-            rel="noreferrer"
-          >星标 GitHub</a>
-        </div>
-        <p class="lp-note">开源免费 · 本地优先 · 可私有化</p>
-        <ul class="lp-chips">
-          <li>智能会话</li>
-          <li>多 Agent</li>
-          <li>媒体工厂</li>
-          <li>采集发布</li>
-        </ul>
+      <p class="lp-brand">ChatCMS</p>
+      <h1 class="lp-title">
+        本地新媒体种草 Agent<br />
+        <em>从灵感到发布，一条链路</em>
+      </h1>
+      <p class="lp-sub">
+        开源桌面端。选题、文案、成片、采集与多平台发布——少切换工具，数据留在本机。
+      </p>
+      <div class="lp-actions">
+        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">免费开始</a>
+        <a
+          class="lp-btn lp-btn--ghost"
+          href="https://github.com/bridgehsu/chatcms"
+          target="_blank"
+          rel="noreferrer"
+        >查看源码</a>
       </div>
 
-      <aside class="lp-demo" aria-label="产品示意">
-        <div class="lp-demo__chrome">
-          <span /><span /><span />
-          <em>chatcms.org</em>
-          <b>ChatCMS · Agent</b>
-        </div>
-        <div class="lp-demo__body">
-          <div class="lp-demo__side">
-            <b>种草主脑</b>
-            <i>文案 Agent</i>
-            <i>视觉 Agent</i>
-            <i>剪辑 Agent</i>
+      <aside class="lp-stage" aria-label="产品示意">
+        <div class="lp-stage__frame">
+          <div class="lp-stage__bar">
+            <span /><span /><span />
+            <em>ChatCMS</em>
           </div>
-          <div class="lp-demo__main">
-            <div class="lp-demo__bubble lp-demo__bubble--user">
-              帮我做一篇小红书种草：春季防晒，语气真实一点
-            </div>
-            <div class="lp-demo__bubble lp-demo__bubble--ai">
-              已选定「文案 Agent」· 正在检索知识库爆款结构…
-              <div class="lp-demo__tags">
-                <span>洞察</span><span>大纲</span><span>成稿</span>
+          <div class="lp-stage__grid">
+            <nav class="lp-stage__nav">
+              <strong>工作台</strong>
+              <i class="is-on">智能会话</i>
+              <i>内容笔记</i>
+              <i>图片工厂</i>
+              <i>视频制片</i>
+              <i>媒体采集</i>
+              <strong>配置</strong>
+              <i>代理档案</i>
+              <i>技能 · MCP</i>
+            </nav>
+            <div class="lp-stage__chat">
+              <header>
+                <b>种草主脑</b>
+                <small>Agent · 文案已绑定</small>
+              </header>
+              <div class="lp-stage__msgs">
+                <p class="u">帮我做一篇小红书种草：春季轻薄防晒，语气真实</p>
+                <p class="a">
+                  已规划：竞品洞察 → 大纲 → 成稿 → 封面 brief
+                  <span>进行中</span>
+                </p>
+                <div class="card">
+                  <b>春日轻薄防晒｜真的不假白</b>
+                  <span>通勤一周实测 · 成膜快 · 不搓泥</span>
+                </div>
               </div>
+              <footer>描述你的种草任务…</footer>
             </div>
-            <div class="lp-demo__preview">
-              <strong>春日轻薄防晒｜真的不假白</strong>
-              <p>通勤党实测一周：成膜快、不搓泥，妆前也能叠…</p>
-            </div>
+            <aside class="lp-stage__rail">
+              <b>本轮</b>
+              <ul>
+                <li><em>洞察</em><i>完成</i></li>
+                <li><em>大纲</em><i>完成</i></li>
+                <li class="on"><em>成稿</em><i>进行中</i></li>
+                <li><em>发布</em><i>待定</i></li>
+              </ul>
+            </aside>
           </div>
         </div>
       </aside>
     </header>
 
-    <section class="lp-strip">
-      <p>打通种草全链路</p>
-      <ul>
-        <li>Ask / Agent / Search</li>
-        <li>多角色协作</li>
-        <li>笔记 · 生图 · 成片</li>
-        <li>采集与发布</li>
-        <li>权限审计</li>
-      </ul>
+    <!-- 信任条：结果向，非技术标签云 -->
+    <section class="lp-trust">
+      <p>开源免费</p>
+      <p>本地优先</p>
+      <p>可私有化</p>
+      <p>多 Agent 协作</p>
+      <p>采集到发布一体</p>
     </section>
 
     <section class="lp-case">
-      <p class="lp-kicker">The case</p>
-      <h2 class="lp-h2">别再当「人肉内容中台」。</h2>
-      <p class="lp-body lp-body--wide">
-        选题、文案、出图、发稿被拆成十几个工具。如果日常生产不再靠人肉串联，团队只处理真正值得拍板的决策呢？
+      <p class="lp-kicker">为什么需要</p>
+      <h2 class="lp-h2">别再当人肉内容中台</h2>
+      <p class="lp-body">
+        选题、文案、出图、发稿拆在十几个工具里。ChatCMS 把种草生产装回一张桌面——团队只处理真正要拍板的事。
       </p>
     </section>
 
-    <section class="lp-feature">
-      <div class="lp-feature__copy">
-        <p class="lp-kicker">Multi-agent</p>
-        <h2 class="lp-h2">你的种草搭档，不只是聊天</h2>
+    <!-- 能力：叙事流，不做三连同质卡片 -->
+    <section class="lp-story">
+      <div class="lp-story__copy">
+        <p class="lp-kicker">多角色协作</p>
+        <h2 class="lp-h2">主脑调度，角色上场</h2>
         <p class="lp-body">
-          Agent 模式带工具与技能上场。主脑调度文案、视觉、剪辑角色，像带一支随时在线的种草小队。
+          为策划、文案、视觉、剪辑配置不同 Agent。主脑负责任务节奏，子代理并行产出，像一支随时在线的种草小队。
         </p>
       </div>
-      <div class="lp-panel">
-        <div class="lp-panel__row"><span>模式</span><b>Agent</b></div>
-        <div class="lp-panel__row"><span>角色</span><b>种草文案 · 已绑定</b></div>
-        <div class="lp-panel__row"><span>技能</span><b>content-publish · image-brief</b></div>
-        <div class="lp-panel__row lp-panel__row--ok"><span>状态</span><b>工具授权 · 可审计</b></div>
-      </div>
+      <ul class="lp-roles">
+        <li><strong>种草主脑</strong><span>拆解任务 · 调度角色</span></li>
+        <li><strong>文案 Agent</strong><span>大纲 · 成稿 · 话术</span></li>
+        <li><strong>视觉 Agent</strong><span>封面 · 图文 brief</span></li>
+        <li><strong>剪辑 Agent</strong><span>口播 · 成片节奏</span></li>
+      </ul>
     </section>
 
-    <section class="lp-feature lp-feature--rev">
-      <div class="lp-feature__copy">
-        <p class="lp-kicker">Pipeline</p>
-        <h2 class="lp-h2">从灵感到成片，不断线</h2>
+    <section class="lp-pipeline">
+      <p class="lp-kicker">全链路</p>
+      <h2 class="lp-h2">洞察 → 创作 → 发布 → 复盘</h2>
+      <p class="lp-body">采集与知识库、笔记与媒体工厂、发布桥接与权限审计，串在同一工作台。</p>
+      <ol class="lp-pipe">
+        <li><span>01</span><strong>洞察</strong></li>
+        <li><span>02</span><strong>创作</strong></li>
+        <li><span>03</span><strong>发布</strong></li>
+        <li><span>04</span><strong>复盘</strong></li>
+      </ol>
+      <a class="lp-more" :href="withBase('/guide/overview')">了解产品能力</a>
+    </section>
+
+    <section class="lp-local">
+      <div>
+        <p class="lp-kicker">本地优先</p>
+        <h2 class="lp-h2">账号与素材，留在你的机器</h2>
         <p class="lp-body">
-          采集、笔记、图片工厂、口播 / 生视频、发布桥接接在同一工作台——少切换，多产出。数据留在本机。
+          会话、素材库、账号保险柜本机落地；工具执行按权限裁决。商业内容不必交给第三方云。
         </p>
-        <a class="lp-text-link" :href="withBase('/guide/overview')">了解产品能力 →</a>
       </div>
-      <div class="lp-steps-card">
-        <div><span>01</span><strong>洞察</strong><em>采集 · 知识库</em></div>
-        <div><span>02</span><strong>创作</strong><em>会话 · 笔记 · 成片</em></div>
-        <div><span>03</span><strong>发布</strong><em>桥接 · 多平台</em></div>
-        <div><span>04</span><strong>复盘</strong><em>链路 · 权限</em></div>
-      </div>
+      <dl class="lp-local__list">
+        <div><dt>本机会话 / 素材</dt><dd>可控</dd></div>
+        <div><dt>账号保险柜</dt><dd>加密</dd></div>
+        <div><dt>工具执行</dt><dd>需授权</dd></div>
+        <div><dt>开源二开</dt><dd>可扩展</dd></div>
+      </dl>
     </section>
 
-    <section class="lp-setup">
-      <p class="lp-kicker">Get started</p>
-      <h2 class="lp-h2">安装。配角色。开始种草。</h2>
-      <ol class="lp-setup__list">
+    <section class="lp-start">
+      <p class="lp-kicker">三步上手</p>
+      <h2 class="lp-h2">安装 · 配角色 · 跑通一条链路</h2>
+      <ol>
         <li>
           <strong>安装桌面端</strong>
-          <p>启动 ChatCMS，连上你的模型供应商。</p>
+          <p>启动 ChatCMS，接入模型供应商。</p>
         </li>
         <li>
           <strong>配置种草角色</strong>
-          <p>为文案 / 视觉 / 剪辑建立 Agent 与技能。</p>
+          <p>建立文案 / 视觉 / 剪辑 Agent。</p>
         </li>
         <li>
-          <strong>跑通一条链路</strong>
-          <p>从洞察到发布，用 Agent 模式走完一遍。</p>
+          <strong>下达种草任务</strong>
+          <p>用 Agent 模式从洞察走到发布。</p>
         </li>
       </ol>
     </section>
 
     <section class="lp-examples">
-      <p class="lp-kicker">Examples</p>
-      <h2 class="lp-h2">这些事，以前要开五个软件</h2>
+      <p class="lp-kicker">可以这样用</p>
+      <h2 class="lp-h2">以前要开五个软件的事</h2>
       <div class="lp-examples__grid">
         <article>
           <span>文案</span>
-          <q>写一篇小红书种草：气垫粉底，避雷假白</q>
+          <p>写一篇小红书种草：气垫粉底，避雷假白</p>
         </article>
         <article>
           <span>成片</span>
-          <q>按口播稿做成 9:16，8 秒，字幕偏大</q>
+          <p>按口播稿做成 9:16，8 秒，字幕偏大</p>
         </article>
         <article>
           <span>发布</span>
-          <q>对接发布桥接，准备发到小红书</q>
+          <p>对接发布桥接，准备发到小红书</p>
         </article>
       </div>
     </section>
 
     <section class="lp-faq">
-      <p class="lp-kicker">FAQ</p>
-      <h2 class="lp-h2">常见问题</h2>
+      <p class="lp-kicker">常见问题</p>
+      <h2 class="lp-h2">还有这些疑问</h2>
       <div class="lp-faq__list">
-        <details v-for="item in faqs" :key="item.q" class="lp-faq__item">
+        <details v-for="item in faqs" :key="item.q">
           <summary>{{ item.q }}</summary>
           <p>{{ item.a }}</p>
         </details>
@@ -187,11 +216,11 @@ const faqs = [
     </section>
 
     <section class="lp-finale">
-      <h2 class="lp-h2">别再为工具切换买单。</h2>
-      <p class="lp-body">开源、本机、可扩展——把下一场种草交给 Agent。</p>
+      <h2 class="lp-h2">下一场种草，交给 Agent</h2>
+      <p class="lp-body">开源、本机、可扩展。你保留对数据与节奏的最终决定权。</p>
       <div class="lp-actions">
-        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">免费开始种草</a>
-        <a class="lp-btn lp-btn--ghost" :href="withBase('/concepts/agent-loop')">看 Agent Loop →</a>
+        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">免费开始</a>
+        <a class="lp-btn lp-btn--ghost" :href="withBase('/guide/overview')">产品能力</a>
       </div>
     </section>
   </div>
@@ -201,78 +230,72 @@ const faqs = [
 .lp {
   position: relative;
   isolation: isolate;
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 0 32px 120px;
+  padding: 0 28px 128px;
   overflow: clip;
 }
 
 .lp-glow {
   position: absolute;
-  inset: -8% -30% auto;
-  height: 70vh;
+  inset: -10% -20% auto;
+  height: 65vh;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 48% 40% at 18% 8%, rgba(255, 92, 92, 0.18), transparent 70%),
-    radial-gradient(ellipse 40% 34% at 88% 0%, rgba(20, 184, 166, 0.1), transparent 68%);
+    radial-gradient(ellipse 50% 42% at 50% 0%, rgba(255, 92, 92, 0.16), transparent 72%),
+    radial-gradient(ellipse 36% 30% at 90% 20%, rgba(20, 184, 166, 0.08), transparent 70%);
 }
 
+/* ——— Hero ——— */
 .lp-hero {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 48px;
-  padding: 72px 0 56px;
-}
-
-.lp-hero__copy {
-  max-width: 40rem;
-  margin: 0 auto;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
   align-items: center;
+  text-align: center;
+  padding: 88px 0 32px;
+  gap: 0;
 }
 
-.lp-eyebrow {
-  margin: 0 0 1.35rem;
+.lp-brand {
+  margin: 0 0 1.5rem;
   font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--oc-accent-hover);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--vp-c-text-1);
 }
 
 .lp-title {
   margin: 0;
+  max-width: 14em;
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 5.6vw, 4rem);
+  font-size: clamp(2.4rem, 5.5vw, 3.75rem);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.12;
   letter-spacing: -0.04em;
   color: var(--vp-c-text-1);
 }
 
-.lp-title span {
-  background: linear-gradient(105deg, #ffb4b4, #ff5c5c 50%, #14b8a6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.lp-title em {
+  font-style: normal;
+  color: var(--vp-c-text-2);
+  font-weight: 600;
 }
 
 .lp-sub {
   margin: 1.5rem 0 0;
-  max-width: 32em;
-  font-size: 1.12rem;
-  line-height: 1.8;
-  color: var(--vp-c-text-2);
+  max-width: 28em;
+  font-size: 1.1rem;
+  line-height: 1.75;
+  color: var(--vp-c-text-3);
 }
 
 .lp-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   margin-top: 2rem;
 }
 
@@ -281,23 +304,23 @@ const faqs = [
   align-items: center;
   justify-content: center;
   min-height: 48px;
-  padding: 0 1.45rem;
+  padding: 0 1.5rem;
   border-radius: 10px;
   font-family: var(--font-display);
   font-size: 0.98rem;
   font-weight: 650;
   text-decoration: none !important;
-  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
 }
 
 .lp-btn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .lp-btn--primary {
   color: #fff !important;
   background: var(--oc-accent);
-  box-shadow: 0 14px 36px color-mix(in srgb, var(--oc-accent) 40%, transparent);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--oc-accent) 36%, transparent);
 }
 
 .lp-btn--primary:hover {
@@ -307,398 +330,443 @@ const faqs = [
 .lp-btn--ghost {
   color: var(--vp-c-text-1) !important;
   border: 1px solid var(--vp-c-border);
-  background: color-mix(in srgb, var(--oc-bg-elevated) 45%, transparent);
+  background: transparent;
 }
 
-.lp-note {
-  margin: 1.1rem 0 0;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-3);
+.lp-btn--ghost:hover {
+  border-color: color-mix(in srgb, var(--oc-accent) 40%, var(--vp-c-border));
 }
 
-.lp-chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  list-style: none;
-  margin: 1.5rem 0 0;
-  padding: 0;
-}
-
-.lp-chips li {
-  padding: 0.4rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid var(--vp-c-border);
-  font-size: 0.84rem;
-  color: var(--vp-c-text-2);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.lp-demo {
+/* Stage — wide product mock */
+.lp-stage {
   width: 100%;
-  max-width: 920px;
-  margin: 0 auto;
-  border-radius: 16px;
+  margin-top: 56px;
+}
+
+.lp-stage__frame {
+  border-radius: 18px;
   border: 1px solid var(--vp-c-border);
-  background: color-mix(in srgb, var(--oc-card) 88%, transparent);
-  box-shadow: 0 32px 72px rgba(0, 0, 0, 0.38);
+  background: #12151c;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
   overflow: hidden;
 }
 
-.lp-demo__chrome {
+.lp-stage__bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 14px 16px;
-  background: var(--oc-bg-elevated);
-  border-bottom: 1px solid var(--vp-c-divider);
+  gap: 7px;
+  padding: 12px 16px;
+  background: #191c24;
+  border-bottom: 1px solid #1e2028;
 }
 
-.lp-demo__chrome span {
-  width: 9px;
-  height: 9px;
+.lp-stage__bar span {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #2e3040;
 }
-
-.lp-demo__chrome span:nth-child(1) {
+.lp-stage__bar span:nth-child(1) {
   background: #ff5c5c;
 }
-.lp-demo__chrome span:nth-child(2) {
+.lp-stage__bar span:nth-child(2) {
   background: #f59e0b;
 }
-.lp-demo__chrome span:nth-child(3) {
+.lp-stage__bar span:nth-child(3) {
   background: #14b8a6;
 }
-
-.lp-demo__chrome em {
+.lp-stage__bar em {
   margin-left: 10px;
   font-style: normal;
-  font-size: 0.78rem;
-  color: var(--vp-c-text-3);
-}
-
-.lp-demo__chrome b {
-  margin-left: auto;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--vp-c-text-2);
+  color: #d4d4d8;
 }
 
-.lp-demo__body {
+.lp-stage__grid {
   display: grid;
-  grid-template-columns: 140px 1fr;
-  min-height: 340px;
+  grid-template-columns: 168px minmax(0, 1fr) 168px;
+  min-height: 380px;
 }
 
-.lp-demo__side {
+.lp-stage__nav {
   padding: 16px 12px;
-  border-right: 1px solid var(--vp-c-divider);
-  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid #1e2028;
+  background: #0e1015;
 }
 
-.lp-demo__side b,
-.lp-demo__side i {
+.lp-stage__nav strong {
+  display: block;
+  margin: 12px 8px 8px;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b8b94;
+}
+.lp-stage__nav strong:first-child {
+  margin-top: 0;
+}
+
+.lp-stage__nav i {
   display: block;
   font-style: normal;
-  font-size: 0.78rem;
-  padding: 9px 8px;
+  font-size: 0.84rem;
+  padding: 8px 10px;
   border-radius: 8px;
-  margin-bottom: 6px;
+  color: #8b8b94;
+  margin-bottom: 2px;
 }
-
-.lp-demo__side b {
+.lp-stage__nav i.is-on {
   color: #fff;
-  background: color-mix(in srgb, var(--oc-accent) 28%, transparent);
-  font-weight: 650;
+  background: color-mix(in srgb, #ff5c5c 22%, transparent);
 }
 
-.lp-demo__side i {
-  color: var(--vp-c-text-3);
-}
-
-.lp-demo__main {
-  padding: 20px;
+.lp-stage__chat {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  min-height: 380px;
+  background: #0e1015;
 }
 
-.lp-demo__bubble {
-  padding: 14px 16px;
+.lp-stage__chat > header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #1e2028;
+}
+.lp-stage__chat > header b {
+  font-size: 0.95rem;
+  color: #f4f4f5;
+}
+.lp-stage__chat > header small {
+  font-size: 0.78rem;
+  color: #8b8b94;
+}
+
+.lp-stage__msgs {
+  flex: 1;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lp-stage__msgs .u,
+.lp-stage__msgs .a {
+  margin: 0;
+  max-width: 88%;
+  padding: 12px 14px;
   border-radius: 12px;
   font-size: 0.9rem;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
-.lp-demo__bubble--user {
+.lp-stage__msgs .u {
   align-self: flex-end;
-  max-width: 92%;
-  background: color-mix(in srgb, var(--oc-accent) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--oc-accent) 35%, transparent);
-  color: var(--vp-c-text-1);
+  background: color-mix(in srgb, #ff5c5c 16%, transparent);
+  border: 1px solid color-mix(in srgb, #ff5c5c 30%, transparent);
+  color: #f4f4f5;
 }
 
-.lp-demo__bubble--ai {
+.lp-stage__msgs .a {
   align-self: flex-start;
-  max-width: 95%;
-  background: var(--oc-bg-elevated);
-  border: 1px solid var(--vp-c-border);
-  color: var(--vp-c-text-2);
+  background: #191c24;
+  border: 1px solid #2e3040;
+  color: #d4d4d8;
 }
 
-.lp-demo__tags {
-  display: flex;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.lp-demo__tags span {
-  padding: 3px 9px;
+.lp-stage__msgs .a span {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   background: rgba(20, 184, 166, 0.15);
   color: #5eead4;
 }
 
-.lp-demo__preview {
-  margin-top: auto;
+.lp-stage__msgs .card {
+  align-self: flex-start;
+  max-width: 70%;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px dashed var(--vp-c-border);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed #2e3040;
+  background: #161920;
 }
-
-.lp-demo__preview strong {
+.lp-stage__msgs .card b {
   display: block;
+  margin-bottom: 6px;
   font-size: 0.92rem;
-  color: var(--vp-c-text-1);
-  margin-bottom: 8px;
+  color: #f4f4f5;
+}
+.lp-stage__msgs .card span {
+  font-size: 0.8rem;
+  color: #8b8b94;
 }
 
-.lp-demo__preview p {
-  margin: 0;
-  font-size: 0.84rem;
-  color: var(--vp-c-text-3);
-  line-height: 1.55;
+.lp-stage__chat > footer {
+  margin: 0 18px 18px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #2e3040;
+  background: #191c24;
+  font-size: 0.85rem;
+  color: #8b8b94;
 }
 
-.lp-strip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 20px 32px;
-  padding: 28px 0;
-  margin: 8px 0 96px;
-  border-top: 1px solid var(--vp-c-divider);
-  border-bottom: 1px solid var(--vp-c-divider);
+.lp-stage__rail {
+  padding: 16px 14px;
+  border-left: 1px solid #1e2028;
+  background: #0e1015;
 }
-
-.lp-strip > p {
-  margin: 0;
-  font-size: 0.88rem;
-  color: var(--vp-c-text-3);
+.lp-stage__rail > b {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b8b94;
 }
-
-.lp-strip ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 22px;
+.lp-stage__rail ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+.lp-stage__rail li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #1e2028;
+  font-size: 0.82rem;
+}
+.lp-stage__rail em {
+  font-style: normal;
+  color: #d4d4d8;
+}
+.lp-stage__rail i {
+  font-style: normal;
+  color: #8b8b94;
+}
+.lp-stage__rail li.on em {
+  color: #fff;
+}
+.lp-stage__rail li.on i {
+  color: #ff8585;
+}
 
-.lp-strip li {
+/* Trust */
+.lp-trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 28px;
+  margin: 56px 0 96px;
+  padding: 22px 0;
+  border-top: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+.lp-trust p {
+  margin: 0;
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
-  color: var(--vp-c-text-2);
+  color: var(--vp-c-text-3);
 }
 
 .lp-kicker {
-  margin: 0 0 1rem;
+  margin: 0 0 0.85rem;
   font-family: var(--font-display);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
   color: var(--oc-accent-hover);
 }
 
 .lp-h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
   font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.18;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
   color: var(--vp-c-text-1);
 }
 
 .lp-body {
-  margin: 1.25rem 0 0;
-  max-width: 32rem;
-  font-size: 1.08rem;
+  margin: 1.1rem 0 0;
+  max-width: 34rem;
+  font-size: 1.05rem;
   line-height: 1.8;
   color: var(--vp-c-text-2);
 }
 
-.lp-body--wide {
-  max-width: 40rem;
-}
-
-.lp-text-link {
-  display: inline-block;
-  margin-top: 1.5rem;
-  font-family: var(--font-display);
-  font-weight: 650;
-  font-size: 0.95rem;
-  color: var(--oc-accent-hover) !important;
-  text-decoration: none !important;
-}
-
 .lp-case {
-  margin-bottom: 120px;
-  max-width: 44rem;
-  padding-top: 16px;
+  max-width: 36rem;
+  margin: 0 auto 112px;
+  text-align: center;
+}
+.lp-case .lp-body {
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.lp-feature {
+.lp-story {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 56px;
-  align-items: center;
-  margin-bottom: 120px;
+  gap: 64px;
+  align-items: start;
+  margin-bottom: 112px;
 }
 
-.lp-feature--rev .lp-feature__copy {
-  order: 2;
+.lp-roles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--vp-c-divider);
 }
-.lp-feature--rev .lp-steps-card {
-  order: 1;
-}
-
-.lp-panel,
-.lp-steps-card {
-  border-radius: 16px;
-  border: 1px solid var(--vp-c-border);
-  background: color-mix(in srgb, var(--oc-card) 80%, transparent);
-  overflow: hidden;
-}
-
-.lp-panel__row {
+.lp-roles li {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 18px 20px;
+  gap: 16px;
+  padding: 1.2rem 0;
   border-bottom: 1px solid var(--vp-c-divider);
-  font-size: 0.95rem;
 }
-
-.lp-panel__row:last-child {
-  border-bottom: none;
-}
-
-.lp-panel__row span {
-  color: var(--vp-c-text-3);
-}
-
-.lp-panel__row b {
-  font-weight: 600;
+.lp-roles strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   color: var(--vp-c-text-1);
 }
-
-.lp-panel__row--ok b {
-  color: #5eead4;
+.lp-roles span {
+  font-size: 0.92rem;
+  color: var(--vp-c-text-3);
+  text-align: right;
 }
 
-.lp-steps-card {
+.lp-pipeline {
+  margin-bottom: 112px;
+  text-align: center;
+}
+.lp-pipeline .lp-body {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lp-pipe {
+  list-style: none;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 2.5rem 0 0;
+  padding: 0;
 }
-
-.lp-steps-card > div {
-  padding: 28px 22px;
-  border-right: 1px solid var(--vp-c-divider);
-  border-bottom: 1px solid var(--vp-c-divider);
+.lp-pipe li {
+  padding: 1.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-border);
+  background: transparent;
 }
-
-.lp-steps-card > div:nth-child(2n) {
-  border-right: none;
-}
-
-.lp-steps-card > div:nth-child(n + 3) {
-  border-bottom: none;
-}
-
-.lp-steps-card span {
+.lp-pipe span {
   display: block;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.65rem;
   font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--oc-accent);
 }
-
-.lp-steps-card strong {
-  display: block;
+.lp-pipe strong {
   font-family: var(--font-display);
   font-size: 1.15rem;
-  margin-bottom: 0.45rem;
   color: var(--vp-c-text-1);
 }
 
-.lp-steps-card em {
-  font-style: normal;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-3);
+.lp-more {
+  display: inline-block;
+  margin-top: 1.75rem;
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: 0.95rem;
+  color: var(--vp-c-text-2) !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid var(--vp-c-border);
+  padding-bottom: 2px;
+}
+.lp-more:hover {
+  color: var(--oc-accent-hover) !important;
+  border-bottom-color: var(--oc-accent);
 }
 
-.lp-setup {
-  margin-bottom: 120px;
+.lp-local {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 56px;
+  align-items: center;
+  margin-bottom: 112px;
+  padding: 40px 0;
+  border-top: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
 }
 
-.lp-setup__list {
+.lp-local__list {
+  margin: 0;
+  padding: 0;
+}
+.lp-local__list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+.lp-local__list > div:last-child {
+  border-bottom: none;
+}
+.lp-local__list dt {
+  font-size: 0.98rem;
+  color: var(--vp-c-text-1);
+}
+.lp-local__list dd {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--oc-accent-hover);
+}
+
+.lp-start {
+  margin-bottom: 112px;
+}
+.lp-start ol {
   list-style: none;
-  margin: 2.5rem 0 0;
+  margin: 2.25rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-  counter-reset: setup;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  counter-reset: s;
 }
-
-.lp-setup__list li {
-  padding: 1.75rem 1.4rem;
-  border-radius: 14px;
-  border: 1px solid var(--vp-c-border);
-  background: color-mix(in srgb, var(--oc-card) 70%, transparent);
-  counter-increment: setup;
+.lp-start li {
+  counter-increment: s;
+  padding-top: 0.25rem;
 }
-
-.lp-setup__list li::before {
-  content: counter(setup, decimal-leading-zero);
+.lp-start li::before {
+  content: counter(s, decimal-leading-zero);
   display: block;
   margin-bottom: 1rem;
   font-family: var(--font-display);
   font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--oc-accent);
 }
-
-.lp-setup__list strong {
+.lp-start strong {
   display: block;
   font-family: var(--font-display);
   font-size: 1.1rem;
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.5rem;
   color: var(--vp-c-text-1);
 }
-
-.lp-setup__list p {
+.lp-start p {
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.65;
@@ -706,121 +774,110 @@ const faqs = [
 }
 
 .lp-examples {
-  margin-bottom: 120px;
+  margin-bottom: 112px;
 }
-
 .lp-examples__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 2.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 2.25rem;
 }
-
 .lp-examples__grid article {
-  padding: 1.6rem 1.4rem;
-  border-radius: 14px;
+  padding: 1.5rem 1.35rem;
+  border-radius: 12px;
   border: 1px solid var(--vp-c-border);
-  background: color-mix(in srgb, var(--oc-card) 65%, transparent);
+  background: transparent;
 }
-
 .lp-examples__grid span {
-  display: inline-block;
-  margin-bottom: 1rem;
+  display: block;
+  margin-bottom: 0.85rem;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--oc-accent-hover);
 }
-
-.lp-examples__grid q {
-  display: block;
-  quotes: "“" "”";
+.lp-examples__grid p {
+  margin: 0;
   font-size: 1.02rem;
-  line-height: 1.65;
+  line-height: 1.6;
   color: var(--vp-c-text-1);
 }
 
 .lp-faq {
-  margin-bottom: 100px;
   max-width: 640px;
+  margin: 0 auto 96px;
 }
-
 .lp-faq__list {
-  margin-top: 2rem;
+  margin-top: 1.75rem;
   border-top: 1px solid var(--vp-c-divider);
 }
-
-.lp-faq__item {
+.lp-faq details {
   border-bottom: 1px solid var(--vp-c-divider);
 }
-
-.lp-faq__item summary {
+.lp-faq summary {
   cursor: pointer;
   list-style: none;
-  padding: 1.35rem 0;
+  padding: 1.25rem 0;
   font-family: var(--font-display);
-  font-size: 1.08rem;
+  font-size: 1.05rem;
   font-weight: 650;
   color: var(--vp-c-text-1);
 }
-
-.lp-faq__item summary::-webkit-details-marker {
+.lp-faq summary::-webkit-details-marker {
   display: none;
 }
-
-.lp-faq__item p {
-  margin: 0 0 1.35rem;
-  font-size: 1rem;
+.lp-faq details p {
+  margin: 0 0 1.25rem;
+  font-size: 0.98rem;
   line-height: 1.75;
   color: var(--vp-c-text-2);
 }
 
 .lp-finale {
-  padding: 64px 0 8px;
+  text-align: center;
+  padding-top: 56px;
   border-top: 1px solid var(--vp-c-divider);
 }
-
 .lp-finale .lp-body {
-  margin-bottom: 0.25rem;
+  margin-left: auto;
+  margin-right: auto;
 }
-
 .lp-finale .lp-actions {
-  justify-content: flex-start;
+  margin-top: 1.75rem;
 }
 
 @media (max-width: 960px) {
-  .lp-feature,
-  .lp-feature--rev .lp-feature__copy,
-  .lp-feature--rev .lp-steps-card,
-  .lp-setup__list,
+  .lp-story,
+  .lp-local,
+  .lp-pipe,
+  .lp-start ol,
   .lp-examples__grid {
     grid-template-columns: 1fr;
   }
 
-  .lp-feature--rev .lp-feature__copy,
-  .lp-feature--rev .lp-steps-card {
-    order: initial;
+  .lp-stage__grid {
+    grid-template-columns: 1fr;
   }
 
-  .lp-hero {
-    gap: 36px;
-    padding: 48px 0 48px;
+  .lp-stage__nav,
+  .lp-stage__rail {
+    display: none;
   }
 
-  .lp-hero__copy {
+  .lp-roles span {
     text-align: left;
-    align-items: flex-start;
-    max-width: none;
   }
 
-  .lp-actions,
-  .lp-chips {
-    justify-content: flex-start;
+  .lp-roles li {
+    flex-direction: column;
+    gap: 4px;
   }
 
   .lp-case,
-  .lp-feature,
-  .lp-setup,
+  .lp-story,
+  .lp-pipeline,
+  .lp-local,
+  .lp-start,
   .lp-examples {
     margin-bottom: 80px;
   }
@@ -828,40 +885,45 @@ const faqs = [
 
 @media (max-width: 640px) {
   .lp {
-    padding: 0 20px 88px;
+    padding: 0 18px 96px;
   }
-
-  .lp-demo__body {
-    grid-template-columns: 1fr;
+  .lp-hero {
+    padding-top: 56px;
+    align-items: flex-start;
+    text-align: left;
   }
-
-  .lp-demo__side {
-    display: flex;
-    gap: 6px;
-    border-right: none;
-    border-bottom: 1px solid var(--vp-c-divider);
-    overflow-x: auto;
+  .lp-actions {
+    justify-content: flex-start;
   }
-
-  .lp-demo__side b,
-  .lp-demo__side i {
-    white-space: nowrap;
-    margin: 0;
+  .lp-trust {
+    justify-content: flex-start;
+  }
+  .lp-case,
+  .lp-pipeline,
+  .lp-finale {
+    text-align: left;
+  }
+  .lp-case .lp-body,
+  .lp-pipeline .lp-body,
+  .lp-finale .lp-body {
+    margin-left: 0;
+  }
+  .lp-finale .lp-actions {
+    justify-content: flex-start;
   }
 }
 
-:global(html:not(.dark)) .lp-title span {
-  background: linear-gradient(105deg, #0f1218, #e11d48 55%, #0d9488);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-:global(html:not(.dark)) .lp-demo,
-:global(html:not(.dark)) .lp-panel,
-:global(html:not(.dark)) .lp-steps-card,
-:global(html:not(.dark)) .lp-setup__list li,
-:global(html:not(.dark)) .lp-examples__grid article {
+:global(html:not(.dark)) .lp-stage__frame {
   background: #fff;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.08);
+}
+:global(html:not(.dark)) .lp-stage__bar,
+:global(html:not(.dark)) .lp-stage__nav,
+:global(html:not(.dark)) .lp-stage__chat,
+:global(html:not(.dark)) .lp-stage__rail {
+  background: #f8f9fb;
+}
+:global(html:not(.dark)) .lp-stage__chat {
+  background: #fff;
 }
 </style>

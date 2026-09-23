@@ -276,3 +276,16 @@ body {
 .VPDoc:not(.has-sidebar) .vp-doc > div {
   margin: 0 !important;
 }
+
+/* 落地页：弱化文档壳（搜索），更接近产品站 */
+html.is-landing .VPNavBarSearch {
+  display: none !important;
+}
+
+html.is-landing .VPNavBar .divider {
+  opacity: 0.35;
+}
+
+html.is-landing .VPContent {
+  padding-top: 0 !important;
+}

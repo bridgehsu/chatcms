@@ -51,10 +51,9 @@ export default defineConfig({
     logo: { src: "/logo.svg", alt: "ChatCMS" },
     siteTitle: "ChatCMS",
     nav: [
-      { text: "开始", link: "/guide/getting-started" },
-      { text: "指南", link: "/guide/overview" },
+      { text: "快速开始", link: "/guide/getting-started" },
+      { text: "产品能力", link: "/guide/overview" },
       { text: "概念", link: "/concepts/agent-loop" },
-      { text: "功能", link: "/features/video" },
       {
         text: "GitHub",
         link: "https://github.com/bridgehsu/chatcms",
