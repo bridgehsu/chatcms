@@ -1,7 +1,7 @@
 import { defineConfig } from "vitepress";
 
 /**
- * 本地默认 `/`（http://localhost:5173/）。
+ * 本地默认 `/`（http://localhost:6173/）。
  * 自定义域名 chatcms.org：CI 使用 DOCS_BASE=/
  * 项目站回退：DOCS_BASE=/chatcms/
  */

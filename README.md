@@ -5,7 +5,7 @@ Tauri + React 桌面 Agent。侧栏「媒体采集 → 采集任务」通过 HTT
 ## 文档
 
 - 正式地址：[https://chatcms.org/](https://chatcms.org/)
-- 本地预览：仓库根目录 `pnpm docs:dev` → http://localhost:5173/  
+- 本地预览：仓库根目录 `pnpm docs:dev` → http://localhost:6173/  
   （不要在 `docs/` 里跑 `pnpm run dev`，那是桌面应用）
 - 流程图源：[`docs/drawio/`](./docs/drawio/)
 

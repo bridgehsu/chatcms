@@ -41,7 +41,7 @@ uv run uvicorn api.main:app --port 8080 --reload
 pnpm docs:dev
 ```
 
-浏览器打开 [http://localhost:5173/](http://localhost:5173/)。
+浏览器打开 [http://localhost:6173/](http://localhost:6173/)。
 
 ```bash
 pnpm docs:build

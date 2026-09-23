@@ -9,7 +9,7 @@ cd /path/to/chatcms
 pnpm docs:dev
 ```
 
-浏览器打开 http://localhost:5173/
+浏览器打开 http://localhost:6173/
 
 > 不要在 `docs/` 里执行 `pnpm run dev`——那会启动**桌面应用**的 Vite（15420），不是文档站。
 
