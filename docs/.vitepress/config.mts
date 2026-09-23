@@ -24,6 +24,13 @@ export default defineConfig({
   head: [
     ["link", { rel: "icon", href: `${base}favicon.svg` }],
     ["script", {}, githubIoRedirect],
+    [
+      "link",
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap",
+      },
+    ],
   ],
 
   markdown: {
