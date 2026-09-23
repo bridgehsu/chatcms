@@ -12,7 +12,7 @@ const githubIoRedirect = `(function(){var h=location.hostname;if(h!=="bridgehsu.
 
 export default defineConfig({
   title: "ChatCMS",
-  description: "开源桌面内容 Agent：本地优先，采集·写作·生图生视频·发布一体",
+  description: "开源新媒体种草 Agent：本地优先，采集·写作·生图生视频·多平台发布一体",
   lang: "zh-CN",
   base,
   cleanUrls: true,
@@ -83,7 +83,7 @@ export default defineConfig({
       { icon: "github", link: "https://github.com/bridgehsu/chatcms" },
     ],
     footer: {
-      message: "开源桌面内容 Agent · 本地优先 · 可私有化",
+      message: "开源新媒体种草 Agent · 本地优先 · 可私有化",
       copyright: "Copyright © ChatCMS contributors",
     },
     search: { provider: "local" },
