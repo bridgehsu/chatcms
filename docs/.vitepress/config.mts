@@ -24,6 +24,15 @@ export default defineConfig({
   head: [
     ["link", { rel: "icon", href: `${base}favicon.svg` }],
     ["script", {}, githubIoRedirect],
+    ["link", { rel: "preconnect", href: "https://fonts.googleapis.com" }],
+    ["link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }],
+    [
+      "link",
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Figtree:wght@600;700&display=swap",
+      },
+    ],
   ],
 
   markdown: {
@@ -47,6 +56,7 @@ export default defineConfig({
       { text: "快速开始", link: "/guide/getting-started" },
       { text: "产品能力", link: "/guide/overview" },
       { text: "概念", link: "/concepts/agent-loop" },
+      { text: "常见问题", link: "/#faq" },
       {
         text: "GitHub",
         link: "https://github.com/bridgehsu/chatcms",

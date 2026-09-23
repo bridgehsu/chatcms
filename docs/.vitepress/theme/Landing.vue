@@ -52,6 +52,25 @@ const platformGroups = [
 
 const platformLogo = (id: string) => withBase(`/platforms/${id}.svg`);
 
+/** 浏览器插件侧栏三态截图 */
+const extensionShots = [
+  {
+    src: "ext1.png",
+    title: "对话",
+    desc: "关联当前网页，带上下文提问",
+  },
+  {
+    src: "ext2.png",
+    title: "导航",
+    desc: "常用工具与平台入口一屏直达",
+  },
+  {
+    src: "ext3.png",
+    title: "发布",
+    desc: "选平台填表，不自动点发布",
+  },
+];
+
 onMounted(() => {
   document.documentElement.classList.add("is-landing");
 });
@@ -77,7 +96,7 @@ onUnmounted(() => {
       <div class="lp-actions">
         <div class="lp-actions__btns">
           <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')"
-            >免费开始<span class="lp-btn__arrow" aria-hidden="true">→</span></a
+            >开始使用<span class="lp-btn__arrow" aria-hidden="true">→</span></a
           >
           <a
             class="lp-btn lp-btn--ghost"
@@ -93,61 +112,22 @@ onUnmounted(() => {
       <aside class="lp-stage" aria-label="产品示意">
         <div class="lp-stage__glow" aria-hidden="true" />
         <div class="lp-stage__frame">
-          <div class="lp-stage__bar">
-            <span /><span /><span />
-            <em>ChatCMS</em>
-          </div>
-          <div class="lp-stage__grid">
-            <nav class="lp-stage__nav">
-              <strong>工作台</strong>
-              <i class="is-on">智能会话</i>
-              <i>内容笔记</i>
-              <i>图片工厂</i>
-              <i>视频制片</i>
-              <i>媒体采集</i>
-              <strong>配置</strong>
-              <i>代理档案</i>
-              <i>技能 · MCP</i>
-            </nav>
-            <div class="lp-stage__chat">
-              <header>
-                <b>种草主脑</b>
-                <small>Agent · 文案已绑定</small>
-              </header>
-              <div class="lp-stage__msgs">
-                <p class="u">帮我做一篇小红书种草：春季轻薄防晒，语气真实</p>
-                <p class="a">
-                  已规划：竞品洞察 → 大纲 → 成稿 → 封面 brief
-                  <span class="lp-pulse">进行中</span>
-                </p>
-                <div class="card">
-                  <b>春日轻薄防晒｜真的不假白</b>
-                  <span>通勤一周实测 · 成膜快 · 不搓泥</span>
-                </div>
-              </div>
-              <footer>描述你的种草任务…<i class="lp-caret" aria-hidden="true" /></footer>
-            </div>
-            <aside class="lp-stage__rail">
-              <b>本轮</b>
-              <ul>
-                <li class="done"><em>洞察</em><i>完成</i></li>
-                <li class="done"><em>大纲</em><i>完成</i></li>
-                <li class="on"><em>成稿</em><i>进行中</i></li>
-                <li><em>发布</em><i>待定</i></li>
-              </ul>
-            </aside>
-          </div>
+          <img
+            class="lp-stage__shot"
+            :src="withBase('/hero-app.png')"
+            alt="ChatCMS 桌面端：智能会话工作台"
+            width="1792"
+            height="1090"
+            loading="eager"
+            decoding="async"
+          />
         </div>
       </aside>
     </header>
 
-    <!-- 信任条：结果向，非技术标签云 -->
-    <section class="lp-trust">
-      <p>开源免费</p>
-      <p>本地优先</p>
-      <p>可私有化</p>
-      <p>多 Agent 协作</p>
-      <p>采集到发布一体</p>
+    <!-- 信任条：一句即可 -->
+    <section class="lp-trust" aria-label="产品特质">
+      <p>开源 · 本地优先 · 可私有化</p>
     </section>
 
     <!-- 媒体平台覆盖：按场景分组 -->
@@ -170,6 +150,33 @@ onUnmounted(() => {
             </li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <!-- 浏览器插件：对话 / 导航 / 发布 -->
+    <section class="lp-ext" aria-label="浏览器插件">
+      <p class="lp-kicker">浏览器插件</p>
+      <h2 class="lp-h2">对话 · 导航 · 一键填表</h2>
+      <p class="lp-body">
+        桌面端产出内容，侧栏在创作者页完成对话、导航与填表——和本机工作台互补，数据仍走你的发布桥。
+      </p>
+      <div class="lp-ext__grid">
+        <figure v-for="shot in extensionShots" :key="shot.src" class="lp-ext__card">
+          <div class="lp-ext__frame">
+            <img
+              :src="withBase(`/extension/${shot.src}`)"
+              :alt="`ChatCMS 插件 · ${shot.title}`"
+              width="436"
+              height="970"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <figcaption>
+            <strong>{{ shot.title }}</strong>
+            <span>{{ shot.desc }}</span>
+          </figcaption>
+        </figure>
       </div>
     </section>
 
@@ -265,7 +272,7 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <section class="lp-faq">
+    <section id="faq" class="lp-faq">
       <p class="lp-kicker">常见问题</p>
       <h2 class="lp-h2">还有这些疑问</h2>
       <div class="lp-faq__list">
@@ -277,11 +284,11 @@ onUnmounted(() => {
     </section>
 
     <section class="lp-finale">
-      <h2 class="lp-h2">下一场种草，交给 Agent</h2>
-      <p class="lp-body">开源、本机、可扩展。你保留对数据与节奏的最终决定权。</p>
+      <h2 class="lp-h2">把种草生产，留在自己的机器上</h2>
+      <p class="lp-body">开源、本机、可扩展。你决定节奏与数据边界。</p>
       <div class="lp-actions">
         <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')"
-          >免费开始<span class="lp-btn__arrow" aria-hidden="true">→</span></a
+          >开始使用<span class="lp-btn__arrow" aria-hidden="true">→</span></a
         >
         <a class="lp-btn lp-btn--ghost" :href="withBase('/guide/overview')">产品能力</a>
       </div>
@@ -301,13 +308,13 @@ onUnmounted(() => {
 
 .lp-glow {
   position: absolute;
-  inset: -8% -18% auto;
-  height: 70vh;
+  inset: -6% -16% auto;
+  height: 62vh;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 46% 38% at 50% 8%, rgba(255, 92, 92, 0.18), transparent 70%),
-    radial-gradient(ellipse 28% 24% at 82% 18%, rgba(20, 184, 166, 0.07), transparent 68%);
+    radial-gradient(ellipse 42% 36% at 50% 6%, rgba(255, 92, 92, 0.12), transparent 72%),
+    radial-gradient(ellipse 26% 24% at 86% 16%, rgba(20, 184, 166, 0.05), transparent 70%);
 }
 
 /* ——— Hero ——— */
@@ -359,7 +366,7 @@ onUnmounted(() => {
   font-size: clamp(2.3rem, 5vw, 3.45rem);
   font-weight: 700;
   line-height: 1.16;
-  letter-spacing: -0.038em;
+  letter-spacing: -0.042em;
   color: var(--vp-c-text-1);
   text-wrap: balance;
   animation: lp-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
@@ -459,15 +466,15 @@ onUnmounted(() => {
   color: #fff !important;
   background: var(--oc-accent);
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset,
-    0 12px 32px color-mix(in srgb, var(--oc-accent) 38%, transparent);
+    0 1px 0 color-mix(in srgb, #fff 18%, transparent) inset,
+    0 10px 28px color-mix(in srgb, var(--oc-accent) 28%, transparent);
 }
 
 .lp-btn--primary:hover {
   background: var(--oc-accent-hover);
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset,
-    0 16px 36px color-mix(in srgb, var(--oc-accent) 44%, transparent);
+    0 1px 0 color-mix(in srgb, #fff 18%, transparent) inset,
+    0 12px 30px color-mix(in srgb, var(--oc-accent) 34%, transparent);
 }
 
 .lp-btn--ghost {
@@ -492,35 +499,12 @@ onUnmounted(() => {
   }
 }
 
-@keyframes lp-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
-
-@keyframes lp-caret {
-  0%,
-  45% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .lp-brand,
   .lp-title,
   .lp-sub,
   .lp-hero .lp-actions,
-  .lp-stage,
-  .lp-pulse,
-  .lp-caret {
+  .lp-stage {
     animation: none !important;
   }
   .lp-btn:hover,
@@ -529,7 +513,7 @@ onUnmounted(() => {
   }
 }
 
-/* Stage — wide product mock */
+/* Stage — real product screenshot */
 .lp-stage {
   position: relative;
   width: 100%;
@@ -539,273 +523,51 @@ onUnmounted(() => {
 
 .lp-stage__glow {
   position: absolute;
-  inset: 12% -8% -18%;
+  inset: 18% -6% -14%;
   z-index: -1;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 70% 55% at 50% 40%,
-    color-mix(in srgb, var(--oc-accent) 22%, transparent),
-    transparent 70%
+    ellipse 68% 50% at 50% 42%,
+    color-mix(in srgb, var(--oc-accent) 14%, transparent),
+    transparent 72%
   );
-  filter: blur(28px);
+  filter: blur(32px);
 }
 
 .lp-stage__frame {
   position: relative;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, #fff 8%, #1e2028);
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, #fff 7%, #1e2028);
   background: #12151c;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #000 40%, transparent),
-    0 28px 64px rgba(0, 0, 0, 0.5),
-    0 8px 24px rgba(0, 0, 0, 0.35);
+    0 0 0 1px rgba(0, 0, 0, 0.28),
+    0 20px 48px rgba(0, 0, 0, 0.38),
+    0 4px 14px rgba(0, 0, 0, 0.22);
   overflow: hidden;
 }
 
-.lp-stage__bar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 12px 16px;
-  background: #191c24;
-  border-bottom: 1px solid #1e2028;
-}
-
-.lp-stage__bar span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #2e3040;
-}
-.lp-stage__bar span:nth-child(1) {
-  background: #ff5c5c;
-}
-.lp-stage__bar span:nth-child(2) {
-  background: #f59e0b;
-}
-.lp-stage__bar span:nth-child(3) {
-  background: #14b8a6;
-}
-.lp-stage__bar em {
-  margin-left: 10px;
-  font-style: normal;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #d4d4d8;
-}
-
-.lp-stage__grid {
-  display: grid;
-  grid-template-columns: 168px minmax(0, 1fr) 168px;
-  min-height: 380px;
-}
-
-.lp-stage__nav {
-  padding: 16px 12px;
-  border-right: 1px solid #1e2028;
-  background: #0e1015;
-}
-
-.lp-stage__nav strong {
+.lp-stage__shot {
   display: block;
-  margin: 12px 8px 8px;
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #8b8b94;
-}
-.lp-stage__nav strong:first-child {
-  margin-top: 0;
-}
-
-.lp-stage__nav i {
-  display: block;
-  font-style: normal;
-  font-size: 0.84rem;
-  padding: 8px 10px;
-  border-radius: 8px;
-  color: #8b8b94;
-  margin-bottom: 2px;
-}
-.lp-stage__nav i.is-on {
-  color: #fff;
-  background: color-mix(in srgb, #ff5c5c 22%, transparent);
-  box-shadow: inset 2px 0 0 #ff5c5c;
-}
-
-.lp-stage__chat {
-  display: flex;
-  flex-direction: column;
-  min-height: 380px;
-  background: #0e1015;
-}
-
-.lp-stage__chat > header {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid #1e2028;
-}
-.lp-stage__chat > header b {
-  font-size: 0.95rem;
-  color: #f4f4f5;
-}
-.lp-stage__chat > header small {
-  font-size: 0.78rem;
-  color: #8b8b94;
-}
-
-.lp-stage__msgs {
-  flex: 1;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.lp-stage__msgs .u,
-.lp-stage__msgs .a {
-  margin: 0;
-  max-width: 88%;
-  padding: 12px 14px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  line-height: 1.55;
-}
-
-.lp-stage__msgs .u {
-  align-self: flex-end;
-  background: color-mix(in srgb, #ff5c5c 16%, transparent);
-  border: 1px solid color-mix(in srgb, #ff5c5c 30%, transparent);
-  color: #f4f4f5;
-}
-
-.lp-stage__msgs .a {
-  align-self: flex-start;
-  background: #191c24;
-  border: 1px solid #2e3040;
-  color: #d4d4d8;
-}
-
-.lp-stage__msgs .a span {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  background: rgba(20, 184, 166, 0.15);
-  color: #5eead4;
-}
-
-.lp-pulse {
-  animation: lp-pulse 1.8s ease-in-out infinite;
-}
-
-.lp-stage__msgs .card {
-  align-self: flex-start;
-  max-width: 70%;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px dashed #2e3040;
-  background: linear-gradient(160deg, #1a1d26 0%, #161920 100%);
-}
-.lp-stage__msgs .card b {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 0.92rem;
-  color: #f4f4f5;
-}
-.lp-stage__msgs .card span {
-  font-size: 0.8rem;
-  color: #8b8b94;
-}
-
-.lp-stage__chat > footer {
-  display: flex;
-  align-items: center;
-  margin: 0 18px 18px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid #2e3040;
-  background: #191c24;
-  font-size: 0.85rem;
-  color: #8b8b94;
-}
-
-.lp-caret {
-  display: inline-block;
-  width: 1.5px;
-  height: 0.95em;
-  margin-left: 2px;
-  background: #ff8585;
-  vertical-align: -0.12em;
-  animation: lp-caret 1.05s step-end infinite;
-}
-
-.lp-stage__rail {
-  padding: 16px 14px;
-  border-left: 1px solid #1e2028;
-  background: #0e1015;
-}
-.lp-stage__rail > b {
-  display: block;
-  margin-bottom: 12px;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #8b8b94;
-}
-.lp-stage__rail ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.lp-stage__rail li {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid #1e2028;
-  font-size: 0.82rem;
-}
-.lp-stage__rail em {
-  font-style: normal;
-  color: #d4d4d8;
-}
-.lp-stage__rail i {
-  font-style: normal;
-  color: #8b8b94;
-}
-.lp-stage__rail li.done em {
-  color: #a1a1aa;
-}
-.lp-stage__rail li.done i {
-  color: #5eead4;
-}
-.lp-stage__rail li.on em {
-  color: #fff;
-}
-.lp-stage__rail li.on i {
-  color: #ff8585;
+  width: 100%;
+  height: auto;
+  vertical-align: top;
 }
 
 /* Trust */
 .lp-trust {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 10px 32px;
-  margin: 64px 0 48px;
-  padding: 24px 0;
+  margin: 56px 0 48px;
+  padding: 18px 0;
   border-top: 1px solid var(--vp-c-divider);
   border-bottom: 1px solid var(--vp-c-divider);
 }
 .lp-trust p {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--vp-c-text-3);
 }
 
@@ -886,6 +648,78 @@ onUnmounted(() => {
   }
 }
 
+/* Extension — three vertical shots */
+.lp-ext {
+  margin: 0 0 112px;
+  text-align: center;
+}
+
+.lp-ext .lp-body {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lp-ext__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 24px;
+  margin-top: 2.5rem;
+  align-items: start;
+}
+
+.lp-ext__card {
+  margin: 0;
+  text-align: left;
+}
+
+.lp-ext__frame {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, #fff 7%, #1e2028);
+  background: #0e1015;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.28),
+    0 16px 36px rgba(0, 0, 0, 0.32),
+    0 4px 12px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.lp-ext__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.lp-ext__card figcaption {
+  margin-top: 0.85rem;
+  padding: 0 0.1rem;
+}
+
+.lp-ext__card strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--vp-c-text-1);
+}
+
+.lp-ext__card span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--vp-c-text-3);
+}
+
+@media (max-width: 860px) {
+  .lp-ext__grid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 .lp-kicker {
   margin: 0 0 0.85rem;
   font-family: var(--font-display);
@@ -900,7 +734,7 @@ onUnmounted(() => {
   font-family: var(--font-display);
   font-size: clamp(1.65rem, 3vw, 2.35rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   line-height: 1.2;
   color: var(--vp-c-text-1);
 }
@@ -1052,18 +886,25 @@ onUnmounted(() => {
   margin: 2.25rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
   counter-reset: s;
 }
 .lp-start li {
   counter-increment: s;
-  padding-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.45rem 1.35rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-border);
+  background: color-mix(in srgb, var(--vp-c-bg-elv) 55%, transparent);
+  min-height: 100%;
 }
 .lp-start li::before {
   content: counter(s, decimal-leading-zero);
   display: block;
-  margin-bottom: 1rem;
+  margin-bottom: 0.35rem;
   font-family: var(--font-display);
   font-size: 0.78rem;
   font-weight: 700;
@@ -1073,13 +914,14 @@ onUnmounted(() => {
 .lp-start strong {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.08rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   color: var(--vp-c-text-1);
 }
 .lp-start p {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   line-height: 1.65;
   color: var(--vp-c-text-3);
 }
@@ -1117,6 +959,7 @@ onUnmounted(() => {
 .lp-faq {
   max-width: 640px;
   margin: 0 auto 96px;
+  scroll-margin-top: 88px;
 }
 .lp-faq__list {
   margin-top: 1.75rem;
@@ -1161,18 +1004,13 @@ onUnmounted(() => {
   .lp-story,
   .lp-local,
   .lp-pipe,
-  .lp-start ol,
   .lp-examples__grid {
     grid-template-columns: 1fr;
   }
 
-  .lp-stage__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .lp-stage__nav,
-  .lp-stage__rail {
-    display: none;
+  .lp-start ol {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .lp-roles span {
@@ -1189,7 +1027,8 @@ onUnmounted(() => {
   .lp-pipeline,
   .lp-local,
   .lp-start,
-  .lp-examples {
+  .lp-examples,
+  .lp-ext {
     margin-bottom: 80px;
   }
 }
@@ -1207,6 +1046,9 @@ onUnmounted(() => {
   .lp-actions__btns {
     align-items: flex-start;
   }
+  .lp-start ol {
+    grid-template-columns: 1fr;
+  }
   .lp-stage {
     margin-top: 72px;
   }
@@ -1221,12 +1063,14 @@ onUnmounted(() => {
   }
   .lp-case,
   .lp-pipeline,
-  .lp-finale {
+  .lp-finale,
+  .lp-ext {
     text-align: left;
   }
   .lp-case .lp-body,
   .lp-pipeline .lp-body,
-  .lp-finale .lp-body {
+  .lp-finale .lp-body,
+  .lp-ext .lp-body {
     margin-left: 0;
   }
   .lp-finale .lp-actions {
@@ -1234,27 +1078,85 @@ onUnmounted(() => {
   }
 }
 
-:global(html:not(.dark)) .lp-stage__frame {
+/* Light overrides — whole selector must be inside :global(), otherwise Vue scoped
+   compiles `:global(html:not(.dark)) .x` into `html:not(.dark) { … }` and can hide the page. */
+:global(html:not(.dark) .lp-glow) {
+  background:
+    radial-gradient(ellipse 46% 36% at 50% 0%, rgba(225, 29, 72, 0.07), transparent 74%),
+    radial-gradient(ellipse 28% 24% at 88% 16%, rgba(13, 148, 136, 0.04), transparent 70%);
+}
+
+:global(html:not(.dark) .lp-brand) {
   background: #fff;
-  border-color: #e5e7eb;
+  border-color: var(--oc-border);
+  box-shadow: 0 1px 2px rgba(15, 18, 24, 0.04);
+}
+
+:global(html:not(.dark) .lp-btn--primary) {
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.03),
-    0 24px 56px rgba(0, 0, 0, 0.08);
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 8px 22px rgba(225, 29, 72, 0.22);
 }
-:global(html:not(.dark)) .lp-stage__glow {
-  background: radial-gradient(
-    ellipse 70% 55% at 50% 40%,
-    color-mix(in srgb, var(--oc-accent) 14%, transparent),
-    transparent 70%
-  );
-}
-:global(html:not(.dark)) .lp-stage__bar,
-:global(html:not(.dark)) .lp-stage__nav,
-:global(html:not(.dark)) .lp-stage__chat,
-:global(html:not(.dark)) .lp-stage__rail {
-  background: #f8f9fb;
-}
-:global(html:not(.dark)) .lp-stage__chat {
+
+:global(html:not(.dark) .lp-btn--ghost) {
   background: #fff;
+  border-color: var(--oc-border-strong);
+  box-shadow: 0 1px 2px rgba(15, 18, 24, 0.03);
+}
+
+:global(html:not(.dark) .lp-btn--ghost:hover) {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--oc-accent) 35%, var(--oc-border-strong));
+}
+
+:global(html:not(.dark) .lp-stage__frame) {
+  background: #fff;
+  border-color: rgba(15, 18, 24, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(15, 18, 24, 0.03),
+    0 22px 48px rgba(15, 18, 24, 0.1),
+    0 6px 16px rgba(15, 18, 24, 0.05);
+}
+
+:global(html:not(.dark) .lp-stage__glow) {
+  display: none;
+}
+
+:global(html:not(.dark) .lp-platforms__list li) {
+  background: #fff;
+  border-color: var(--oc-border);
+  box-shadow: 0 1px 2px rgba(15, 18, 24, 0.03);
+  color: var(--vp-c-text-1);
+}
+
+:global(html:not(.dark) .lp-ext__frame) {
+  background: #fff;
+  border-color: rgba(15, 18, 24, 0.07);
+  box-shadow:
+    0 0 0 1px rgba(15, 18, 24, 0.025),
+    0 12px 28px rgba(15, 18, 24, 0.07);
+}
+
+:global(html:not(.dark) .lp-start li) {
+  background: #fff;
+  border-color: var(--oc-border);
+  box-shadow: 0 1px 2px rgba(15, 18, 24, 0.03);
+}
+
+:global(html:not(.dark) .lp-pipe li),
+:global(html:not(.dark) .lp-examples__grid article) {
+  background: #fff;
+  border-color: var(--oc-border);
+  box-shadow: 0 1px 2px rgba(15, 18, 24, 0.03);
+}
+
+:global(html:not(.dark) .lp-trust) {
+  border-color: var(--oc-border);
+}
+
+:global(html:not(.dark) .lp-faq details),
+:global(html:not(.dark) .lp-faq__list),
+:global(html:not(.dark) .lp-finale) {
+  border-color: var(--oc-border);
 }
 </style>

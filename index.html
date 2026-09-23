@@ -1,21 +1,20 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="refresh" content="0;url=https://chatcms.org/" />
-    <title>ChatCMS Docs</title>
-    <script>
-      (function () {
-        var dest = "https://chatcms.org/";
-        if (location.hostname === "bridgehsu.github.io") {
-          var rest = location.pathname.replace(/^\/chatcms\/?/, "/") || "/";
-          dest = "https://chatcms.org" + rest + location.search + location.hash;
-        }
-        location.replace(dest);
-      })();
-    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <title>ChatCMS</title>
   </head>
+
   <body>
-    <p>文档站已迁移至 <a href="https://chatcms.org/">https://chatcms.org/</a></p>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

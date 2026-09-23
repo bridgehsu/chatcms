@@ -15,10 +15,10 @@
   --oc-accent-hover: #ff7070;
   --oc-accent-subtle: rgba(255, 92, 92, 0.1);
   --oc-accent-2: #14b8a6;
-  /* 系统中文字体栈：零网字体积，Mac/Win 观感更干净 */
+  /* 标题：轻量 Figtree；正文：系统中文 */
   --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei",
     "Noto Sans SC", "Segoe UI", system-ui, sans-serif;
-  --font-display: var(--font-sans);
+  --font-display: "Figtree", var(--font-sans);
   --font-body: var(--font-sans);
 
   --vp-font-family-base: var(--font-body);
@@ -119,21 +119,21 @@
 }
 
 html:not(.dark) {
-  --oc-bg: #f3f4f6;
+  --oc-bg: #f7f8fa;
   --oc-bg-elevated: #ffffff;
-  --oc-bg-hover: #eef0f3;
+  --oc-bg-hover: #eef1f5;
   --oc-card: #ffffff;
-  --oc-text: #1c1f26;
-  --oc-muted: #6b7280;
-  --oc-border: #e5e7eb;
-  --oc-border-strong: #d1d5db;
+  --oc-text: #1a1d24;
+  --oc-muted: #667085;
+  --oc-border: #e8eaef;
+  --oc-border-strong: #d8dde6;
   --oc-accent: #e11d48;
   --oc-accent-hover: #be123c;
-  --oc-accent-subtle: rgba(225, 29, 72, 0.1);
+  --oc-accent-subtle: rgba(225, 29, 72, 0.08);
   --oc-accent-2: #0d9488;
 
   --vp-c-bg: var(--oc-bg);
-  --vp-c-bg-alt: #ebecef;
+  --vp-c-bg-alt: #eef0f4;
   --vp-c-bg-elv: var(--oc-bg-elevated);
   --vp-c-bg-soft: var(--oc-bg-hover);
   --vp-c-border: var(--oc-border-strong);
@@ -152,7 +152,7 @@ html:not(.dark) {
   --vp-button-alt-text: var(--oc-text);
   --vp-button-alt-border: var(--oc-border-strong);
   --vp-code-block-bg: #f8fafc;
-  --vp-nav-bg-color: color-mix(in srgb, #ffffff 86%, transparent);
+  --vp-nav-bg-color: color-mix(in srgb, #ffffff 88%, transparent);
   --vp-sidebar-bg-color: var(--oc-bg);
   --vp-home-hero-name-background: linear-gradient(
     105deg,
@@ -162,11 +162,12 @@ html:not(.dark) {
   );
   --vp-home-hero-image-background-image: radial-gradient(
     closest-side,
-    rgba(225, 29, 72, 0.16),
+    rgba(225, 29, 72, 0.12),
     transparent 72%
   );
-  --vp-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --vp-shadow-2: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --vp-shadow-1: 0 1px 2px rgba(15, 18, 24, 0.04);
+  --vp-shadow-2: 0 12px 28px rgba(15, 18, 24, 0.07);
+  --vp-shadow-3: 0 24px 48px rgba(15, 18, 24, 0.09);
   color-scheme: light;
 }
 
