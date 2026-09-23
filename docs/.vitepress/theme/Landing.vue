@@ -45,12 +45,19 @@ const faqs = [
           >星标 GitHub</a>
         </div>
         <p class="lp-note">开源免费 · 本地优先 · 可私有化</p>
+        <ul class="lp-chips">
+          <li>智能会话</li>
+          <li>多 Agent</li>
+          <li>媒体工厂</li>
+          <li>采集发布</li>
+        </ul>
       </div>
 
       <aside class="lp-demo" aria-label="产品示意">
         <div class="lp-demo__chrome">
           <span /><span /><span />
-          <em>ChatCMS · Agent</em>
+          <em>chatcms.org</em>
+          <b>ChatCMS · Agent</b>
         </div>
         <div class="lp-demo__body">
           <div class="lp-demo__side">
@@ -212,12 +219,20 @@ const faqs = [
 }
 
 .lp-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 48px;
+  padding: 72px 0 56px;
+}
+
+.lp-hero__copy {
+  max-width: 40rem;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 80px 0 72px;
-  min-height: min(84vh, 720px);
 }
 
 .lp-eyebrow {
@@ -231,7 +246,7 @@ const faqs = [
 .lp-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 5.4vw, 3.85rem);
+  font-size: clamp(2.5rem, 5.6vw, 4rem);
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.04em;
@@ -246,8 +261,8 @@ const faqs = [
 }
 
 .lp-sub {
-  margin: 1.6rem 0 0;
-  max-width: 30em;
+  margin: 1.5rem 0 0;
+  max-width: 32em;
   font-size: 1.12rem;
   line-height: 1.8;
   color: var(--vp-c-text-2);
@@ -256,8 +271,9 @@ const faqs = [
 .lp-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 14px;
-  margin-top: 2.25rem;
+  margin-top: 2rem;
 }
 
 .lp-btn {
@@ -295,16 +311,38 @@ const faqs = [
 }
 
 .lp-note {
-  margin: 1.15rem 0 0;
+  margin: 1.1rem 0 0;
   font-size: 0.9rem;
   color: var(--vp-c-text-3);
 }
 
+.lp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+}
+
+.lp-chips li {
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-border);
+  font-size: 0.84rem;
+  color: var(--vp-c-text-2);
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .lp-demo {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
   border-radius: 16px;
   border: 1px solid var(--vp-c-border);
   background: color-mix(in srgb, var(--oc-card) 88%, transparent);
-  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 32px 72px rgba(0, 0, 0, 0.38);
   overflow: hidden;
 }
 
@@ -335,16 +373,23 @@ const faqs = [
 }
 
 .lp-demo__chrome em {
-  margin-left: 8px;
+  margin-left: 10px;
   font-style: normal;
   font-size: 0.78rem;
   color: var(--vp-c-text-3);
 }
 
+.lp-demo__chrome b {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+}
+
 .lp-demo__body {
   display: grid;
-  grid-template-columns: 118px 1fr;
-  min-height: 320px;
+  grid-template-columns: 140px 1fr;
+  min-height: 340px;
 }
 
 .lp-demo__side {
@@ -739,8 +784,11 @@ const faqs = [
   margin-bottom: 0.25rem;
 }
 
+.lp-finale .lp-actions {
+  justify-content: flex-start;
+}
+
 @media (max-width: 960px) {
-  .lp-hero,
   .lp-feature,
   .lp-feature--rev .lp-feature__copy,
   .lp-feature--rev .lp-steps-card,
@@ -755,9 +803,19 @@ const faqs = [
   }
 
   .lp-hero {
-    min-height: auto;
-    gap: 40px;
-    padding: 48px 0 56px;
+    gap: 36px;
+    padding: 48px 0 48px;
+  }
+
+  .lp-hero__copy {
+    text-align: left;
+    align-items: flex-start;
+    max-width: none;
+  }
+
+  .lp-actions,
+  .lp-chips {
+    justify-content: flex-start;
   }
 
   .lp-case,
