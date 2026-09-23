@@ -33,27 +33,34 @@ onUnmounted(() => {
   <div class="lp">
     <div class="lp-glow" aria-hidden="true" />
 
-    <!-- Hero：只留主张 + 主次 CTA + 大示意 -->
+    <!-- Hero：主张 + 主次 CTA + 大示意 -->
     <header class="lp-hero">
-      <p class="lp-brand">ChatCMS</p>
+      <p class="lp-brand"><span>ChatCMS</span> 开源 · 本地</p>
       <h1 class="lp-title">
-        本地新媒体种草 Agent<br />
-        <em>从灵感到发布，一条链路</em>
+        新媒体智能体工作台
+        <em>从灵感到发布，一条链路自动完成</em>
       </h1>
       <p class="lp-sub">
-        开源桌面端。选题、文案、成片、采集与多平台发布——少切换工具，数据留在本机。
+        开源桌面端。选题、文案、成片、采集与多平台发布一站完成，少切换工具，数据留在本机。
       </p>
       <div class="lp-actions">
-        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">免费开始</a>
-        <a
-          class="lp-btn lp-btn--ghost"
-          href="https://github.com/bridgehsu/chatcms"
-          target="_blank"
-          rel="noreferrer"
-        >查看源码</a>
+        <div class="lp-actions__btns">
+          <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')"
+            >免费开始<span class="lp-btn__arrow" aria-hidden="true">→</span></a
+          >
+          <a
+            class="lp-btn lp-btn--ghost"
+            href="https://github.com/bridgehsu/chatcms"
+            target="_blank"
+            rel="noreferrer"
+            >查看源码</a
+          >
+        </div>
+        <p class="lp-actions__note">本机运行 · 数据不出机器</p>
       </div>
 
       <aside class="lp-stage" aria-label="产品示意">
+        <div class="lp-stage__glow" aria-hidden="true" />
         <div class="lp-stage__frame">
           <div class="lp-stage__bar">
             <span /><span /><span />
@@ -80,20 +87,20 @@ onUnmounted(() => {
                 <p class="u">帮我做一篇小红书种草：春季轻薄防晒，语气真实</p>
                 <p class="a">
                   已规划：竞品洞察 → 大纲 → 成稿 → 封面 brief
-                  <span>进行中</span>
+                  <span class="lp-pulse">进行中</span>
                 </p>
                 <div class="card">
                   <b>春日轻薄防晒｜真的不假白</b>
                   <span>通勤一周实测 · 成膜快 · 不搓泥</span>
                 </div>
               </div>
-              <footer>描述你的种草任务…</footer>
+              <footer>描述你的种草任务…<i class="lp-caret" aria-hidden="true" /></footer>
             </div>
             <aside class="lp-stage__rail">
               <b>本轮</b>
               <ul>
-                <li><em>洞察</em><i>完成</i></li>
-                <li><em>大纲</em><i>完成</i></li>
+                <li class="done"><em>洞察</em><i>完成</i></li>
+                <li class="done"><em>大纲</em><i>完成</i></li>
                 <li class="on"><em>成稿</em><i>进行中</i></li>
                 <li><em>发布</em><i>待定</i></li>
               </ul>
@@ -219,7 +226,9 @@ onUnmounted(() => {
       <h2 class="lp-h2">下一场种草，交给 Agent</h2>
       <p class="lp-body">开源、本机、可扩展。你保留对数据与节奏的最终决定权。</p>
       <div class="lp-actions">
-        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')">免费开始</a>
+        <a class="lp-btn lp-btn--primary" :href="withBase('/guide/getting-started')"
+          >免费开始<span class="lp-btn__arrow" aria-hidden="true">→</span></a
+        >
         <a class="lp-btn lp-btn--ghost" :href="withBase('/guide/overview')">产品能力</a>
       </div>
     </section>
@@ -238,13 +247,13 @@ onUnmounted(() => {
 
 .lp-glow {
   position: absolute;
-  inset: -10% -20% auto;
-  height: 65vh;
+  inset: -8% -18% auto;
+  height: 70vh;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 50% 42% at 50% 0%, rgba(255, 92, 92, 0.16), transparent 72%),
-    radial-gradient(ellipse 36% 30% at 90% 20%, rgba(20, 184, 166, 0.08), transparent 70%);
+    radial-gradient(ellipse 46% 38% at 50% 8%, rgba(255, 92, 92, 0.18), transparent 70%),
+    radial-gradient(ellipse 28% 24% at 82% 18%, rgba(20, 184, 166, 0.07), transparent 68%);
 }
 
 /* ——— Hero ——— */
@@ -253,101 +262,249 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 88px 0 32px;
+  padding: clamp(148px, 20vh, 220px) 0 40px;
   gap: 0;
 }
 
 .lp-brand {
-  margin: 0 0 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 1.75rem;
+  padding: 0.32rem 0.9rem 0.32rem 0.38rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--vp-c-border) 85%, transparent);
+  background: color-mix(in srgb, var(--vp-c-bg-elv) 55%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--vp-c-text-3);
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 4%, transparent) inset;
+  animation: lp-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lp-brand span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: var(--oc-accent-subtle);
+  color: var(--oc-accent-hover);
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--vp-c-text-1);
+  letter-spacing: -0.01em;
 }
 
 .lp-title {
   margin: 0;
-  max-width: 14em;
+  max-width: 15em;
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 5.5vw, 3.75rem);
+  font-size: clamp(2.3rem, 5vw, 3.45rem);
   font-weight: 700;
-  line-height: 1.12;
-  letter-spacing: -0.04em;
+  line-height: 1.16;
+  letter-spacing: -0.038em;
   color: var(--vp-c-text-1);
+  text-wrap: balance;
+  animation: lp-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
 }
 
 .lp-title em {
+  display: block;
+  margin-top: 0.62rem;
   font-style: normal;
-  color: var(--vp-c-text-2);
-  font-weight: 600;
+  font-size: 0.68em;
+  font-weight: 650;
+  letter-spacing: -0.028em;
+  line-height: 1.35;
+  color: var(--oc-accent-hover);
+  text-wrap: balance;
 }
 
 .lp-sub {
-  margin: 1.5rem 0 0;
-  max-width: 28em;
-  font-size: 1.1rem;
-  line-height: 1.75;
+  margin: 1.55rem 0 0;
+  max-width: 30em;
+  font-size: 1.05rem;
+  line-height: 1.82;
   color: var(--vp-c-text-3);
+  text-wrap: pretty;
+  animation: lp-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
 }
 
 .lp-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 2rem;
+}
+
+.lp-hero .lp-actions {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 2.2rem;
+  animation: lp-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+.lp-actions__btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.lp-actions__note {
+  margin: 0;
+  font-size: 0.86rem;
+  letter-spacing: 0.01em;
+  color: var(--vp-c-text-3);
+  opacity: 0.88;
 }
 
 .lp-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
   min-height: 48px;
-  padding: 0 1.5rem;
+  padding: 0 1.45rem;
   border-radius: 10px;
   font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-size: 0.97rem;
   font-weight: 650;
   text-decoration: none !important;
-  transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .lp-btn:hover {
   transform: translateY(-1px);
 }
 
+.lp-btn:focus-visible {
+  outline: 2px solid var(--oc-accent);
+  outline-offset: 3px;
+}
+
+.lp-btn__arrow {
+  display: inline-block;
+  transition: transform 160ms ease;
+}
+
+.lp-btn--primary:hover .lp-btn__arrow {
+  transform: translateX(3px);
+}
+
 .lp-btn--primary {
   color: #fff !important;
   background: var(--oc-accent);
-  box-shadow: 0 12px 32px color-mix(in srgb, var(--oc-accent) 36%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset,
+    0 12px 32px color-mix(in srgb, var(--oc-accent) 38%, transparent);
 }
 
 .lp-btn--primary:hover {
   background: var(--oc-accent-hover);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 22%, transparent) inset,
+    0 16px 36px color-mix(in srgb, var(--oc-accent) 44%, transparent);
 }
 
 .lp-btn--ghost {
   color: var(--vp-c-text-1) !important;
   border: 1px solid var(--vp-c-border);
-  background: transparent;
+  background: color-mix(in srgb, var(--vp-c-bg-elv) 40%, transparent);
 }
 
 .lp-btn--ghost:hover {
-  border-color: color-mix(in srgb, var(--oc-accent) 40%, var(--vp-c-border));
+  border-color: color-mix(in srgb, var(--oc-accent) 42%, var(--vp-c-border));
+  background: color-mix(in srgb, var(--vp-c-bg-elv) 70%, transparent);
+}
+
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes lp-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-brand,
+  .lp-title,
+  .lp-sub,
+  .lp-hero .lp-actions,
+  .lp-stage,
+  .lp-pulse,
+  .lp-caret {
+    animation: none !important;
+  }
+  .lp-btn:hover,
+  .lp-btn--primary:hover .lp-btn__arrow {
+    transform: none;
+  }
 }
 
 /* Stage — wide product mock */
 .lp-stage {
+  position: relative;
   width: 100%;
-  margin-top: 56px;
+  margin-top: clamp(88px, 12vh, 128px);
+  animation: lp-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.lp-stage__glow {
+  position: absolute;
+  inset: 12% -8% -18%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 40%,
+    color-mix(in srgb, var(--oc-accent) 22%, transparent),
+    transparent 70%
+  );
+  filter: blur(28px);
 }
 
 .lp-stage__frame {
+  position: relative;
   border-radius: 18px;
-  border: 1px solid var(--vp-c-border);
+  border: 1px solid color-mix(in srgb, #fff 8%, #1e2028);
   background: #12151c;
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #000 40%, transparent),
+    0 28px 64px rgba(0, 0, 0, 0.5),
+    0 8px 24px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
 
@@ -419,6 +576,7 @@ onUnmounted(() => {
 .lp-stage__nav i.is-on {
   color: #fff;
   background: color-mix(in srgb, #ff5c5c 22%, transparent);
+  box-shadow: inset 2px 0 0 #ff5c5c;
 }
 
 .lp-stage__chat {
@@ -486,13 +644,17 @@ onUnmounted(() => {
   color: #5eead4;
 }
 
+.lp-pulse {
+  animation: lp-pulse 1.8s ease-in-out infinite;
+}
+
 .lp-stage__msgs .card {
   align-self: flex-start;
   max-width: 70%;
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px dashed #2e3040;
-  background: #161920;
+  background: linear-gradient(160deg, #1a1d26 0%, #161920 100%);
 }
 .lp-stage__msgs .card b {
   display: block;
@@ -506,6 +668,8 @@ onUnmounted(() => {
 }
 
 .lp-stage__chat > footer {
+  display: flex;
+  align-items: center;
   margin: 0 18px 18px;
   padding: 12px 14px;
   border-radius: 10px;
@@ -513,6 +677,16 @@ onUnmounted(() => {
   background: #191c24;
   font-size: 0.85rem;
   color: #8b8b94;
+}
+
+.lp-caret {
+  display: inline-block;
+  width: 1.5px;
+  height: 0.95em;
+  margin-left: 2px;
+  background: #ff8585;
+  vertical-align: -0.12em;
+  animation: lp-caret 1.05s step-end infinite;
 }
 
 .lp-stage__rail {
@@ -549,6 +723,12 @@ onUnmounted(() => {
   font-style: normal;
   color: #8b8b94;
 }
+.lp-stage__rail li.done em {
+  color: #a1a1aa;
+}
+.lp-stage__rail li.done i {
+  color: #5eead4;
+}
 .lp-stage__rail li.on em {
   color: #fff;
 }
@@ -561,9 +741,9 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px 28px;
-  margin: 56px 0 96px;
-  padding: 22px 0;
+  gap: 10px 32px;
+  margin: 64px 0 96px;
+  padding: 24px 0;
   border-top: 1px solid var(--vp-c-divider);
   border-bottom: 1px solid var(--vp-c-divider);
 }
@@ -888,12 +1068,22 @@ onUnmounted(() => {
     padding: 0 18px 96px;
   }
   .lp-hero {
-    padding-top: 56px;
+    padding-top: clamp(96px, 14vh, 140px);
     align-items: flex-start;
     text-align: left;
   }
+  .lp-hero .lp-actions,
+  .lp-actions__btns {
+    align-items: flex-start;
+  }
+  .lp-stage {
+    margin-top: 72px;
+  }
   .lp-actions {
     justify-content: flex-start;
+  }
+  .lp-actions__note {
+    text-align: left;
   }
   .lp-trust {
     justify-content: flex-start;
@@ -915,7 +1105,17 @@ onUnmounted(() => {
 
 :global(html:not(.dark)) .lp-stage__frame {
   background: #fff;
-  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.08);
+  border-color: #e5e7eb;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.03),
+    0 24px 56px rgba(0, 0, 0, 0.08);
+}
+:global(html:not(.dark)) .lp-stage__glow {
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 40%,
+    color-mix(in srgb, var(--oc-accent) 14%, transparent),
+    transparent 70%
+  );
 }
 :global(html:not(.dark)) .lp-stage__bar,
 :global(html:not(.dark)) .lp-stage__nav,
