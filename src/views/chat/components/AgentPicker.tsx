@@ -9,10 +9,12 @@ type Props = {
   disabled?: boolean;
   /** 会话已绑定角色时不允许选「自动」 */
   allowAuto?: boolean;
-  /** 菜单展开方向：顶栏用 bottom，输入区旁用 top */
+  /** 菜单展开方向：侧栏 / 对话顶用 bottom，输入区旁用 top */
   placement?: "top" | "bottom";
-  /** 视觉变体：顶栏对齐 action 按钮 */
-  variant?: "default" | "topbar";
+  /** 视觉变体：侧栏全宽 / 紧凑默认 */
+  variant?: "default" | "header" | "sidebar";
+  /** 触发器显示副标题（slug / 说明） */
+  showSubtitle?: boolean;
 };
 
 const initialOf = (name: string) => {
@@ -29,6 +31,7 @@ export const AgentPicker = ({
   allowAuto = true,
   placement = "bottom",
   variant = "default",
+  showSubtitle = false,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [agents, setAgents] = useState<AgentProfile[]>([]);
@@ -69,7 +72,9 @@ export const AgentPicker = ({
       : value
         ? "未知代理"
         : "选择代理";
-  const subtitle = isAuto ? "按意图 / 默认" : (active?.slug ?? null);
+  const subtitle = isAuto
+    ? "按意图 / 默认"
+    : (active?.remark?.trim() || active?.slug || null);
   const avatar = isAuto ? "自" : initialOf(active?.name ?? title);
 
   const pickAuto = () => {
@@ -87,7 +92,11 @@ export const AgentPicker = ({
   const rootClass = [
     "agent-picker",
     `agent-picker--${placement}`,
-    variant === "topbar" ? "agent-picker--topbar" : "agent-picker--default",
+    variant === "sidebar"
+      ? "agent-picker--sidebar"
+      : variant === "header"
+        ? "agent-picker--header"
+        : "agent-picker--default",
     open ? "is-open" : "",
   ]
     .filter(Boolean)
@@ -114,6 +123,9 @@ export const AgentPicker = ({
         </span>
         <span className="agent-picker__meta">
           <span className="agent-picker__title">{title}</span>
+          {showSubtitle && subtitle ? (
+            <span className="agent-picker__subtitle">{subtitle}</span>
+          ) : null}
         </span>
         <svg
           className="agent-picker__chevron"

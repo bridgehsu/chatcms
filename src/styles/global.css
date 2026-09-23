@@ -686,38 +686,40 @@ body.is-resizing-session-pane {
 }
 
 .session-pane-focus-hint strong {
-  color: var(--text);
+  color: color-mix(in srgb, var(--text) 88%, var(--text-dim));
   font-weight: 600;
 }
 
-.session-pane-focus-hint__tip {
-  opacity: 0.75;
+.session-pane-header {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-2) 70%, var(--bg-1));
 }
 
-.session-pane-header {
-  padding: 12px 12px 10px;
+.session-agent-bar {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
 }
 
-.session-pane-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.session-agent-bar .agent-picker {
+  width: 100%;
+  z-index: 30;
 }
 
 .session-pane-folder-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--bg-1);
   color: var(--text-dim);
   cursor: pointer;
@@ -733,17 +735,34 @@ body.is-resizing-session-pane {
   background: color-mix(in srgb, var(--accent) 8%, var(--bg-1));
 }
 
+.session-pane-search-wrap {
+  position: relative;
+  display: block;
+}
+
+.session-pane-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
 .session-pane-search {
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 10px;
+  height: 36px;
+  padding: 0 10px 0 32px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--bg-1);
   color: var(--text);
   font-size: 12px;
   font-family: inherit;
   outline: none;
+  transition: border-color 140ms var(--ease-out), background 140ms var(--ease-out);
 }
 
 .session-pane-search::placeholder {
@@ -752,12 +771,33 @@ body.is-resizing-session-pane {
 
 .session-pane-search:focus {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--bg-1) 92%, var(--bg-3));
 }
 
 .session-pane-footer {
-  padding: 10px 14px 14px;
+  padding: 10px 12px 12px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: color-mix(in srgb, var(--bg-2) 70%, var(--bg-1));
+}
+
+.session-pane-footer__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-pane-footer .btn-new-session {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+.session-pane-footer .session-pane-focus-hint {
+  padding: 0 2px;
 }
 
 .btn-new-session {
@@ -766,16 +806,17 @@ body.is-resizing-session-pane {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 11px 14px;
+  height: 36px;
+  padding: 0 14px;
   border: 1px solid var(--accent);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--accent);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 22%, transparent);
   transition:
     background 140ms var(--ease-out),
     border-color 140ms var(--ease-out),
@@ -783,17 +824,10 @@ body.is-resizing-session-pane {
     box-shadow 140ms var(--ease-out);
 }
 
-.btn-new-session--compact {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 24%, transparent);
-}
-
 .btn-new-session:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 38%, transparent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 .btn-new-session:active {
   transform: translateY(1px);
@@ -848,6 +882,11 @@ body.is-resizing-session-pane {
 .session-group-create {
   padding: 8px 12px 0;
   flex-shrink: 0;
+}
+
+.session-group-create--footer {
+  padding: 8px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 
 .session-group-error {
@@ -1268,21 +1307,6 @@ body.is-resizing-session-pane {
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 92, 92, 0.06), transparent 55%),
     var(--bg-1);
-}
-
-/* ── Agent Picker ────────────────────────────────────────────────────────── */
-.agent-picker {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.agent-picker .ui-select {
-  width: 100%;
-}
-
-.agent-picker .ui-select__trigger {
-  width: 100%;
-  justify-content: space-between;
 }
 
 /* mode pill styles live next to composer__perm */
@@ -2107,13 +2131,39 @@ body.is-resizing-session-pane {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 12px;
+  padding: 10px 16px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  background: color-mix(in srgb, var(--bg-2) 70%, transparent);
-  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--bg-2) 85%, var(--bg-1));
   flex-shrink: 0;
-  z-index: 10;
+  z-index: 20;
+  position: relative;
+}
+
+.chat-header__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-header__agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-header__agent-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  flex-shrink: 0;
 }
 
 .chat-header__model {
@@ -2896,7 +2946,7 @@ body.is-resizing-session-pane {
   cursor: not-allowed;
 }
 
-/* ── AgentPicker（顶栏 / 通用） ───────────────────────────────────────────── */
+/* ── AgentPicker（对话顶栏 / 通用） ───────────────────────────────────────── */
 .agent-picker {
   position: relative;
 }
@@ -3079,10 +3129,71 @@ body.is-resizing-session-pane {
   text-align: center;
 }
 
-/* 顶栏：与 action 按钮同高，略紧凑 */
-.agent-picker--topbar .agent-picker__trigger {
+/* 对话区顶栏：略紧凑，与会话标题对齐 */
+.agent-picker--header .agent-picker__trigger {
   height: 32px;
   min-width: 132px;
+}
+
+/* 左侧会话栏：全宽下拉 */
+.agent-picker--sidebar .agent-picker__trigger {
+  width: 100%;
+  max-width: none;
+  height: 36px;
+  padding: 0 10px 0 8px;
+  justify-content: flex-start;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-2);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--border) 90%, transparent);
+}
+
+.agent-picker--sidebar .agent-picker__trigger:hover:not(:disabled) {
+  background: var(--bg-3);
+}
+
+.agent-picker--sidebar.is-open .agent-picker__trigger {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: var(--bg-3);
+}
+
+.agent-picker--sidebar .agent-picker__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+
+.agent-picker--sidebar .agent-picker__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-picker--sidebar .agent-picker__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 100%;
+}
+
+.agent-picker--sidebar .agent-picker__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.agent-picker--sidebar .agent-picker__menu {
+  left: 0;
+  right: 0;
+  min-width: 0;
+  width: 100%;
+  margin-top: 6px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 40;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
 }
 
 .agent-picker--default .agent-picker__trigger {

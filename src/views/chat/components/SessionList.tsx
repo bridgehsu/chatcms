@@ -3,6 +3,7 @@ import { App as AntdApp } from "antd";
 import { IconChevron, IconMore, IconPencil, IconPin, IconPlus, IconTrash } from "@/components/icons";
 import { useChatStore } from "@/stores/useChatStore";
 import type { SessionGroup as PersistedGroup, SessionSummary } from "@/types";
+import { SessionAgentBar } from "./SessionAgentBar";
 import { SessionDeleteDialog } from "./SessionDeleteDialog";
 
 type PendingDelete = { id: string; title: string };
@@ -108,6 +109,18 @@ const IconFolder = () => (
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+    <path
+      d="M16.5 16.5L20 20"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
     />
   </svg>
 );
@@ -666,73 +679,27 @@ export const SessionList = () => {
   return (
     <aside className="session-pane" style={{ width: paneWidth, minWidth: paneWidth }}>
       <div className="session-pane-header">
-        <div className="session-pane-actions">
-          <button
-            type="button"
-            className="btn-new-session btn-new-session--compact"
-            onClick={newSession}
-            title={`新会话将创建在「${focusedLabel}」`}
-          >
-            <span className="btn-new-session__icon">
-              <IconPlus />
-            </span>
-            新会话
-          </button>
-          <button
-            type="button"
-            className="session-pane-folder-btn"
-            onClick={startCreateGroup}
-            title="新建分组"
-            aria-label="新建分组"
-          >
-            <IconFolder />
-          </button>
-        </div>
-        <input
-          className="session-pane-search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜索会话…"
-          aria-label="搜索会话"
-        />
-        <p className="session-pane-focus-hint">
-          新建到：<strong>{focusedLabel}</strong>
-          <span className="session-pane-focus-hint__tip"> · 可拖拽会话进组</span>
-        </p>
-      </div>
-
-      {creatingGroup && (
-        <div className="session-group-create">
+        <SessionAgentBar />
+        <label className="session-pane-search-wrap">
+          <span className="session-pane-search-icon" aria-hidden>
+            <SearchIcon />
+          </span>
           <input
-            ref={newGroupInputRef}
-            className="session-item__input"
-            value={newGroupName}
-            maxLength={40}
-            placeholder="分组名称，回车创建"
-            aria-label="新建分组名称"
-            onChange={(e) => setNewGroupName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void commitCreateGroup();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                cancelCreateGroup();
-              }
-            }}
-            onBlur={() => {
-              void commitCreateGroup();
-            }}
+            className="session-pane-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="搜索会话…"
+            aria-label="搜索会话"
           />
-        </div>
-      )}
+        </label>
+      </div>
 
       <nav className="session-list" ref={listRef}>
         {filteredSessions.length === 0 && sessionGroups.length === 0 && !creatingGroup && (
           <p className="session-empty">
             {query.trim() ? "无匹配会话" : "暂无会话"}
             <span className="session-empty__hint">
-              {query.trim() ? "试试其他关键词" : "点击上方「新会话」开始"}
+              {query.trim() ? "试试其他关键词" : "点击下方「新会话」开始"}
             </span>
           </p>
         )}
@@ -871,6 +838,60 @@ export const SessionList = () => {
           );
         })}
       </nav>
+
+      {creatingGroup && (
+        <div className="session-group-create session-group-create--footer">
+          <input
+            ref={newGroupInputRef}
+            className="session-item__input"
+            value={newGroupName}
+            maxLength={40}
+            placeholder="分组名称，回车创建"
+            aria-label="新建分组名称"
+            onChange={(e) => setNewGroupName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void commitCreateGroup();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                cancelCreateGroup();
+              }
+            }}
+            onBlur={() => {
+              void commitCreateGroup();
+            }}
+          />
+        </div>
+      )}
+
+      <div className="session-pane-footer">
+        <p className="session-pane-focus-hint">
+          新建到 <strong>{focusedLabel}</strong>
+        </p>
+        <div className="session-pane-footer__actions">
+          <button
+            type="button"
+            className="btn-new-session"
+            onClick={newSession}
+            title={`新会话将创建在「${focusedLabel}」`}
+          >
+            <span className="btn-new-session__icon">
+              <IconPlus />
+            </span>
+            新会话
+          </button>
+          <button
+            type="button"
+            className="session-pane-folder-btn"
+            onClick={startCreateGroup}
+            title="新建分组"
+            aria-label="新建分组"
+          >
+            <IconFolder />
+          </button>
+        </div>
+      </div>
 
       <div
         className="session-pane-resizer"
