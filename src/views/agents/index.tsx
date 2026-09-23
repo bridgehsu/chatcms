@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Col, Form, InputNumber, Row, Switch } from 'antd';
-import { EyeOutlined } from '@ant-design/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Col, Form, InputNumber, Row, Switch, Tag, Tooltip } from 'antd';
+import { EyeOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
 import { invoke } from '@/hooks/useTauri';
 import type { AgentProfile, Skill } from '@/types';
 import CabinX, { type CabinXColumn, type FormField } from '@/components/CabinX';
@@ -13,13 +13,28 @@ import PermField from './components/PermField';
 export const AgentsPage = () => {
     const [skillOptions, setSkillOptions] = useState<Skill[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
     const [viewForm] = Form.useForm();
     const [viewOpen, setViewOpen] = useState(false);
     const [viewTitle, setViewTitle] = useState('');
 
+    const refreshMeta = async () => {
+        const [skills, activeId] = await Promise.all([
+            invoke<Skill[]>('skill_list'),
+            invoke<string | null>('agent_active_id'),
+        ]);
+        setSkillOptions(skills);
+        setActiveAgentId(activeId);
+    };
+
     useEffect(() => {
-        void invoke<Skill[]>('skill_list').then(setSkillOptions).catch(console.error);
-    }, []);
+        void refreshMeta().catch(console.error);
+    }, [refreshKey]);
+
+    const handleActivate = async (id: string) => {
+        await invoke('agent_activate', { id });
+        setRefreshKey((k) => k + 1);
+    };
 
     const api = useMemo(() => ({
         paging: async (params: any) => {
@@ -77,6 +92,12 @@ export const AgentsPage = () => {
             key: 'name',
             fixed: 'left',
             search: {name: 'name', label: '代理名称', type: 'input', placeholder: '搜索代理名称'},
+            render: (name: string, record: AgentProfile) => (
+                <span style={{display: 'inline-flex', alignItems: 'center', gap: 6}}>
+                    {name}
+                    {record.id === activeAgentId && <Tag color="gold" style={{margin: 0}}>默认</Tag>}
+                </span>
+            ),
             editor: {
                 name: 'name',
                 label: '代理名称',
@@ -246,7 +267,7 @@ export const AgentsPage = () => {
             })
             .filter(f => !f.hide?.[2]),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [skillOptions],
+        [skillOptions, activeAgentId],
     );
 
     const handleView = (record: AgentProfile) => {
@@ -267,9 +288,21 @@ export const AgentsPage = () => {
                 formType="D"
                 editorWidth={650}
                 actionBtnComponents={(record: AgentProfile) => (
-                    <Button type="link" icon={<EyeOutlined/>} onClick={() => handleView(record)}>
-                        查看
-                    </Button>
+                    <>
+                        <Tooltip title={record.id === activeAgentId ? '当前全局默认' : '设为全局默认'}>
+                            <Button
+                                type="link"
+                                icon={record.id === activeAgentId ? <StarFilled /> : <StarOutlined />}
+                                disabled={!record.enabled || record.id === activeAgentId}
+                                onClick={() => void handleActivate(record.id)}
+                            >
+                                {record.id === activeAgentId ? '默认' : '设为默认'}
+                            </Button>
+                        </Tooltip>
+                        <Button type="link" icon={<EyeOutlined/>} onClick={() => handleView(record)}>
+                            查看
+                        </Button>
+                    </>
                 )}
             />
 

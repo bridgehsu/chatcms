@@ -17,12 +17,13 @@ use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
+use crate::agents::AgentState;
 use crate::medias;
-use crate::persist;
+use crate::common::persist;
 
 pub const DEFAULT_BRIDGE_PORT: u16 = 17890;
 
@@ -97,7 +98,7 @@ impl PublishBridge {
     }
 
     pub fn base_url_for(app: &AppHandle) -> String {
-        let port = crate::config::resolve_bridge_port(app);
+        let port = crate::common::config::resolve_bridge_port(app);
         format!("http://127.0.0.1:{port}")
     }
 
@@ -180,6 +181,10 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
         .route("/api/draft/{id}", get(get_draft))
         .route("/media/import", post(import_media))
         .route("/media/{kind}/{id}", get(get_media))
+        .route("/media/images", get(list_media_images))
+        .route("/media/videos", get(list_media_videos))
+        .route("/content/notes", get(list_content_notes).post(create_content_note))
+        .route("/content/notes/{id}", get(get_content_note))
         .route("/publish/platforms", get(list_publish_platforms))
         .route("/publish/script", get(get_publish_script))
         .route("/collect/script", get(get_collect_script))
@@ -197,7 +202,7 @@ async fn run_server(bridge: PublishBridge) -> Result<(), String> {
 
     let port = bridge
         .app_handle()
-        .map(|a| crate::config::resolve_bridge_port(&a))
+        .map(|a| crate::common::config::resolve_bridge_port(&a))
         .unwrap_or(DEFAULT_BRIDGE_PORT);
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(addr)
@@ -294,6 +299,185 @@ async fn get_collect_script(
         }
         Err(e) => (StatusCode::NOT_FOUND, e).into_response(),
     }
+}
+
+// ── 内容管理 / 图片·视频工厂（插件发布装填）────────────────
+
+#[derive(Debug, Serialize)]
+struct BridgeNote {
+    id: String,
+    title: String,
+    content: String,
+    icon: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    group_id: Option<String>,
+    created_at: i64,
+    updated_at: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct BridgeNoteGroup {
+    id: String,
+    name: String,
+    sort_order: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct BridgeNotesResponse {
+    notes: Vec<BridgeNote>,
+    groups: Vec<BridgeNoteGroup>,
+}
+
+#[derive(Debug, Deserialize)]
+struct CreateNoteBody {
+    title: String,
+    content: String,
+    #[serde(default)]
+    icon: Option<String>,
+    #[serde(default)]
+    group_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct BridgeMediaItem {
+    id: String,
+    kind: String,
+    title: String,
+    remark: String,
+    url: String,
+    created: i64,
+    updated: i64,
+}
+
+fn map_bridge_note(n: crate::notes::CmsNote) -> BridgeNote {
+    BridgeNote {
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        icon: n.icon,
+        group_id: n.group_id,
+        created_at: n.created_at,
+        updated_at: n.updated_at,
+    }
+}
+
+async fn list_content_notes(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let bundle = crate::notes::service::list_bundle(&app).await;
+    Json(BridgeNotesResponse {
+        notes: bundle.notes.into_iter().map(map_bridge_note).collect(),
+        groups: bundle
+            .groups
+            .into_iter()
+            .map(|g| BridgeNoteGroup {
+                id: g.id,
+                name: g.name,
+                sort_order: g.sort_order,
+            })
+            .collect(),
+    })
+    .into_response()
+}
+
+async fn get_content_note(
+    State(bridge): State<PublishBridge>,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    match crate::notes::repository::get_note(&app, &id).await {
+        Some(n) => Json(map_bridge_note(n)).into_response(),
+        None => (StatusCode::NOT_FOUND, "笔记不存在").into_response(),
+    }
+}
+
+async fn create_content_note(
+    State(bridge): State<PublishBridge>,
+    Json(body): Json<CreateNoteBody>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let Some(state) = app.try_state::<AgentState>() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    match crate::notes::service::create_note(
+        &app,
+        state.inner(),
+        body.title,
+        body.content,
+        body.icon,
+        body.group_id,
+        None,
+        None,
+        None,
+    )
+    .await
+    {
+        Ok(n) => Json(map_bridge_note(n)).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
+}
+
+async fn list_media_images(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let items = crate::images::list(&app)
+        .await
+        .into_iter()
+        .map(|img| {
+            let title = if !img.remark.trim().is_empty() {
+                img.remark.clone()
+            } else if !img.prompt.trim().is_empty() {
+                img.prompt.chars().take(48).collect()
+            } else {
+                img.id.clone()
+            };
+            BridgeMediaItem {
+                id: img.id.clone(),
+                kind: "image".into(),
+                title,
+                remark: img.remark,
+                url: media_url(&app, "image", &img.id),
+                created: img.created,
+                updated: img.updated,
+            }
+        })
+        .collect::<Vec<_>>();
+    Json(items).into_response()
+}
+
+async fn list_media_videos(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let items = crate::videos::list(&app)
+        .await
+        .into_iter()
+        .map(|vid| {
+            let title = if !vid.remark.trim().is_empty() {
+                vid.remark.clone()
+            } else if !vid.prompt.trim().is_empty() {
+                vid.prompt.chars().take(48).collect()
+            } else {
+                vid.id.clone()
+            };
+            BridgeMediaItem {
+                id: vid.id.clone(),
+                kind: "video".into(),
+                title,
+                remark: vid.remark,
+                url: media_url(&app, "video", &vid.id),
+                created: vid.created,
+                updated: vid.updated,
+            }
+        })
+        .collect::<Vec<_>>();
+    Json(items).into_response()
 }
 
 async fn get_map_nav(State(bridge): State<PublishBridge>) -> Response {
@@ -724,7 +908,6 @@ pub async fn prepare_and_open(
     Ok(url)
 }
 
-#[allow(dead_code)]
 pub fn media_url(app: &AppHandle, kind: &str, id: &str) -> String {
     format!("{}/media/{kind}/{id}", PublishBridge::base_url_for(app))
 }

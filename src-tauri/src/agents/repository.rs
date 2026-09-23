@@ -2,7 +2,7 @@ use sqlx::Row;
 use tauri::{AppHandle, Manager};
 
 use super::AgentProfile;
-use crate::config::AppConfig;
+use crate::common::config::AppConfig;
 use crate::db::DbPool;
 
 fn pool(app: &AppHandle) -> sqlx::SqlitePool {
@@ -97,9 +97,9 @@ pub async fn delete(app: &AppHandle, id: &str) {
 }
 
 pub fn load_config(app: &AppHandle) -> Option<AppConfig> {
-    crate::persist::load_config(app)
+    crate::common::persist::load_config(app)
 }
 
 pub fn save_config(app: &AppHandle, config: &AppConfig) {
-    crate::persist::save_config(app, config);
+    crate::common::persist::save_config(app, config);
 }

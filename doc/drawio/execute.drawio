@@ -1,0 +1,74 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Execute 紧贴 Plan" id="execute-vs-plan">
+    <mxGraphModel background="#ffffff" dx="1500" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="&lt;b&gt;L4b 执行层 Execute&lt;/b&gt; · 嵌在 L4 Plan Loop 内 · 非 turn 顶层" style="text;html=1;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="12" width="720" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- 与 Plan 的关系条 -->
+        <mxCell id="nest" value="&lt;b&gt;和 Plan 的关系&lt;/b&gt;（先看这里）&lt;br&gt;Plan（Agent）stream_chat → &lt;b&gt;有 tool_call&lt;/b&gt; → 【进入本图】→ 结果回灌 → &lt;b&gt;回到 Plan 再问模型&lt;/b&gt;&lt;br&gt;Ask / Search 在 Plan 已结束，&lt;font color='#b85450'&gt;不会进入本图&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="50" width="980" height="72" as="geometry" />
+        </mxCell>
+
+        <mxCell id="from" value="&lt;b&gt;← 来自 plan.drawio · Agent 列&lt;/b&gt;&lt;br&gt;「有 tool_call？→ 是」" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="360" y="150" width="320" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="in" value="① 取出本轮 tool_calls[]&lt;br&gt;（可多个，按顺序逐个 dispatch）&lt;br&gt;&lt;font color='#666'&gt;不看 Intent 域；只看工具名 + 参数&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="340" y="230" width="360" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="auth" value="② &lt;b&gt;permission::authorize&lt;/b&gt;&lt;br&gt;allow / ask（弹窗）/ deny · 可会话记住" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="340" y="330" width="360" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qdeny" value="允许执行？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="420" y="420" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="denied" value="否 → Permission denied&lt;br&gt;仍写回一条工具结果（失败）" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="720" y="430" width="220" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qname" value="③ 按工具名分流" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="400" y="530" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="spawn" value="&lt;b&gt;spawn_agent&lt;/b&gt;&lt;br&gt;子 Agent ≤30 轮&lt;br&gt;不落库 · 不弹权限 · 不可再套" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="650" width="220" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="mcp" value="&lt;b&gt;MCP 工具&lt;/b&gt;&lt;br&gt;mcp.call_tool&lt;br&gt;超时保护" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="390" y="650" width="220" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="builtin" value="&lt;b&gt;内置工具&lt;/b&gt;&lt;br&gt;bash / read / write / fetch…&lt;br&gt;限制在 workspace" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="700" y="650" width="240" height="78" as="geometry" />
+        </mxCell>
+
+        <mxCell id="back" value="④ ToolResult 回灌 api_messages&lt;br&gt;&lt;b&gt;→ 回到 L4 plan · Agent Loop 下一圈&lt;/b&gt;（再 stream_chat）" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="300" y="780" width="440" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="noask" value="&lt;b&gt;不会进本图&lt;/b&gt;&lt;br&gt;Ask / Search&lt;br&gt;（Plan 侧 tools=[]）" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="230" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" edge="1" parent="1" source="from" target="in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="in" target="auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="auth" target="qdeny" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="否" edge="1" parent="1" source="qdeny" target="denied" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="是" edge="1" parent="1" source="qdeny" target="qname" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="spawn_agent" edge="1" parent="1" source="qname" target="spawn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" value="MCP" edge="1" parent="1" source="qname" target="mcp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="其它" edge="1" parent="1" source="qname" target="builtin" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="spawn" target="back" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="mcp" target="back" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="builtin" target="back" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="denied" target="back" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

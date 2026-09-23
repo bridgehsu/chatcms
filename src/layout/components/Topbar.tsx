@@ -12,8 +12,10 @@ import {
   IconVideos,
 } from "@/components/icons";
 import { titleForPath, subtitleForPath } from "@/layout/nav";
+import { useChatStore } from "@/stores/useChatStore";
 import { MapSearch } from "@/views/map/components/MapSearch";
 import { useBusinessMap } from "@/views/map/hooks/useBusinessMap";
+import { AgentPicker } from "@/views/chat/components/AgentPicker";
 
 const MapActions = () => {
   const { favorites, sections } = useBusinessMap();
@@ -127,6 +129,7 @@ const VideoStudioActions = () => {
     busy: false,
     canGenerate: false,
     progress: 0,
+    mode: "clip" as "clip" | "model",
   });
 
   useEffect(() => {
@@ -141,6 +144,7 @@ const VideoStudioActions = () => {
         busy: !!detail.busy,
         canGenerate: !!detail.canGenerate,
         progress: Number(detail.progress) || 0,
+        mode: detail.mode === "model" ? "model" : "clip",
       });
     };
     window.addEventListener("mpt:health", onHealth);
@@ -154,6 +158,7 @@ const VideoStudioActions = () => {
 
   return (
     <>
+      {state.mode === "clip" ? (
       <span
         className={
           healthOk ? "topbar-status topbar-status--ok" : "topbar-status"
@@ -162,7 +167,8 @@ const VideoStudioActions = () => {
       >
         {healthOk ? "已连接" : "未连接"}
       </span>
-      {state.busy ? (
+      ) : null}
+      {state.busy && state.mode === "clip" ? (
         <button
           type="button"
           className="topbar-action-btn topbar-action-btn--danger"
@@ -183,11 +189,13 @@ const VideoStudioActions = () => {
         }
       >
         <IconPlay />
-        <span>
+          <span>
           {state.busy
-            ? `生成中 ${Math.round(state.progress)}%`
+            ? state.mode === "model"
+              ? "生成中…"
+              : `生成中 ${Math.round(state.progress)}%`
             : "生成视频"}
-        </span>
+          </span>
       </button>
     </>
   );
@@ -223,6 +231,46 @@ const ChannelsActions = () => (
     <span>新增</span>
   </button>
 );
+
+/** 智能会话 · 顶栏右侧主 Agent 选择 */
+const ChatAgentActions = () => {
+  const {
+    activeSessionId,
+    activeSession,
+    preferredAgentId,
+    isStreaming,
+    pendingPermission,
+    setPreferredAgentId,
+    setSessionAgent,
+  } = useChatStore();
+
+  const sessionBound = Boolean(activeSession?.agent_id);
+  const value = activeSession?.agent_id ?? preferredAgentId;
+  const disabled = isStreaming || !!pendingPermission;
+
+  const handleChange = (id: string | null) => {
+    if (id == null) {
+      setPreferredAgentId(null);
+      return;
+    }
+    if (activeSessionId && activeSessionId !== "pending") {
+      void setSessionAgent(id);
+    } else {
+      setPreferredAgentId(id);
+    }
+  };
+
+  return (
+    <AgentPicker
+      value={value}
+      onChange={handleChange}
+      disabled={disabled}
+      allowAuto={!sessionBound}
+      placement="bottom"
+      variant="topbar"
+    />
+  );
+};
 
 const EvalActions = () => {
   const [state, setState] = useState({ busy: false, hasReport: false });
@@ -384,6 +432,7 @@ export const Topbar = () => {
   const isEval = pathname === "/settings/eval";
   const isObservability = pathname === "/settings/observability";
   const isChannels = pathname === "/settings/channels";
+  const isChat = pathname === "/chat";
 
   return (
     <header className={`topbar${pageSub ? " topbar--with-sub" : ""}`}>
@@ -394,6 +443,7 @@ export const Topbar = () => {
         {pageSub ? <p className="topbar-sub">{pageSub}</p> : null}
       </div>
       <div className="topbar-actions">
+        {isChat ? <ChatAgentActions /> : null}
         {isMap ? <MapActions /> : null}
         {isImages ? <ImagesFactoryActions /> : null}
         {isVideos ? <VideosFactoryActions /> : null}

@@ -21,7 +21,7 @@ pub async fn ensure_seeded(app: &AppHandle) -> Vec<Skill> {
         }
 
         // 写出到 skills/bundled/{name}.md
-        let dir = crate::config::resolve_data_root(app)
+        let dir = crate::common::config::resolve_data_root(app)
             .join("skills")
             .join("bundled");
         let _ = std::fs::create_dir_all(&dir);

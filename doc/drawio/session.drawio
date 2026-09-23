@@ -1,0 +1,58 @@
+<mxfile host="65bd71144e">
+    <diagram name="L1 Session" id="session-l1-v3">
+        <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="900" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="&lt;b&gt;L1 会话层&lt;/b&gt; · core/session · session::run" style="text;html=1;fontSize=16;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="20" width="420" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="先于意图 · 可预绑手选角色 · Mode 在此解析供 trace，决策层再确认" style="text;html=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="48" width="560" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="输入：content · session_id? · mode_raw · group_id?" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="90" width="360" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="&lt;b&gt;① 解析 Mode&lt;/b&gt;&lt;br&gt;ChatMode::parse(mode_raw) → Ask / Agent / Search" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="170" width="320" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="&lt;b&gt;② ensure_session&lt;/b&gt;&lt;br&gt;复用或新建 · 新建可写分组&lt;br&gt;可预绑用户手选 Agent；否则不绑，留给 decision" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="260" width="360" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="&lt;b&gt;③ ChatTrace::start&lt;/b&gt;&lt;br&gt;记录 session_id · mode · 用户字数" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="360" width="320" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="&lt;b&gt;④ push_user_message&lt;/b&gt;&lt;br&gt;用户原文写入会话历史并落库" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="450" width="320" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="&lt;b&gt;⑤ 读会话快照 → ctx&lt;/b&gt;&lt;br&gt;sid · workspace_dir · session_agent_id" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="540" width="320" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="&lt;b&gt;→ intent::run（L2）&lt;/b&gt;　详见 intent.drawio" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="300" y="640" width="320" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="&lt;b&gt;workspace 规则&lt;/b&gt;&lt;br&gt;手选 / 绑角时跟随 Agent 目录&lt;br&gt;session_set_agent 可切换并同步&lt;br&gt;未绑定时新建暂取全局默认" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="700" y="170" width="240" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="4" target="5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="5" target="6">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="6" target="7">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="7" target="8">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="8" target="9">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="9" target="10">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

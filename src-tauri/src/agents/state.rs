@@ -7,11 +7,11 @@ use tokio::sync::oneshot;
 
 use super::AgentProfile;
 use crate::channels::ChannelState;
-use crate::config::AppConfig;
+use crate::common::config::AppConfig;
 use crate::kbase::KnowledgeEntry;
 use crate::mcp::McpManager;
 use crate::chat::Session;
-use crate::permission::{RememberScope, SessionGrantStore};
+use crate::common::permission::{RememberScope, SessionGrantStore};
 use crate::scripts::Skill;
 
 /// 前端权限回执

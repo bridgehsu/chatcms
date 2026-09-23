@@ -8,7 +8,7 @@ import { MapPage } from "@/views/map";
 import { NavBookmarksPage } from "@/views/nav";
 import { ContentPage } from "@/views/content";
 import { ImagesPage, ImageGeneratePage } from "@/views/images";
-import { VideosPage, VideoGeneratePage, VideoStudioPage } from "@/views/videos";
+import { VideosPage, VideoStudioPage } from "@/views/videos";
 import { AccountsPage } from "@/views/accounts";
 import {
   MediaPlatformsPage,
@@ -56,7 +56,7 @@ const App = () => {
               <Route path="images" element={<ImagesPage />} />
               <Route path="images/generate" element={<ImageGeneratePage />} />
               <Route path="videos" element={<VideosPage />} />
-              <Route path="videos/generate" element={<VideoGeneratePage />} />
+              <Route path="videos/generate" element={<Navigate to="/videos/studio?mode=model" replace />} />
               <Route path="videos/studio" element={<VideoStudioPage />} />
               <Route path="media-platforms" element={<MediaPlatformsPage />} />
               <Route

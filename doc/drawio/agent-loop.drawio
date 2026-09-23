@@ -1,0 +1,77 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="层级结构" id="layer-structure">
+    <mxGraphModel background="#ffffff" dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1180" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="&lt;b&gt;Agent 运行 · 层级结构图&lt;/b&gt;　L1→L5 · Execute⊂Plan" style="text;html=1;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="12" width="480" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="code" value="chat_send → core::start_turn　｜　本图只表达层级；Ask/Search/Agent 细节见 decision / plan" style="text;html=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="38" width="700" height="18" as="geometry" />
+        </mxCell>
+
+        <mxCell id="principle" value="&lt;b&gt;原则&lt;/b&gt;　Mode=能力硬边界　Intent=业务域软提示　Execute⊂Plan　无独立槽位层" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="64" width="720" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="orch" value="&lt;b&gt;总编排&lt;/b&gt;　turn.rs + pipeline　｜　只定顺序" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="260" y="120" width="400" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="l1" value="&lt;b&gt;L1 会话&lt;/b&gt;　session/　　→ session.drawio&lt;br&gt;会话壳 · 用户消息 · trace · 解析 Mode" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="240" y="190" width="440" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="&lt;b&gt;L2 意图&lt;/b&gt;　intent/　　→ intent.drawio&lt;br&gt;业务域 + confidence + source" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="240" y="270" width="440" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="&lt;b&gt;L3 决策&lt;/b&gt;　decision/　　→ decision.drawio&lt;br&gt;Ask / Search / Agent 三路组装参数" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="240" y="350" width="440" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="l4box" value="" style="rounded=1;fillColor=#f5f5f5;strokeColor=#82b366;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="200" y="430" width="520" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="l4t" value="&lt;b&gt;L4 规划 / 编排&lt;/b&gt;　plan/　　→ plan.drawio&lt;br&gt;拼 prompt · stream_chat ·（三模式分路）" style="text;html=1;align=left;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="442" width="480" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="l4a" value="模型回合" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="260" y="510" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="l4b" value="&lt;b&gt;L4b 执行&lt;/b&gt;&lt;br&gt;execute/ → execute.drawio&lt;br&gt;仅 tool_call" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="500" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="l4c" value="回灌 → 再模型回合　｜　Ask/Search 通常无 L4b" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="590" width="360" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="l4d" value="无 tool_call → finalize 助手正文" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="640" width="360" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="l5" value="&lt;b&gt;L5 响应 / 观测&lt;/b&gt;　response/&lt;br&gt;trace 落库（正文已在 L4 写入）" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="240" y="710" width="440" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="side" value="&lt;b&gt;协作模块&lt;/b&gt;&lt;br&gt;（非 turn 顶层）&lt;br&gt;&lt;br&gt;memory/　知识·截断·快照&lt;br&gt;tools/　内置工具&lt;br&gt;dispatch　权限+分流&lt;br&gt;&lt;br&gt;槽位　当前无&lt;br&gt;显式 Todo/验证层　当前无" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="780" y="190" width="200" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="order" value="&lt;b&gt;代码顶层顺序&lt;/b&gt;&lt;br&gt;L1→L2→L3→L4→L5　｜　L4b 仅被 L4 调用" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="240" y="800" width="440" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="idx" value="&lt;b&gt;详图索引&lt;/b&gt;&lt;br&gt;L1 session · L2 intent&lt;br&gt;L3 decision · L4 plan&lt;br&gt;L4b execute" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="780" y="460" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e0" edge="1" parent="1" source="orch" target="l1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="l1" target="l2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="l2" target="l3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="l3" target="l4box" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="l4a" target="l4b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="l4box" target="l5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -15,6 +15,7 @@ export interface Session {
   updated: number;
   pinned?: boolean;
   agent_id?: string | null;
+  group_id?: string | null;
 }
 
 export interface SessionSummary {
@@ -24,6 +25,15 @@ export interface SessionSummary {
   message_count: number;
   pinned?: boolean;
   agent_id?: string | null;
+  group_id?: string | null;
+}
+
+export interface SessionGroup {
+  id: string;
+  name: string;
+  sort_order: number;
+  created: number;
+  updated: number;
 }
 
 export interface StreamChunk {
@@ -131,6 +141,43 @@ export interface AuditEvent {
   run_mode?: RunMode;
   mode_name?: string;
   grant_used: boolean;
+}
+
+/** 会话链路观测 · 单个阶段 */
+export interface TracePhase {
+  name: string;
+  elapsed_ms: number;
+  duration_ms?: number;
+  detail?: string;
+}
+
+export type ChatMode = "ask" | "agent" | "search";
+
+/** 一次 chat_send 的链路汇总 */
+export interface ChatTurnTrace {
+  id: string;
+  session_id: string;
+  ts: number;
+  content_len: number;
+  intent_kind: string;
+  needs_tools: boolean;
+  chat_mode?: string;
+  model: string;
+  base_url: string;
+  thinking: boolean;
+  tools_count: number;
+  msg_count: number;
+  system_chars: number;
+  http_ms: number | null;
+  ttft_ms: number | null;
+  stream_ms: number | null;
+  total_ms: number;
+  ok: boolean;
+  error: string | null;
+  input_tokens: number;
+  output_tokens: number;
+  tool_rounds: number;
+  phases: TracePhase[];
 }
 
 export type ProviderKind = "anthropic" | "openai";
@@ -244,6 +291,8 @@ export interface SubAgentStart {
   parent_session_id: string;
   task_id: string;
   prompt: string;
+  /** 子代理显示名，如「内容写手 (writer)」 */
+  agent?: string;
 }
 
 export interface SubAgentDone {
@@ -273,6 +322,10 @@ export interface GeneralSettings {
   video_base_url?: string;
   publish_bridge_port?: number;
   crawler_base_url?: string;
+  /** 是否为模型请求启用自定义 HTTP 代理 */
+  use_system_proxy?: boolean;
+  /** 代理地址，如 http://127.0.0.1:7890 */
+  http_proxy_url?: string;
 }
 
 export interface AppConfig {
@@ -315,7 +368,7 @@ export interface RevealedSecrets {
 
 // ── Media platforms / publish scripts ─────────────────────────────────────────
 
-export type MediaPublishKind = "dynamic" | "article" | "video";
+export type MediaPublishKind = "dynamic" | "article" | "video" | "podcast";
 
 export interface MediaPlatform {
   id: string;
@@ -326,7 +379,10 @@ export interface MediaPlatform {
   home_url: string;
   enabled: boolean;
   notes: string;
-  updated: number;
+  /** cn | intl */
+  region?: string;
+  updated_at?: number;
+  updated?: number;
 }
 
 export interface MediaPlatformPageItem extends MediaPlatform {

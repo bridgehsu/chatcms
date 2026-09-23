@@ -1,9 +1,11 @@
+//! 智能会话数据与命令。Agent 运行分层在 `crate::core`。
+
 pub mod commands;
-pub mod compress;
-pub mod intent;
 pub mod repository;
 pub mod service;
-pub mod truncate;
+pub mod trace;
+
+pub use trace::ChatTurnTrace;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -19,12 +21,25 @@ pub struct Session {
     pub pinned: bool,
     #[serde(default)]
     pub agent_id: Option<String>,
-    /// 创建时从 AgentProfile 锁定的 workspace 路径，整个会话生命周期内不变
+    /// 会话绑定的 Agent 工作目录；切换主 Agent 时随档案更新
     #[serde(default)]
     pub workspace_dir: Option<String>,
     /// 手动指定的模型 profile（优先级高于 auto 路由）
     #[serde(default)]
     pub profile_id: Option<String>,
+    /// 用户自定义分组（None = 未分组）
+    #[serde(default)]
+    pub group_id: Option<String>,
+}
+
+/// 用户自定义会话分组
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionGroup {
+    pub id: String,
+    pub name: String,
+    pub sort_order: i64,
+    pub created: u64,
+    pub updated: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,10 +72,15 @@ impl Session {
             agent_id: None,
             workspace_dir: None,
             profile_id: None,
+            group_id: None,
         }
     }
 
-    pub fn new_with_agent(title: impl Into<String>, agent_id: String, workspace_dir: Option<String>) -> Self {
+    pub fn new_with_agent(
+        title: impl Into<String>,
+        agent_id: String,
+        workspace_dir: Option<String>,
+    ) -> Self {
         let mut s = Self::new(title);
         s.agent_id = Some(agent_id);
         s.workspace_dir = workspace_dir;

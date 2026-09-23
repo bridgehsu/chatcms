@@ -1,0 +1,64 @@
+---
+description: 数据表格统一使用 CabinX（禁止页面直接堆 antd Table）
+globs: src/views/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# CabinX 表格规范
+
+管理类 / 观测类列表页的数据表格，**统一用** `src/components/CabinX`，保证 Topbar、Card 包表、序号列、分页样式一致。
+
+## 强制
+
+```text
+✅ import CabinX, { type CabinXColumn } from '@/components/CabinX'
+✅ api.paging 返回 { list, total, pageNum, pageSize }
+❌ 页面内直接 import { Table } from 'antd' 做主列表
+❌ 手写 .model-table / 原生 <table> 做 CRUD 主列表（存量逐步迁走）
+```
+
+参考实现：`views/accounts`、`views/skills`、`views/intents`、`views/settings/ObservabilityPage`。
+
+## 最小用法
+
+```tsx
+const api = useMemo(() => ({
+  paging: async (params: { pageNum?: number; pageSize?: number }) => {
+    void refreshKey; // 刷新时 bump key 触发重拉
+    const list = await invoke<Item[]>('xxx_list');
+    // 可前端切片，或后端分页后原样返回
+    return { list, total: list.length, pageNum: 1, pageSize: Math.max(list.length, 10) };
+  },
+  // 需要时再补：add / edit / del
+}), [refreshKey]);
+
+const columns: CabinXColumn<Item>[] = [/* dataIndex + render */];
+
+<CabinX
+  api={api}
+  columns={columns}
+  pageTitle="页面名"       // 与侧栏 / titleForPath 一致
+  rowKey="id"
+  headerActions={null}     // 无新增时显式 null；有则传按钮或留 undefined 用默认「新增」
+  showActionColumn={false} // 只读列表关操作列；可编辑页用 actionColumnRender
+/>
+```
+
+## 与 PageShell / Topbar
+
+| 场景 | 做法 |
+|------|------|
+| 独立一级页（账号 / 技能 / MCP…） | 用 CabinX **自带 Topbar**（`pageTitle` + `headerActions`） |
+| 已在 `PageShell` 下（系统设置子页） | `hideTopbar`，刷新等动作仍走外层 Topbar 事件 |
+| 行点击看详情 | `onRowClick={(row) => …}`；或 `actionColumnRender` + `ActionOverflow` |
+
+## 列与操作
+
+- 列类型：`CabinXColumn<T>`；筛选 / 表单字段挂在列的 `search` / `editor`
+- 行操作优先 `actionColumnRender` + `ActionOverflow`，不要在单元格里堆多个裸按钮
+- 刷新列表：`setRefreshKey(k => k + 1)`，并让 `api` 的 `useMemo` 依赖 `refreshKey`
+
+## 例外（可不走 CabinX）
+
+- 非列表主表：嵌在 Drawer / Modal / 聊天气泡里的小表
+- 复杂自定义网格（画布、时间线、瀑布图）——主列表仍用 CabinX，详情区可自定义

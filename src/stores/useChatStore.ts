@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import { invoke, listen } from "@/hooks/useTauri";
 import type {
+  ChatMode,
   Message,
   PermissionRequest,
   RememberScope,
   Session,
+  SessionGroup,
   SessionSummary,
   StreamChunk,
   SubAgentDone,
@@ -15,6 +17,26 @@ import type {
   ToolResultEvent,
 } from "@/types";
 
+const CHAT_MODE_KEY = "chatcms.chat.mode.v1";
+const PREFERRED_AGENT_KEY = "chatcms.preferredAgentId";
+
+const readChatMode = (): ChatMode => {
+  try {
+    const v = localStorage.getItem(CHAT_MODE_KEY);
+    if (v === "ask" || v === "agent" || v === "search") return v;
+    // 旧版 auto → Ask
+  } catch { /* ignore */ }
+  return "ask";
+};
+
+const readPreferredAgentId = (): string | null => {
+  try {
+    return localStorage.getItem(PREFERRED_AGENT_KEY);
+  } catch {
+    return null;
+  }
+};
+
 interface TokenUsage {
   input: number;
   output: number;
@@ -23,9 +45,14 @@ interface TokenUsage {
 
 interface ChatState {
   sessions: SessionSummary[];
+  sessionGroups: SessionGroup[];
+  /** 当前聚焦的分组：新会话会写入该 group_id；null = 未分组 */
+  focusedGroupId: string | null;
   activeSessionId: string | null;
   activeSession: Session | null;
-  activeAgentId: string | null;
+  chatMode: ChatMode;
+  /** 新建会话时的首选 Agent；null = 自动选角 */
+  preferredAgentId: string | null;
   streamingContent: string;
   isStreaming: boolean;
   thinkingContent: string;
@@ -34,8 +61,13 @@ interface ChatState {
   error: string | null;
   tokenUsage: TokenUsage | null;
 
-  setActiveAgent: (agentId: string | null) => void;
+  setChatMode: (mode: ChatMode) => void;
+  setPreferredAgentId: (agentId: string | null) => void;
+  /** 已有会话切换主 Agent（落库 + 同步 workspace） */
+  setSessionAgent: (agentId: string) => Promise<void>;
+  setFocusedGroupId: (groupId: string | null) => void;
   loadSessions: () => Promise<void>;
+  loadSessionGroups: () => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   abortSession: () => void;
@@ -43,6 +75,10 @@ interface ChatState {
   renameSession: (id: string, title: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
   pinSession: (id: string, pinned: boolean) => Promise<void>;
+  setSessionGroup: (sessionId: string, groupId: string | null) => Promise<void>;
+  createSessionGroup: (name: string) => Promise<SessionGroup>;
+  renameSessionGroup: (groupId: string, name: string) => Promise<void>;
+  deleteSessionGroup: (groupId: string) => Promise<void>;
   clearError: () => void;
   respondPermission: (
     requestId: string,
@@ -164,13 +200,14 @@ export const useChatStore = create<ChatState>((set, get) => {
 
   // ── sub-agent events ──────────────────────────────────────────────────────
   listen<SubAgentStart>("subagent-start", (event) => {
-    const { parent_session_id, task_id, prompt } = event.payload;
+    const { parent_session_id, task_id, prompt, agent } = event.payload;
     const { activeSessionId } = get();
     if (parent_session_id !== activeSessionId && activeSessionId !== null) return;
+    const who = agent?.trim() ? agent : "子代理";
     const msg: Message = {
       id: `subagent-${task_id}`,
       role: "tool",
-      content: `[sub-agent starting]\n${prompt}`,
+      content: `[tool: spawn_agent | ${JSON.stringify({ prompt, agent: who })}]\n[sub-agent starting] ${who}`,
       created: Date.now(),
     };
     set((s) => {
@@ -189,8 +226,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       if (!s.activeSession) return {};
       const messages = s.activeSession.messages.map((m) =>
         m.id === `subagent-${task_id}`
-          ? { ...m, content: m.content.replace("[sub-agent starting]", "[sub-agent done]") }
-          : m
+          ? {
+              ...m,
+              content: m.content.replace(
+                /\[sub-agent starting\][^\n]*/,
+                "[sub-agent done]",
+              ),
+            }
+          : m,
       );
       return { activeSession: { ...s.activeSession, messages } };
     });
@@ -198,9 +241,12 @@ export const useChatStore = create<ChatState>((set, get) => {
 
   return {
     sessions: [],
+    sessionGroups: [],
+    focusedGroupId: null,
     activeSessionId: null,
     activeSession: null,
-    activeAgentId: null,
+    chatMode: readChatMode(),
+    preferredAgentId: readPreferredAgentId(),
     streamingContent: "",
     isStreaming: false,
     thinkingContent: "",
@@ -217,17 +263,56 @@ export const useChatStore = create<ChatState>((set, get) => {
       void invoke("chat_abort", { sessionId: activeSessionId });
     },
 
-    setActiveAgent: (agentId) => {
-      set({ activeAgentId: agentId, activeSessionId: null, activeSession: null, error: null });
-      void get().loadSessions();
+    setFocusedGroupId: (groupId) => {
+      set({ focusedGroupId: groupId });
+    },
+
+    setChatMode: (mode) => {
+      try {
+        localStorage.setItem(CHAT_MODE_KEY, mode);
+      } catch { /* ignore */ }
+      set({ chatMode: mode });
+    },
+
+    setPreferredAgentId: (agentId) => {
+      try {
+        if (agentId) localStorage.setItem(PREFERRED_AGENT_KEY, agentId);
+        else localStorage.removeItem(PREFERRED_AGENT_KEY);
+      } catch { /* ignore */ }
+      set({ preferredAgentId: agentId });
+    },
+
+    setSessionAgent: async (agentId) => {
+      const { activeSessionId } = get();
+      if (!activeSessionId || activeSessionId === "pending") {
+        get().setPreferredAgentId(agentId);
+        return;
+      }
+      const session = await invoke<Session>("session_set_agent", {
+        sessionId: activeSessionId,
+        agentId,
+      });
+      set({
+        activeSession: session,
+        preferredAgentId: agentId,
+      });
+      try {
+        localStorage.setItem(PREFERRED_AGENT_KEY, agentId);
+      } catch { /* ignore */ }
+      await get().loadSessions();
     },
 
     loadSessions: async () => {
-      const { activeAgentId } = get();
+      // 展示全部会话（不再按角色过滤）
       const sessions = await invoke<SessionSummary[]>("session_list", {
-        agentId: activeAgentId ?? null,
+        agentId: null,
       });
       set({ sessions });
+    },
+
+    loadSessionGroups: async () => {
+      const sessionGroups = await invoke<SessionGroup[]>("session_group_list");
+      set({ sessionGroups });
     },
 
     selectSession: async (id: string) => {
@@ -235,14 +320,17 @@ export const useChatStore = create<ChatState>((set, get) => {
       set({
         activeSessionId: id,
         activeSession: session,
+        focusedGroupId: session?.group_id ?? null,
         streamingContent: "",
         isStreaming: false,
+        thinkingContent: "",
+        isThinking: false,
         error: null,
       });
     },
 
     sendMessage: async (content: string) => {
-      const { activeSessionId, activeSession } = get();
+      const { activeSessionId, activeSession, focusedGroupId } = get();
       const now = Date.now();
       const userMsg: Message = {
         id: crypto.randomUUID(),
@@ -261,6 +349,7 @@ export const useChatStore = create<ChatState>((set, get) => {
               messages: [userMsg],
               created: now,
               updated: now,
+              group_id: focusedGroupId,
             },
         streamingContent: "",
         isStreaming: true,
@@ -271,11 +360,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       });
 
       try {
-        const { activeAgentId } = get();
+        const { chatMode, preferredAgentId, activeSession: cur } = get();
+        const agentId = cur?.agent_id ?? preferredAgentId;
         const sessionId = await invoke<string>("chat_send", {
           sessionId: activeSessionId,
-          agentId: activeAgentId ?? null,
           content,
+          mode: chatMode,
+          groupId: activeSessionId ? null : focusedGroupId,
+          agentId,
         });
 
         set((s) => ({
@@ -291,6 +383,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         if (session) {
           set({
             activeSession: session,
+            focusedGroupId: session.group_id ?? null,
             isStreaming: false,
             streamingContent: "",
           });
@@ -312,6 +405,8 @@ export const useChatStore = create<ChatState>((set, get) => {
         activeSession: null,
         streamingContent: "",
         isStreaming: false,
+        thinkingContent: "",
+        isThinking: false,
         error: null,
       });
     },
@@ -359,6 +454,27 @@ export const useChatStore = create<ChatState>((set, get) => {
             : s.activeSession,
       }));
       await get().loadSessions();
+    },
+
+    setSessionGroup: async (sessionId, groupId) => {
+      await invoke("session_set_group", { sessionId, groupId });
+      await get().loadSessions();
+    },
+
+    createSessionGroup: async (name) => {
+      const g = await invoke<SessionGroup>("session_group_create", { name });
+      await get().loadSessionGroups();
+      return g;
+    },
+
+    renameSessionGroup: async (groupId, name) => {
+      await invoke("session_group_rename", { groupId, name });
+      await get().loadSessionGroups();
+    },
+
+    deleteSessionGroup: async (groupId) => {
+      await invoke("session_group_delete", { groupId });
+      await get().loadSessionGroups();
     },
 
     respondPermission: async (requestId, allowed, remember = "once") => {

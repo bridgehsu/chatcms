@@ -8,7 +8,7 @@ mod export;
 mod service;
 
 pub use types::{
-    ExportResult, KnowledgeEntry, KnowledgeSiteProfile, PublicFeed, normalize_slug,
+    ExportResult, KnowledgeEntry, KnowledgeSiteProfile, PublicFeed, normalize_slug, now_secs,
 };
 pub use search::{format_for_prompt, search};
 pub use feed::build_feed;

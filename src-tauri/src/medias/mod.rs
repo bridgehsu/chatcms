@@ -3,6 +3,7 @@
 pub mod commands;
 pub mod repository;
 
+mod multipost_catalog;
 mod service;
 
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ pub struct MediaPlatform {
     pub id: String,
     pub code: String,
     pub name: String,
-    /// dynamic | article | video
+    /// dynamic | article | video | podcast
     pub kind: String,
     #[serde(default)]
     pub inject_url: String,
@@ -22,6 +23,9 @@ pub struct MediaPlatform {
     pub enabled: bool,
     #[serde(default)]
     pub notes: String,
+    /// cn | intl
+    #[serde(default = "default_region")]
+    pub region: String,
     pub updated_at: i64,
 }
 
@@ -82,6 +86,8 @@ pub struct BridgePlatform {
     pub kind: String,
     pub inject_url: String,
     pub home_url: String,
+    #[serde(default = "default_region")]
+    pub region: String,
     pub has_script: bool,
     pub script_version: u32,
     #[serde(default)]
@@ -104,6 +110,10 @@ pub(crate) fn default_true() -> bool {
     true
 }
 
+pub(crate) fn default_region() -> String {
+    "cn".into()
+}
+
 pub(crate) fn now_ms() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
@@ -115,8 +125,15 @@ pub(crate) fn now_ms() -> i64 {
 pub(crate) fn normalize_kind(kind: &str) -> Result<String, String> {
     let k = kind.trim().to_lowercase();
     match k.as_str() {
-        "dynamic" | "article" | "video" => Ok(k),
-        _ => Err("类型须为 dynamic / article / video".into()),
+        "dynamic" | "article" | "video" | "podcast" => Ok(k),
+        _ => Err("类型须为 dynamic / article / video / podcast".into()),
+    }
+}
+
+pub(crate) fn normalize_region(region: &str) -> String {
+    match region.trim().to_lowercase().as_str() {
+        "intl" | "overseas" | "global" => "intl".into(),
+        _ => "cn".into(),
     }
 }
 
@@ -136,4 +153,5 @@ pub use service::{
     publish_script, discard_script_draft, bridge_list_platforms, bridge_get_script,
     bridge_get_collect_script, list_collect_scripts, get_or_create_collect_script,
     save_collect_script_draft, publish_collect_script, discard_collect_script_draft,
+    migrate_and_seed,
 };

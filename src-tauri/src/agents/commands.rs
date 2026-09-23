@@ -1,6 +1,6 @@
 use super::AgentProfile;
 use crate::agents::AgentState;
-use crate::permission::DomainPolicy;
+use crate::common::permission::DomainPolicy;
 use std::collections::HashMap;
 use tauri::{AppHandle, State};
 
@@ -87,6 +87,12 @@ pub async fn agent_activate(
     Ok(profile)
 }
 
+/// 当前全局默认 Agent id（智能配置「设为默认」）。
+#[tauri::command]
+pub fn agent_active_id(state: State<'_, AgentState>) -> Option<String> {
+    state.config.lock().unwrap().active_agent_id.clone()
+}
+
 #[tauri::command]
 pub async fn agent_remove(
     app: AppHandle,
@@ -113,6 +119,7 @@ pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
             agent_add,
             agent_update,
             agent_activate,
+            agent_active_id,
             agent_remove,
         ])
         .build()

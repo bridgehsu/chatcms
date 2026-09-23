@@ -135,7 +135,7 @@ export const MarkdownContent = ({ content, streaming = false }: Props) => {
   if (!text.trim()) {
     return (
       <div className="md-content">
-        <p className="md-content__placeholder">思考中…</p>
+        <p className="md-content__placeholder">回复中…</p>
         {streaming && <span className="cursor" aria-hidden="true" />}
       </div>
     );

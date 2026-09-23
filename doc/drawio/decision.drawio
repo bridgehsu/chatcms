@@ -1,0 +1,126 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Decision 三分支" id="decision-three">
+    <mxGraphModel background="#ffffff" dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="&lt;b&gt;L3 决策层&lt;/b&gt; · Ask/Search/Agent 三路组装 → L4 plan（不调 L4b）" style="text;html=1;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="16" width="680" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="sub" value="入口已有：intent（业务域）· sid · mode_raw　｜　角色：会话已绑定 → 否则 Ask/Search 用激活 Agent / Agent 按意图选角　｜　本层只备料" style="text;html=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="44" width="780" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="from" value="← L2 intent　业务域已写入 ctx" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="580" y="70" width="240" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="in" value="&lt;b&gt;decision::run&lt;/b&gt;&lt;br&gt;确认 ChatMode = parse(mode_raw)" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="560" y="118" width="280" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="split" value="Mode？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="610" y="190" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Ask 列 ===== -->
+        <mxCell id="ask_h" value="&lt;b&gt;Ask&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="280" width="280" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="ask_1" value="① 角色：默认/激活 Agent&lt;br&gt;&lt;b&gt;不按意图选角、不绑定会话&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="340" width="280" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ask_2" value="② tools = []" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="420" width="280" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ask_3" value="③ 标记：后续 &lt;b&gt;不注入意图块&lt;/b&gt;&lt;br&gt;（inject_intent_block=false）" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="484" width="280" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ask_4" value="④ 知识库/技能：不注入" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="564" width="280" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ask_out" value="组装结果 A&lt;br&gt;mode=Ask · tools=[] · intent 仅 trace" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="632" width="280" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Search 列 ===== -->
+        <mxCell id="sea_h" value="&lt;b&gt;Search&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="560" y="280" width="280" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="sea_1" value="① 角色：默认/激活&lt;br&gt;&lt;b&gt;不按意图选角、不绑定&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="340" width="280" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sea_2" value="② tools = []（仍不进执行层）" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="420" width="280" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sea_3" value="③ 标记：&lt;b&gt;可注入意图块&lt;/b&gt;&lt;br&gt;+ 知识库 limit=8" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="484" width="280" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sea_4" value="④ 技能：不注入" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="564" width="280" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sea_out" value="组装结果 S&lt;br&gt;mode=Search · tools=[] · 意图供 prompt" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="632" width="280" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Agent 列 ===== -->
+        <mxCell id="ag_h" value="&lt;b&gt;Agent&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1040" y="280" width="300" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="ag_1" value="① 会话已绑定 → 否则 &lt;b&gt;按意图业务域选角&lt;/b&gt;&lt;br&gt;（如 publish→writer）并 &lt;b&gt;可绑定会话&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="340" width="300" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="ag_2" value="② tools = 内置 + MCP" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="436" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ag_3" value="③ 标记：&lt;b&gt;注入意图块&lt;/b&gt;（含 hint）&lt;br&gt;+ 技能 + 知识库 limit=3" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="500" width="300" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ag_4" value="④ 刷新 workspace / session_agent 到 ctx" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="580" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ag_out" value="组装结果 G&lt;br&gt;mode=Agent · tools满 · 意图参与选角+prompt" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="648" width="300" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- 汇合 -->
+        <mxCell id="merge" value="&lt;b&gt;汇合 → plan::run（L4）&lt;/b&gt;　详见 plan.drawio&lt;br&gt;拼 system prompt · stream_chat（Ask/Search 通常无 tool_call）&lt;br&gt;&lt;font color='#666'&gt;仅当模型返回 tool_call 时才进入 L4b execute（见 execute.drawio）&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="400" y="760" width="600" height="78" as="geometry" />
+        </mxCell>
+
+        <mxCell id="no_exec" value="✗ L3 不调用 L4b execute" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="774" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- edges -->
+        <mxCell id="ef" edge="1" parent="1" source="from" target="in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e0" edge="1" parent="1" source="in" target="split" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_ask" value="Ask" edge="1" parent="1" source="split" target="ask_h" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_sea" value="Search" edge="1" parent="1" source="split" target="sea_h" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_ag" value="Agent" edge="1" parent="1" source="split" target="ag_h" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="ea1" edge="1" parent="1" source="ask_h" target="ask_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea2" edge="1" parent="1" source="ask_1" target="ask_2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea3" edge="1" parent="1" source="ask_2" target="ask_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea4" edge="1" parent="1" source="ask_3" target="ask_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea5" edge="1" parent="1" source="ask_4" target="ask_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="es1" edge="1" parent="1" source="sea_h" target="sea_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es2" edge="1" parent="1" source="sea_1" target="sea_2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es3" edge="1" parent="1" source="sea_2" target="sea_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es4" edge="1" parent="1" source="sea_3" target="sea_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es5" edge="1" parent="1" source="sea_4" target="sea_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="eg1" edge="1" parent="1" source="ag_h" target="ag_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eg2" edge="1" parent="1" source="ag_1" target="ag_2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eg3" edge="1" parent="1" source="ag_2" target="ag_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eg4" edge="1" parent="1" source="ag_3" target="ag_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eg5" edge="1" parent="1" source="ag_4" target="ag_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="em1" edge="1" parent="1" source="ask_out" target="merge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em2" edge="1" parent="1" source="sea_out" target="merge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="em3" edge="1" parent="1" source="ag_out" target="merge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

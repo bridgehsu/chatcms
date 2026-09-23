@@ -3,6 +3,7 @@ import { App as AntdApp, Button, Form, Input, InputNumber, Select, Switch, Tag }
 import { CopyOutlined } from '@ant-design/icons';
 import { invoke } from '@/hooks/useTauri';
 import CabinX, { type CabinXColumn } from '@/components/CabinX';
+import { readActiveProfileId } from '@/views/chat/components/ModelPicker';
 
 const LOCAL_BASE_URL = 'http://localhost:11434';
 
@@ -59,17 +60,26 @@ const PRESET_TAGS = [
 
 // ── 动态子组件（内部使用 Form.useWatch） ──────────────────────────────────────
 
-/** 思考深度选择器：仅在 thinking=true 时可用 */
-const ThinkingEffortField = ({ form }: { form: any }) => {
+/** 思考深度：随 thinking 开关启用（需透传 Form.Item 的 value/onChange） */
+const ThinkingEffortField = ({
+    form,
+    value,
+    onChange,
+}: {
+    form: any;
+    value?: string;
+    onChange?: (v: string) => void;
+}) => {
     const thinking = Form.useWatch('thinking', form);
     return (
-        <Form.Item name="thinkingEffort" noStyle initialValue="medium">
-            <Select
-                options={EFFORT_OPTIONS}
-                disabled={!thinking}
-                placeholder="开启后选择深度"
-            />
-        </Form.Item>
+        <Select
+            value={value}
+            onChange={onChange}
+            options={EFFORT_OPTIONS}
+            disabled={!thinking}
+            placeholder="开启思考后可选深度"
+            allowClear={false}
+        />
     );
 };
 
@@ -89,6 +99,7 @@ const ExtraBodyField = () => (
 export const ModelsPage = () => {
     const { message } = AntdApp.useApp();
     const [refreshKey, setRefreshKey] = useState(0);
+    const activeChatProfileId = readActiveProfileId();
 
     const api = useMemo(() => ({
         paging: async (params: any) => {
@@ -109,34 +120,52 @@ export const ModelsPage = () => {
             });
             return { list, total: list.length, pageNum: 1, pageSize: Math.max(list.length, 10) };
         },
-        add:  async (data: any) => invoke('model_profile_add', data),
-        edit: async (data: any) => invoke('model_profile_update', data),
+        add:  async (data: any) => {
+            try {
+                return await invoke('model_profile_add', data);
+            } catch (e) {
+                throw new Error(typeof e === 'string' ? e : (e as Error)?.message || String(e));
+            }
+        },
+        edit: async (data: any) => {
+            try {
+                return await invoke('model_profile_update', data);
+            } catch (e) {
+                throw new Error(typeof e === 'string' ? e : (e as Error)?.message || String(e));
+            }
+        },
         del:  async (id: string | number) => invoke('model_profile_remove', { id: String(id) }),
     }), [refreshKey]);
 
     // 记录 → 表单初始值（snake_case → camelCase）
     const updateProfile = async (record: ProviderProfile, patch: Partial<ProviderProfile>) => {
         const p = { ...record, ...patch };
-        await invoke('model_profile_update', {
-            id:              p.id,
-            name:            p.name,
-            kind:            p.kind,
-            apiKey:          p.api_key,
-            model:           p.model,
-            baseUrl:         p.base_url ?? null,
-            tier:            p.tier,
-            weight:          p.weight,
-            contextWindow:   p.context_window,
-            enabled:         p.enabled,
-            capabilities:    p.capabilities ?? null,
-            thinking:        p.thinking,
-            thinkingEffort:  p.thinking_effort,
-            temperature:     p.temperature ?? null,
-            maxOutputTokens: p.max_output_tokens ?? null,
-            extraBody:       p.extra_body ?? null,
-            tags:            p.tags ?? [],
-        });
-        setRefreshKey(k => k + 1);
+        try {
+            await invoke('model_profile_update', {
+                id:              p.id,
+                name:            p.name,
+                kind:            p.kind,
+                apiKey:          p.api_key,
+                model:           p.model,
+                baseUrl:         p.base_url ?? null,
+                tier:            p.tier || 'cloud',
+                weight:          p.weight,
+                contextWindow:   p.context_window,
+                enabled:         p.enabled,
+                capabilities:    p.capabilities ?? null,
+                thinking:        p.thinking === true,
+                thinkingEffort:  p.thinking_effort || 'medium',
+                temperature:     p.temperature ?? null,
+                maxOutputTokens: p.max_output_tokens ?? null,
+                extraBody:       p.extra_body ?? null,
+                tags:            p.tags ?? [],
+            });
+            setRefreshKey(k => k + 1);
+        } catch (e) {
+            const msg = typeof e === 'string' ? e : (e as Error)?.message || String(e);
+            message.error(msg);
+            throw e;
+        }
     };
 
     const formatRecordForEdit = (record: ProviderProfile) => ({
@@ -170,27 +199,33 @@ export const ModelsPage = () => {
         if (values.capVision)    capabilities.vision    = true;
 
         let extraBody: Record<string, unknown> | null = null;
-        if (values.extraBody?.trim()) {
-            try { extraBody = JSON.parse(values.extraBody); } catch { /* 忽略非法 JSON */ }
+        if (typeof values.extraBody === 'string' && values.extraBody.trim()) {
+            try {
+                extraBody = JSON.parse(values.extraBody);
+            } catch {
+                throw new Error('extra_body 不是合法 JSON');
+            }
+        } else if (values.extraBody && typeof values.extraBody === 'object') {
+            extraBody = values.extraBody;
         }
 
         const out: Record<string, any> = {
-            name:            values.name?.trim(),
+            name:            String(values.name ?? '').trim(),
             kind:            values.kind,
             apiKey:          values.apiKey ?? '',
-            model:           values.model?.trim(),
-            baseUrl:         values.baseUrl?.trim() || null,
-            tier:            values.tier,
-            weight:          values.weight ?? 2,
-            contextWindow:   values.contextWindow ?? 8192,
-            enabled:         values.enabled ?? true,
-            tags:            values.tags ?? [],
+            model:           String(values.model ?? '').trim(),
+            baseUrl:         String(values.baseUrl ?? '').trim() || null,
+            tier:            values.tier === 'local' || values.tier === 'cloud' ? values.tier : 'cloud',
+            weight:          Number(values.weight ?? 2),
+            contextWindow:   Number(values.contextWindow ?? 8192),
+            enabled:         values.enabled !== false,
+            tags:            Array.isArray(values.tags) ? values.tags : [],
             capabilities:    Object.keys(capabilities).length > 0 ? capabilities : null,
-            thinking:        values.thinking ?? false,
-            thinkingEffort:  values.thinkingEffort ?? 'medium',
+            thinking:        values.thinking === true || values.thinking === 'true',
+            thinkingEffort:  values.thinkingEffort || 'medium',
             temperature:     typeof values.temperature === 'number' ? values.temperature : null,
             maxOutputTokens: typeof values.maxOutputTokens === 'number' ? values.maxOutputTokens : null,
-            extraBody:       extraBody,
+            extraBody,
         };
         if (values.id) out.id = values.id;
         return out;
@@ -262,8 +297,13 @@ export const ModelsPage = () => {
                 rules: [{ required: true, message: '请输入名称' }],
                 placeholder: '例如：公司 Claude / 本地 Qwen',
             },
-            render: (name: string) => (
-                <span className="model-table__name">{name}</span>
+            render: (name: string, record: ProviderProfile) => (
+                <span className="model-table__name">
+                    {name}
+                    {activeChatProfileId === record.id && (
+                        <Tag color="blue" style={{ marginLeft: 6 }}>会话中</Tag>
+                    )}
+                </span>
             ),
         },
         {
@@ -296,17 +336,33 @@ export const ModelsPage = () => {
                 rules: [{ required: true, message: '请选择类型' }],
                 initialValue: 'cloud',
                 renderFormItem: (form: any) => (
-                    <Select
-                        options={[
-                            { label: '云端 (cloud)', value: 'cloud' },
-                            { label: '本地 (local)', value: 'local' },
-                        ]}
-                        onChange={(val: string) => {
-                            if (val === 'local') {
-                                form.setFieldsValue({ kind: 'openai', baseUrl: LOCAL_BASE_URL });
-                            }
-                        }}
-                    />
+                    <Form.Item
+                        name="tier"
+                        noStyle
+                        rules={[{ required: true, message: '请选择类型' }]}
+                        initialValue="cloud"
+                    >
+                        <Select
+                            options={[
+                                { label: '云端 (cloud)', value: 'cloud' },
+                                { label: '本地 (local)', value: 'local' },
+                            ]}
+                            onChange={(val: string) => {
+                                // 自定义 onChange 时显式写回 tier，避免冲掉 Form.Item 收集
+                                if (val === 'local') {
+                                    const cur = String(form.getFieldValue('baseUrl') ?? '').trim();
+                                    form.setFieldsValue({
+                                        tier: val,
+                                        kind: 'openai',
+                                        // 仅在地址为空时填本地默认，勿覆盖已配置的远程地址
+                                        ...(cur ? {} : { baseUrl: LOCAL_BASE_URL }),
+                                    });
+                                } else {
+                                    form.setFieldsValue({ tier: val });
+                                }
+                            }}
+                        />
+                    </Form.Item>
                 ),
             },
             render: (tier: string) => (
@@ -505,24 +561,52 @@ export const ModelsPage = () => {
 
         // ── 思考模式 ─────────────────────────────────────────────────────────
         {
-            title: '思考模式（表单）',
-            dataIndex: '__thinking',
-            key: '__thinking',
-            hideInTable: true,
+            title: '思考',
+            dataIndex: 'thinking',
+            key: 'thinking',
+            width: 88,
+            render: (v: boolean, record: ProviderProfile) => (
+                <Switch
+                    size="small"
+                    checked={!!v}
+                    checkedChildren="开"
+                    unCheckedChildren="关"
+                    onChange={(checked) => {
+                        void updateProfile(record, { thinking: checked }).then(() => {
+                            message.success(
+                                checked
+                                    ? `已开启思考：${record.name}`
+                                    : `已关闭思考：${record.name}`,
+                            );
+                        });
+                    }}
+                />
+            ),
             editor: {
                 name: 'thinking',
                 label: '思考模式',
                 type: 'switch',
+                valuePropName: 'checked',
                 initialValue: false,
+                checkedChildren: '开启',
+                unCheckedChildren: '关闭',
+            },
+        },
+        {
+            title: '思考深度（表单）',
+            dataIndex: '__thinkingEffort',
+            key: '__thinkingEffort',
+            hideInTable: true,
+            editor: {
+                name: 'thinkingEffort',
+                label: '思考深度',
+                type: 'select',
+                options: EFFORT_OPTIONS,
+                initialValue: 'medium',
                 renderFormItem: (form: any) => (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <Form.Item name="thinking" noStyle valuePropName="checked" initialValue={false}>
-                            <Switch checkedChildren="开启" unCheckedChildren="关闭" />
-                        </Form.Item>
-                        <div style={{ flex: 1 }}>
-                            <ThinkingEffortField form={form} />
-                        </div>
-                    </div>
+                    <Form.Item name="thinkingEffort" noStyle initialValue="medium">
+                        <ThinkingEffortField form={form} />
+                    </Form.Item>
                 ),
             },
         },

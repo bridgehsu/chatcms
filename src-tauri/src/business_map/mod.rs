@@ -61,13 +61,13 @@ pub struct MapNavView {
 }
 
 pub fn get(app: &AppHandle) -> BusinessMapState {
-    let mut state = crate::persist::load_business_map(app);
+    let mut state = crate::common::persist::load_business_map(app);
     state.sections.sort_by_key(|s| s.sort_order);
     state
 }
 
 pub fn save(app: &AppHandle, state: BusinessMapState) {
-    crate::persist::save_business_map(app, &state);
+    crate::common::persist::save_business_map(app, &state);
 }
 
 pub fn nav_view(app: &AppHandle) -> MapNavView {

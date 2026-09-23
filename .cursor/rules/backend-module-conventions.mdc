@@ -25,7 +25,7 @@ src-tauri/src/<domain>/
 ### repository.rs
 - **直接**持有 SQL 语句（sqlx query）或 store 读写逻辑
 - **不**通过 `crate::persist` 转发——persist 层是尚未拥有独立 repository 的模块的临时家
-- 若需读写 AppConfig（跨域共享配置），可委托给 `crate::persist::load_config / save_config`
+- 若需读写 AppConfig（跨域共享配置），可委托给 `crate::common::persist::load_config / save_config`
 - 函数命名：`load_all`、`save`、`delete`、`load_config`、`save_config`
 
 ### service.rs
@@ -50,7 +50,7 @@ commands  →  service  →  repository  →  SQLite / store
 |------|------|
 | 域模块有独立 CRUD（list/add/update/remove） | 在域目录下建 `repository.rs`，SQL 写在此处 |
 | 简单键值、无 CRUD、无业务规则 | 继续使用 `crate::persist` |
-| 跨域共享配置（AppConfig） | repository 中委托 `crate::persist::load_config / save_config` |
+| 跨域共享配置（AppConfig） | repository 中委托 `crate::common::persist::load_config / save_config` |
 
 ## 示例：agents 模块
 

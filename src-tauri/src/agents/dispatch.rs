@@ -7,12 +7,12 @@ use tokio::time::{timeout, Duration};
 /// MCP 工具调用最长等待时间
 const MCP_TOOL_TIMEOUT_SECS: u64 = 60;
 
-use crate::permission::{
+use crate::common::permission::{
     self, append_audit, make_audit, AuditDecision, RememberScope, SessionGrant, Verdict,
 };
-use super::tools;
+use crate::core::tools;
 
-use crate::permission::request_permission;
+use crate::common::permission::request_permission;
 use super::state::AgentState;
 use super::subagent::run_sub_agent;
 

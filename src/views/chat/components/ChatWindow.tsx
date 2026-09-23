@@ -1,23 +1,32 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { IconSend, IconStop } from "@/components/icons";
+import {
+  CheckOutlined,
+  CopyOutlined,
+  DownOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
+import { App as AntdApp, Button, Dropdown, Space, Tooltip, Typography } from "antd";
+import { useNavigate } from "react-router-dom";
 import { Select } from "@/components/Select";
+import { IconSend, IconStop } from "@/components/icons";
 import { useChatStore } from "@/stores/useChatStore";
+import { useNotesStore } from "@/stores/useNotesStore";
 import { usePermissionStore } from "@/stores/usePermissionStore";
 import type { Message } from "@/types";
+import {
+  findLatestNoteByMessageId,
+} from "../utils/saveToContent";
 import { MarkdownContent } from "./MarkdownContent";
+import { ModePicker } from "./ModePicker";
 import { ModelPicker, readAuto } from "./ModelPicker";
 import { PermissionPrompt } from "./PermissionPrompt";
+import { QuickSaveModal } from "./QuickSaveModal";
+import { SaveToContentModal } from "./SaveToContentModal";
 import { ToolMessage } from "./ToolMessage";
 
-/**
- * 思考过程气泡（可折叠）
- * - thinking=true：思考中，标题带动画点
- * - thinking=false：思考完成，默认折叠
- */
 const ThinkingBubble = ({ content, thinking }: { content: string; thinking: boolean }) => {
   const [open, setOpen] = useState(thinking);
 
-  // 思考中自动展开，结束后保持当前状态
   useEffect(() => {
     if (thinking) setOpen(true);
   }, [thinking]);
@@ -45,40 +54,216 @@ const ThinkingBubble = ({ content, thinking }: { content: string; thinking: bool
   );
 };
 
-/**
- * 消息行（ChatGPT / Claude 范式）
- * - 无头像
- * - 用户：右对齐胶囊，纯文本
- * - 助手：左对齐 Markdown 渲染
- * - 工具：左对齐工具卡
- */
-const MessageBubble = memo(({ msg }: { msg: Message }) => {
-  if (msg.role === "tool") {
-    return (
-      <div className="message message--tool">
-        <ToolMessage content={msg.content} />
-      </div>
-    );
-  }
+type AssistantActionsProps = {
+  msg: Message;
+  sessionId: string;
+  sessionTitle: string;
+  onPolish: (msg: Message) => void;
+};
 
-  if (msg.role === "user") {
-    return (
-      <div className="message message--user">
-        <div className="message-body message-body--bubble">{msg.content}</div>
-      </div>
-    );
-  }
+const AssistantActions = ({
+  msg,
+  sessionId,
+  sessionTitle,
+  onPolish,
+}: AssistantActionsProps) => {
+  const { message } = AntdApp.useApp();
+  const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const notes = useNotesStore((s) => s.notes);
+  const related = notes
+    .filter((n) => n.sourceMessageId === msg.id)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+  const savedNote = related[0];
+  const savedCount = related.length;
+
+  const toastSaved = (noteId: string, updated: boolean) => {
+    const note = useNotesStore.getState().notes.find((n) => n.id === noteId);
+    const groupName =
+      (note?.groupId &&
+        useNotesStore.getState().groups.find((g) => g.id === note.groupId)?.name) ||
+      "未分组";
+    message.success({
+      content: (
+        <span>
+          {updated ? "已更新笔记" : "已保存到内容管理"}
+          <Typography.Text type="secondary" style={{ marginLeft: 6 }}>
+            · {groupName}
+          </Typography.Text>
+          <a
+            style={{ marginLeft: 10 }}
+            onClick={() => {
+              useNotesStore.getState().select(noteId);
+              navigate("/content");
+            }}
+          >
+            打开
+          </a>
+        </span>
+      ),
+      duration: 4,
+    });
+  };
+
+  const handleQuickSave = () => {
+    if (!msg.content.trim()) {
+      message.warning("没有可保存的内容");
+      return;
+    }
+    setQuickOpen(true);
+  };
+
+  const handleCopy = async () => {
+    const text = msg.content.trim();
+    if (!text) {
+      message.warning("没有可复制的内容");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      message.success("已复制");
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      message.error("复制失败");
+    }
+  };
+
+  const menuItems = [
+    {
+      key: "polish",
+      label: "AI 整理后保存",
+      onClick: () => onPolish(msg),
+    },
+    ...(savedNote
+      ? [
+          {
+            key: "open",
+            label:
+              savedCount > 1
+                ? `打开最近笔记（共 ${savedCount} 篇）`
+                : "打开已存笔记",
+            onClick: () => {
+              useNotesStore.getState().select(savedNote.id);
+              navigate("/content");
+            },
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <div className={`message message--${msg.role}`}>
-      <div className="message-body message-body--md">
-        <MarkdownContent content={msg.content} />
-      </div>
+    <div
+      className={`message-actions${savedNote ? " is-saved" : ""}${menuOpen ? " is-open" : ""}`}
+    >
+      <Space size={0} className="message-actions__btns">
+        <Tooltip title={copied ? "已复制" : "复制"}>
+          <Button
+            type="text"
+            size="small"
+            icon={copied ? <CheckOutlined /> : <CopyOutlined />}
+            onClick={() => void handleCopy()}
+            aria-label="复制"
+          />
+        </Tooltip>
+        <Tooltip
+          title={
+            savedNote
+              ? savedCount > 1
+                ? `已保存 ${savedCount} 篇 · 点击管理`
+                : "已保存 · 点击可更新或另存"
+              : "保存到内容管理"
+          }
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={savedNote ? <CheckOutlined /> : <SaveOutlined />}
+            onClick={handleQuickSave}
+            aria-label={savedNote ? "已保存" : "保存"}
+            className={savedNote ? "message-actions__save is-done" : undefined}
+          />
+        </Tooltip>
+        <Dropdown
+          menu={{ items: menuItems }}
+          trigger={["click"]}
+          onOpenChange={setMenuOpen}
+        >
+          <Tooltip title="更多">
+            <Button
+              type="text"
+              size="small"
+              icon={<DownOutlined />}
+              aria-label="更多保存选项"
+            />
+          </Tooltip>
+        </Dropdown>
+      </Space>
+      <QuickSaveModal
+        open={quickOpen}
+        msg={msg}
+        sessionId={sessionId}
+        sessionTitle={sessionTitle}
+        onClose={() => setQuickOpen(false)}
+        onSaved={toastSaved}
+      />
     </div>
   );
-});
+};
 
-// ── 独立的输入框组件，按键时只重渲自身，不触发消息列表重渲 ──────────────────
+const MessageBubble = memo(
+  ({
+    msg,
+    sessionId,
+    sessionTitle,
+    onPolish,
+  }: {
+    msg: Message;
+    sessionId?: string;
+    sessionTitle?: string;
+    onPolish?: (msg: Message) => void;
+  }) => {
+    if (msg.role === "tool") {
+      return (
+        <div className="message message--tool">
+          <ToolMessage content={msg.content} />
+        </div>
+      );
+    }
+
+    if (msg.role === "user") {
+      return (
+        <div className="message message--user">
+          <div className="message-body message-body--bubble">{msg.content}</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`message message--${msg.role}`}>
+        <div className="message__stack">
+          <div className="message-body message-body--md">
+            <MarkdownContent content={msg.content} />
+          </div>
+          {msg.role === "assistant" &&
+            sessionId &&
+            onPolish &&
+            msg.content.trim() && (
+              <AssistantActions
+                msg={msg}
+                sessionId={sessionId}
+                sessionTitle={sessionTitle ?? ""}
+                onPolish={onPolish}
+              />
+            )}
+        </div>
+      </div>
+    );
+  },
+);
+
 type ComposerProps = {
   onSend: (text: string) => Promise<void>;
   isStreaming: boolean;
@@ -88,7 +273,13 @@ type ComposerProps = {
 };
 
 const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage }: ComposerProps) => {
-  const { modes: permissionModes, activeModeId, load: loadPermissionModes, setActive: setActivePermissionMode } = usePermissionStore();
+  const {
+    modes: permissionModes,
+    activeModeId,
+    load: loadPermissionModes,
+    setActive: setActivePermissionMode,
+  } = usePermissionStore();
+  const { chatMode, setChatMode } = useChatStore();
   const [input, setInput] = useState("");
   const [autoModel, setAutoModel] = useState(readAuto);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -122,6 +313,14 @@ const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage 
       ? activeModeId
       : (permissionOptions[0]?.value ?? "");
 
+  const showPermission = chatMode === "agent";
+  const placeholder =
+    chatMode === "ask"
+      ? "提问或闲聊…（Ask：不调用工具）"
+      : chatMode === "search"
+        ? "检索知识库相关问题…"
+        : "描述要完成的任务…（Agent：可调用工具）";
+
   return (
     <div className="input-bar">
       <PermissionPrompt />
@@ -133,7 +332,7 @@ const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"
+            placeholder={placeholder}
             rows={1}
             disabled={isStreaming || pendingPermission}
           />
@@ -154,21 +353,28 @@ const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage 
           )}
         </div>
         <div className="composer__footer">
-          <ModelPicker autoModel={autoModel} onAutoChange={setAutoModel} />
+          <div className="composer__controls">
+            <ModePicker
+              value={chatMode}
+              onChange={setChatMode}
+              disabled={isStreaming || pendingPermission}
+            />
+            <ModelPicker autoModel={autoModel} onAutoChange={setAutoModel} />
+            {showPermission && permissionOptions.length > 0 && (
+              <Select
+                className="composer__perm"
+                aria-label="选择权限模式"
+                placement="top"
+                value={permissionValue}
+                options={permissionOptions}
+                onChange={(id) => void setActivePermissionMode(id)}
+              />
+            )}
+          </div>
           {tokenUsage && (
             <span className="composer__tokens" title={`输入 ${tokenUsage.input.toLocaleString()} · 输出 ${tokenUsage.output.toLocaleString()}`}>
               {tokenUsage.total.toLocaleString()} tokens
             </span>
-          )}
-          {permissionOptions.length > 0 && (
-            <Select
-              className="composer__perm"
-              aria-label="选择权限模式"
-              placement="top"
-              value={permissionValue}
-              options={permissionOptions}
-              onChange={(id) => void setActivePermissionMode(id)}
-            />
           )}
         </div>
       </div>
@@ -191,8 +397,14 @@ export const ChatWindow = () => {
     clearError,
   } = useChatStore();
   const messagesRef = useRef<HTMLDivElement>(null);
+  const [polishTarget, setPolishTarget] = useState<Message | null>(null);
+  const hydrateNotes = useNotesStore((s) => s.hydrate);
+  const notesReady = useNotesStore((s) => s.ready);
 
-  // 只滚消息容器，避免 scrollIntoView 带动整页导致会话区「空白」
+  useEffect(() => {
+    if (!notesReady) void hydrateNotes();
+  }, [notesReady, hydrateNotes]);
+
   useEffect(() => {
     const root = messagesRef.current;
     if (!root) return;
@@ -201,6 +413,9 @@ export const ChatWindow = () => {
 
   const messages = activeSession?.messages ?? [];
   const isEmpty = messages.length === 0 && !isStreaming;
+  const existingForPolish = polishTarget
+    ? findLatestNoteByMessageId(polishTarget.id)
+    : undefined;
 
   return (
     <div className="chat-window">
@@ -210,13 +425,19 @@ export const ChatWindow = () => {
             <div className="empty-state">
               <p className="empty-state__title">有什么可以帮你的？</p>
               <p className="empty-state__hint">
-                在下方输入问题，或先到侧栏「模型」填写 API 密钥
+                顶栏可选主 Agent；下方可切换 Ask / Agent / Search
               </p>
             </div>
           )}
 
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} />
+            <MessageBubble
+              key={msg.id}
+              msg={msg}
+              sessionId={activeSession?.id}
+              sessionTitle={activeSession?.title}
+              onPolish={setPolishTarget}
+            />
           ))}
 
           {(isThinking || (!isThinking && thinkingContent)) && (
@@ -251,6 +472,18 @@ export const ChatWindow = () => {
         onAbort={abortSession}
         tokenUsage={tokenUsage}
       />
+
+      {activeSession && polishTarget && (
+        <SaveToContentModal
+          open
+          onClose={() => setPolishTarget(null)}
+          sessionId={activeSession.id}
+          sessionTitle={activeSession.title}
+          messageId={polishTarget.id}
+          content={polishTarget.content}
+          existingNoteId={existingForPolish?.id}
+        />
+      )}
     </div>
   );
 };

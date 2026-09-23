@@ -95,6 +95,10 @@ export interface CabinXProps<T = any> {
   actionColumnRender?: (record: T, actions: ActionHandlers) => React.ReactNode;
   actionBtnComponents?: (record: T) => React.ReactNode;
   formType?: 'D' | 'M'; // D for Drawer, M for Tmodal
+  /** 嵌在 PageShell 等已有 Topbar 的页面时隐藏自带标题栏 */
+  hideTopbar?: boolean;
+  /** 行点击（如打开详情） */
+  onRowClick?: (record: T) => void;
 }
 
 export type CabinXParameters<T = any> = {
@@ -122,4 +126,6 @@ export type CabinXParameters<T = any> = {
   actionColumnRender?: (record: any, actions: ActionHandlers) => React.ReactNode;
   actionBtnComponents?: (record: any) => React.ReactNode;
   formType?: 'D' | 'M'; // default: 'D' (Drawer), M for Tmodal
+  hideTopbar?: boolean;
+  onRowClick?: (record: T) => void;
 };

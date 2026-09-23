@@ -156,6 +156,8 @@ const CabinX: React.FC<CabinXProps> = ({
                                            headerActions,
                                            extraHeaderActions,
                                            initialSearchValues,
+                                           hideTopbar = false,
+                                           onRowClick,
                                        }) => {
     const {message} = AntdApp.useApp();
     const [loading, setLoading] = useState(false);
@@ -344,6 +346,10 @@ const CabinX: React.FC<CabinXProps> = ({
     }, [fetchData, sorterState.field, sorterState.order, pagination.pageNum, pagination.pageSize]);
 
     const handleDelete = async (id: number | string) => {
+        if (!api.del) {
+            message.error('未配置删除接口');
+            return;
+        }
         try {
             await api.del(id);
             await fetchData(searchForm.getFieldsValue(), pagination.pageNum, pagination.pageSize, sorterState.field, sorterState.order);
@@ -392,9 +398,17 @@ const CabinX: React.FC<CabinXProps> = ({
         setBtnLoading(true);
         try {
             if (currentItem) {
+                if (!api.edit) {
+                    message.error('未配置编辑接口');
+                    return;
+                }
                 await api.edit({...payload, id: currentItem[rowKey]});
                 message.success('编辑成功');
             } else {
+                if (!api.add) {
+                    message.error('未配置新增接口');
+                    return;
+                }
                 await api.add(payload);
                 message.success('添加成功');
             }
@@ -402,7 +416,11 @@ const CabinX: React.FC<CabinXProps> = ({
             editorForm.resetFields();
             await fetchData(searchForm.getFieldsValue(), pagination.pageNum, pagination.pageSize, sorterState.field, sorterState.order);
         } catch (err: any) {
-            message.error(err.message || '操作失败');
+            const msg =
+                typeof err === 'string'
+                    ? err
+                    : err?.message || err?.toString?.() || '操作失败';
+            message.error(msg);
         } finally {
             setBtnLoading(false);
         }
@@ -512,21 +530,23 @@ const CabinX: React.FC<CabinXProps> = ({
 
     return (
         <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-            {/* Topbar：突破 .page padding，贴顶全宽 */}
-            <header className="topbar" style={{margin: '-24px -10px 0'}}>
-                <div className="topbar-text">
-                    <h1 className="topbar-title">{pageTitle}</h1>
-                </div>
-                <div className="topbar-actions">
-                    {extraHeaderActions}
-                    {headerActions === undefined ? (
-                        <Button variant="outlined" color="primary" icon={<IconPlus />} onClick={handleAdd}>新增</Button>
-                    ) : headerActions}
-                </div>
-            </header>
+            {/* Topbar：突破 .page padding，贴顶全宽；PageShell 内嵌时可隐藏 */}
+            {!hideTopbar && (
+                <header className="topbar" style={{margin: '-24px -10px 0'}}>
+                    <div className="topbar-text">
+                        <h1 className="topbar-title">{pageTitle}</h1>
+                    </div>
+                    <div className="topbar-actions">
+                        {extraHeaderActions}
+                        {headerActions === undefined ? (
+                            <Button variant="outlined" color="primary" icon={<IconPlus />} onClick={handleAdd}>新增</Button>
+                        ) : headerActions}
+                    </div>
+                </header>
+            )}
 
             {/* 搜索栏 + 表格区，统一加回 padding */}
-            <div style={{display: 'flex', flexDirection: 'column', gap: 12, padding: '16px 0', flex: 1, minHeight: 0}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 12, padding: hideTopbar ? '0' : '16px 0', flex: 1, minHeight: 0}}>
             {searchFormFields.length > 0 && (
                 <Card size="small" styles={{body: {padding: '10px 16px'}}}>
                     <Search
@@ -562,6 +582,10 @@ const CabinX: React.FC<CabinXProps> = ({
                         size: 'small',
                     }}
                     onChange={handleTableChange}
+                    onRow={onRowClick ? (record) => ({
+                        onClick: () => onRowClick(record),
+                        style: {cursor: 'pointer'},
+                    }) : undefined}
                 />
             </Card>
 

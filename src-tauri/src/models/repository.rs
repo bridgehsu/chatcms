@@ -124,13 +124,13 @@ pub async fn insert(app: &AppHandle, p: &ProviderProfile) -> Result<(), String> 
     .map_err(|e| e.to_string())
 }
 
-pub async fn update(app: &AppHandle, p: &ProviderProfile) {
+pub async fn update(app: &AppHandle, p: &ProviderProfile) -> Result<(), String> {
     let pool = pool(app);
     let capabilities = p.capabilities.to_string();
     let extra_body = p.extra_body.to_string();
     let tags = serde_json::to_string(&p.tags).unwrap_or_else(|_| "[]".into());
 
-    let _ = sqlx::query(
+    sqlx::query(
         "UPDATE model_profile SET
            name             = ?,
            kind             = ?,
@@ -170,7 +170,9 @@ pub async fn update(app: &AppHandle, p: &ProviderProfile) {
     .bind(&tags)
     .bind(&p.id)
     .execute(&pool)
-    .await;
+    .await
+    .map(|_| ())
+    .map_err(|e| format!("更新失败：{e}"))
 }
 
 pub async fn remove(app: &AppHandle, id: &str) {

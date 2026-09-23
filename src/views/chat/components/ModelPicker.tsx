@@ -7,6 +7,7 @@ interface Profile {
   model: string;
   tier: string;
   enabled: boolean;
+  thinking?: boolean;
 }
 
 const STORAGE_KEY = "chatcms.activeProfileId";
@@ -23,9 +24,15 @@ export function readAuto(): boolean {
 type Props = {
   autoModel: boolean;
   onAutoChange: (v: boolean) => void;
+  /** 为 false 时不展示 Auto，只选具体模型（内容管理等） */
+  allowAuto?: boolean;
 };
 
-export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
+export const ModelPicker = ({
+  autoModel,
+  onAutoChange,
+  allowAuto = true,
+}: Props) => {
   const [open, setOpen] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,9 +59,14 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
     };
   }, [open]);
 
-  const activeId = autoModel ? null : readActiveProfileId();
+  const activeId = autoModel && allowAuto ? null : readActiveProfileId();
   const active = profiles.find((p) => p.id === activeId);
-  const label = autoModel ? "Auto" : (active?.name ?? "选择模型");
+  const label =
+    allowAuto && autoModel
+      ? "Auto"
+      : active
+        ? `${active.name}${active.thinking ? " · 思考" : ""}`
+        : "选择模型";
 
   const pickAuto = () => {
     invoke("model_profile_activate", { id: null }).catch(console.error);
@@ -87,19 +99,22 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
 
       {open && (
         <ul className="model-picker__menu" role="listbox" aria-label="选择模型">
-          <li role="option" aria-selected={autoModel}>
-            <button
-              type="button"
-              className={`model-picker__item${autoModel ? " is-active" : ""}`}
-              onClick={pickAuto}
-            >
-              <span className="model-picker__item-label">Auto</span>
-              {autoModel && <CheckIcon />}
-            </button>
-          </li>
-
-          {profiles.length > 0 && (
-            <li role="separator" className="model-picker__divider" />
+          {allowAuto && (
+            <>
+              <li role="option" aria-selected={autoModel}>
+                <button
+                  type="button"
+                  className={`model-picker__item${autoModel ? " is-active" : ""}`}
+                  onClick={pickAuto}
+                >
+                  <span className="model-picker__item-label">Auto</span>
+                  {autoModel && <CheckIcon />}
+                </button>
+              </li>
+              {profiles.length > 0 && (
+                <li role="separator" className="model-picker__divider" />
+              )}
+            </>
           )}
 
           {profiles.map((p) => {
@@ -111,7 +126,10 @@ export const ModelPicker = ({ autoModel, onAutoChange }: Props) => {
                   className={`model-picker__item${selected ? " is-active" : ""}`}
                   onClick={() => pickProfile(p.id)}
                 >
-                  <span className="model-picker__item-label">{p.name}</span>
+                  <span className="model-picker__item-label">
+                    {p.name}
+                    {p.thinking ? " · 思考" : ""}
+                  </span>
                   {selected && <CheckIcon />}
                 </button>
               </li>

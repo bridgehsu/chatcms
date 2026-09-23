@@ -11,7 +11,7 @@ use serde_json::Value;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
-use crate::persist;
+use crate::common::persist;
 
 const DEFAULT_BASE_URL: &str = "http://127.0.0.1:8080";
 

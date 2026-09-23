@@ -11,7 +11,7 @@ pub struct DbPool(pub SqlitePool);
 
 /// 初始化连接池并创建 Schema（首次运行时建表）。
 pub async fn init(app: &AppHandle) -> Result<SqlitePool> {
-    let dir = crate::config::resolve_data_root(app);
+    let dir = crate::common::config::resolve_data_root(app);
     std::fs::create_dir_all(&dir)?;
     let db_path = dir.join("chatcms.db");
     let url = format!("sqlite://{}?mode=rwc", db_path.display());

@@ -56,39 +56,49 @@ export type NavEntry = NavLeaf | NavGroup;
 /** 侧栏导航：干活区平铺 + 智能配置 / 系统设置分组 */
 export const NAV_ENTRIES: NavEntry[] = [
   {
-    kind: "leaf",
-    path: "/chat",
-    label: "智能会话",
-    description: "与 Agent 对话，调用工具与技能完成任务",
+    kind: "group",
+    id: "workbench",
+    label: "工作台",
     Icon: IconChat,
-  },
-  {
-    kind: "leaf",
-    path: "/map",
-    label: "业务地图",
-    description: "分区入口、笔记与截止提醒，一览业务全貌",
-    Icon: IconMap,
-  },
-  {
-    kind: "leaf",
-    path: "/content",
-    label: "内容管理",
-    description: "Notion 风格 AI 笔记，沉淀选题与成稿",
-    Icon: IconContent,
-  },
-  {
-    kind: "leaf",
-    path: "/images",
-    label: "图片工厂",
-    description: "图片列表：上传、AI 生成与网页导入素材",
-    Icon: IconImages,
-  },
-  {
-    kind: "leaf",
-    path: "/videos",
-    label: "视频工厂",
-    description: "视频列表：上传、AI 生成与网页导入成片",
-    Icon: IconVideos,
+    defaultPath: "/chat",
+    children: [
+      {
+        path: "/chat",
+        label: "智能会话",
+        description: "Ask / Agent / Search：问答、工具干活与知识检索",
+        Icon: IconChat,
+      },
+      {
+        path: "/map",
+        label: "业务地图",
+        description: "分区入口、笔记与截止提醒，一览业务全貌",
+        Icon: IconMap,
+      },
+      {
+        path: "/content",
+        label: "内容管理",
+        description: "Notion 风格 AI 笔记，沉淀选题与成稿",
+        Icon: IconContent,
+      },
+      {
+        path: "/images",
+        label: "图片工厂",
+        description: "图片列表：上传、AI 生成与网页导入素材",
+        Icon: IconImages,
+      },
+      {
+        path: "/videos",
+        label: "视频工厂",
+        description: "视频列表：上传、AI 生成与网页导入成片",
+        Icon: IconVideos,
+      },
+      {
+        path: "/schedules",
+        label: "调度中心",
+        description: "创建调度项目，在画布中设计节点工作流（类似 n8n）",
+        Icon: IconCron,
+      },
+    ],
   },
   {
     kind: "group",
@@ -118,13 +128,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     ],
   },
   {
-    kind: "leaf",
-    path: "/schedules",
-    label: "调度中心",
-    description: "创建调度项目，在画布中设计节点工作流（类似 n8n）",
-    Icon: IconCron,
-  },
-  {
     kind: "group",
     id: "workspace",
     label: "智能配置",
@@ -134,7 +137,7 @@ export const NAV_ENTRIES: NavEntry[] = [
       {
         path: "/agents",
         label: "代理管理",
-        description: "管理多 Agent 档案、默认代理与技能白名单",
+        description: "管理多角色档案、全局默认与技能白名单；会话可选手选主 Agent",
         Icon: IconAgents,
       },
       {
@@ -158,13 +161,13 @@ export const NAV_ENTRIES: NavEntry[] = [
       {
         path: "/intents",
         label: "意图规则",
-        description: "配置会话意图关键词与权重（软路由，不短路 Agent）",
+        description: "配置会话意图关键词与权重（软路由；Agent 模式按意图选角色）",
         Icon: IconIntent,
       },
       {
         path: "/settings/knowledge",
         label: "知识库",
-        description: "本机知识条目；可注入 Agent，并可勾选公开导出",
+        description: "本机知识条目；Search 模式优先检索；亦可注入 Agent",
         Icon: IconMemory,
       },
     ],
@@ -197,7 +200,7 @@ export const NAV_ENTRIES: NavEntry[] = [
       {
         path: "/settings/observability",
         label: "运行观测",
-        description: "查看工具权限裁决与近期 Agent 操作审计",
+        description: "会话链路（含 Ask/Agent/Search）与工具权限审计",
         Icon: IconObserve,
       },
       {
@@ -242,8 +245,7 @@ const leafForPath = (pathname: string) => {
 
 export const titleForPath = (pathname: string): string => {
   if (pathname === "/images/generate") return "AI 生成图片";
-  if (pathname === "/videos/generate") return "AI 生成视频";
-  if (pathname === "/videos/studio") return "制片";
+  if (pathname === "/videos/generate" || pathname === "/videos/studio") return "制片";
   if (pathname === "/crawler/new") return "新增媒体采集";
   if (pathname.match(/^\/crawler\/[^/]+$/)) return "媒体采集";
   if (pathname.match(/^\/media-platforms\/[^/]+\/collect-script$/))

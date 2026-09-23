@@ -81,9 +81,9 @@ pub async fn update(
     weight: i64,
     context_window: i64,
     enabled: bool,
-    // 新增参数
+    // 新增参数；thinking 必传，确保「关闭」一定写回 false
     capabilities: Option<Value>,
-    thinking: Option<bool>,
+    thinking: bool,
     thinking_effort: Option<String>,
     temperature: Option<f64>,
     max_output_tokens: Option<i64>,
@@ -104,15 +104,15 @@ pub async fn update(
     p.weight = weight.clamp(1, 4);
     p.context_window = context_window;
     p.enabled = enabled;
+    p.thinking = thinking;
     p.updated = now_ms();
     if let Some(v) = capabilities    { p.capabilities = v; }
-    if let Some(v) = thinking        { p.thinking = v; }
     if let Some(v) = thinking_effort { p.thinking_effort = v; }
     if temperature.is_some()         { p.temperature = temperature; }
     if max_output_tokens.is_some()   { p.max_output_tokens = max_output_tokens; }
     if let Some(v) = extra_body      { p.extra_body = v; }
     if let Some(v) = tags            { p.tags = v; }
-    repo::update(app, &p).await;
+    repo::update(app, &p).await?;
     Ok(p)
 }
 
@@ -124,9 +124,15 @@ pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
-/// 从旧的 chatcms.json profiles 迁移到 SQLite（幂等）。
-/// 仅在 model_profile 表为空时执行。
-pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::config::ProviderProfile>) {
+/// 启动时补齐 model_profile（幂等）。
+///
+/// 顺序：
+/// 1. 若使用自定义 `data_root`，从系统默认目录的 `chatcms.db` 导入缺失档案
+///    （避免换数据目录后扩展/桥只剩 JSON 里的「默认」）
+/// 2. 若仍为空，再从旧 `chatcms.json` profiles 迁移
+pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::common::config::ProviderProfile>) {
+    import_missing_from_default_app_db(app).await;
+
     let existing = repo::list(app).await;
     if !existing.is_empty() {
         return;
@@ -134,8 +140,8 @@ pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::co
     let now = now_ms();
     for (i, lp) in legacy_profiles.iter().enumerate() {
         let kind = match lp.kind {
-            crate::config::ProviderKind::Anthropic => "anthropic",
-            crate::config::ProviderKind::OpenAI => "openai",
+            crate::common::config::ProviderKind::Anthropic => "anthropic",
+            crate::common::config::ProviderKind::OpenAI => "openai",
         };
         let p = ProviderProfile {
             id: lp.id.clone(),
@@ -157,6 +163,88 @@ pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::co
             max_output_tokens: None,
             extra_body: Value::Object(Default::default()),
             tags: vec![],
+        };
+        let _ = repo::insert(app, &p).await;
+    }
+}
+
+/// 自定义 data_root 时，把默认 app_data_dir 里已有的模型档案补进当前库（按 id 跳过已存在）。
+async fn import_missing_from_default_app_db(app: &AppHandle) {
+    use sqlx::Row;
+
+    let current = crate::common::config::resolve_data_root(app);
+    let default = crate::common::config::default_data_root(app);
+    if current == default {
+        return;
+    }
+    let src_path = default.join("chatcms.db");
+    if !src_path.is_file() {
+        return;
+    }
+
+    let url = format!("sqlite://{}?mode=ro", src_path.display());
+    let Ok(src_pool) = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&url)
+        .await
+    else {
+        return;
+    };
+
+    let rows = sqlx::query(
+        "SELECT id, name, kind, api_key, model, base_url, tier, weight, context_window,
+                enabled, created, updated,
+                capabilities, thinking, thinking_effort, temperature, max_output_tokens,
+                extra_body, tags
+         FROM model_profile",
+    )
+    .fetch_all(&src_pool)
+    .await
+    .unwrap_or_default();
+    src_pool.close().await;
+
+    if rows.is_empty() {
+        return;
+    }
+
+    let existing: std::collections::HashSet<String> = repo::list(app)
+        .await
+        .into_iter()
+        .map(|p| p.id)
+        .collect();
+
+    for r in rows {
+        let id: String = r.get("id");
+        if existing.contains(&id) {
+            continue;
+        }
+        let enabled: i64 = r.get("enabled");
+        let thinking: i64 = r.try_get("thinking").unwrap_or(0);
+        let capabilities_str: String = r.try_get("capabilities").unwrap_or_else(|_| "{}".into());
+        let extra_body_str: String = r.try_get("extra_body").unwrap_or_else(|_| "{}".into());
+        let tags_str: String = r.try_get("tags").unwrap_or_else(|_| "[]".into());
+        let p = ProviderProfile {
+            id,
+            name: r.get("name"),
+            kind: r.get("kind"),
+            api_key: r.get("api_key"),
+            model: r.get("model"),
+            base_url: r.get("base_url"),
+            tier: r.get("tier"),
+            weight: r.get("weight"),
+            context_window: r.get("context_window"),
+            enabled: enabled != 0,
+            created: r.get("created"),
+            updated: r.get("updated"),
+            capabilities: serde_json::from_str(&capabilities_str)
+                .unwrap_or_else(|_| Value::Object(Default::default())),
+            thinking: thinking != 0,
+            thinking_effort: r.try_get("thinking_effort").unwrap_or_else(|_| "medium".into()),
+            temperature: r.try_get("temperature").unwrap_or(None),
+            max_output_tokens: r.try_get("max_output_tokens").unwrap_or(None),
+            extra_body: serde_json::from_str(&extra_body_str)
+                .unwrap_or_else(|_| Value::Object(Default::default())),
+            tags: serde_json::from_str(&tags_str).unwrap_or_default(),
         };
         let _ = repo::insert(app, &p).await;
     }

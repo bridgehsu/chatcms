@@ -1,0 +1,75 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Intent 推断" id="intent-infer">
+    <mxGraphModel background="#ffffff" dx="1500" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="&lt;b&gt;L2 意图层&lt;/b&gt; · 只产出业务域 · 不读 Mode · 不调度工具" style="text;html=1;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="520" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="绿=已实现　黄虚线=规划　｜　Mode×消费见 decision / plan　｜　槽位：当前无" style="text;html=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="520" height="18" as="geometry" />
+        </mxCell>
+
+        <mxCell id="from" value="← L1 session　用户原文" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="300" y="70" width="240" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="norm" value="&lt;b&gt;1. normalize&lt;/b&gt;&lt;br&gt;trim / 小写 / 字数" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="280" y="130" width="280" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="rules" value="&lt;b&gt;2. 规则打分 score&lt;/b&gt;&lt;br&gt;关键词+权重 → 域赢家" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="280" y="210" width="280" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="q1" value="置信度 ≥ 0.7？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="330" y="290" width="180" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="hit" value="source=rules" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="580" y="300" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="local" value="&lt;b&gt;3a. 本地小模型&lt;/b&gt;（规划）" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;dashed=1;dashPattern=8 8;" vertex="1" parent="1">
+          <mxGeometry x="280" y="390" width="280" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="q2" value="本地够高？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;dashed=1;dashPattern=8 8;" vertex="1" parent="1">
+          <mxGeometry x="330" y="460" width="180" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="llm" value="&lt;b&gt;3b. 大模型补判&lt;/b&gt;（规划·可选）" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;dashed=1;dashPattern=8 8;" vertex="1" parent="1">
+          <mxGeometry x="280" y="555" width="280" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="now" value="现状：低置信→finalize" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="420" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="final" value="&lt;b&gt;4. finalize&lt;/b&gt;&lt;br&gt;校验 · 短句 unknown→chat" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="280" y="640" width="280" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="out" value="&lt;b&gt;Intent&lt;/b&gt; = 业务域 + confidence + source&lt;br&gt;→ decision::run（L3）　详见 decision.drawio" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="260" y="730" width="320" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domains" value="&lt;b&gt;业务域（只保留域）&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;一期&lt;/b&gt;&lt;br&gt;· chat　闲聊 / 解释&lt;br&gt;· publish　内容发布&lt;br&gt;· account　账号 / 凭证&lt;br&gt;· workspace　本地文件 / 终端&lt;br&gt;　（代码暂名 UseTools）&lt;br&gt;· unknown　未识别&lt;br&gt;&lt;br&gt;&lt;b&gt;预留扩展&lt;/b&gt;&lt;br&gt;· knowledge　笔记 / 知识库&lt;br&gt;· media　生图 / 生视频&lt;br&gt;· collect　采集&lt;br&gt;· schedule　调度&lt;br&gt;&lt;br&gt;&lt;font color='#666'&gt;不是域：Ask/Agent/Search、&lt;br&gt;needs_tools、具体平台名&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="780" y="130" width="260" height="360" as="geometry" />
+        </mxCell>
+
+        <mxCell id="handoff" value="&lt;b&gt;出口规则&lt;/b&gt;&lt;br&gt;消费在 L3 decision / L4 plan&lt;br&gt;本层不组装 tools、不调 L4b" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="780" y="520" width="260" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e0" edge="1" parent="1" source="from" target="norm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="norm" target="rules" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="rules" target="q1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="是" edge="1" parent="1" source="q1" target="hit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="否·目标" edge="1" parent="1" source="q1" target="local" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 8;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="否·现状" edge="1" parent="1" source="q1" target="now" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeColor=#999999;exitX=0;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="now" target="final" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeColor=#999999;"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="115" y="666" /></Array></mxGeometry></mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="local" target="q2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 8;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="是" edge="1" parent="1" source="q2" target="final" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 8;exitX=1;exitY=0.5;entryX=1;entryY=0.3;"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="600" y="492" /><mxPoint x="600" y="656" /></Array></mxGeometry></mxCell>
+        <mxCell id="e9" value="否" edge="1" parent="1" source="q2" target="llm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 8;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="llm" target="final" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;dashPattern=8 8;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="hit" target="final" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="640" y="666" /></Array></mxGeometry></mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="final" target="out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="out" target="handoff" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

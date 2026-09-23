@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     updated       INTEGER NOT NULL                      -- 最近修改时间（Unix 毫秒）
 );
 -- 为已有数据库补列（幂等）
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS workspace_dir TEXT;
+ALTER TABLE sessions ADD COLUMN workspace_dir TEXT;
 
 -- Messages (belongs to session)
 CREATE TABLE IF NOT EXISTS messages (
@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS skill_pkg (
     updated                  INTEGER NOT NULL         -- 最近修改时间（Unix 毫秒）
 );
 -- 为已有数据库补列（幂等）
-ALTER TABLE skill_pkg ADD COLUMN IF NOT EXISTS user_invocable           INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE skill_pkg ADD COLUMN IF NOT EXISTS disable_model_invocation INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE skill_pkg ADD COLUMN user_invocable           INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE skill_pkg ADD COLUMN disable_model_invocation INTEGER NOT NULL DEFAULT 0;
 
 -- Images metadata
 CREATE TABLE IF NOT EXISTS images (
@@ -167,10 +167,10 @@ CREATE TABLE IF NOT EXISTS agent (
     yn            INTEGER NOT NULL DEFAULT 0         -- 软删除标志（0=正常 1=已删除）
 );
 -- 为已有数据库补列（幂等）
-ALTER TABLE agent ADD COLUMN IF NOT EXISTS spawnable     INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE agent ADD COLUMN IF NOT EXISTS perms         TEXT    NOT NULL DEFAULT '{}';
-ALTER TABLE agent ADD COLUMN IF NOT EXISTS workspace_dir TEXT;
-ALTER TABLE agent ADD COLUMN IF NOT EXISTS sort          INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE agent ADD COLUMN spawnable     INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE agent ADD COLUMN perms         TEXT    NOT NULL DEFAULT '{}';
+ALTER TABLE agent ADD COLUMN workspace_dir TEXT;
+ALTER TABLE agent ADD COLUMN sort          INTEGER NOT NULL DEFAULT 0;
 
 -- Model profiles (replaces chatcms.json provider profiles)
 CREATE TABLE IF NOT EXISTS model_profile (
@@ -191,7 +191,21 @@ CREATE TABLE IF NOT EXISTS model_profile (
 CREATE INDEX IF NOT EXISTS idx_model_profile_tier_weight ON model_profile(tier, weight DESC);
 
 -- 为 sessions 表补 profile_id 列（幂等）
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS profile_id TEXT;
+ALTER TABLE sessions ADD COLUMN profile_id TEXT;
+
+-- 用户自定义会话分组
+CREATE TABLE IF NOT EXISTS session_group (
+    id         TEXT    PRIMARY KEY,
+    name       TEXT    NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created    INTEGER NOT NULL,
+    updated    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_group_sort ON session_group(sort_order ASC, created ASC);
+
+-- 会话归属分组（NULL = 未分组，仍按日期桶展示）
+ALTER TABLE sessions ADD COLUMN group_id TEXT;
 
 -- model_profile 新增字段（首次运行添加列；列已存在时 db::init 会自动跳过报错）
 ALTER TABLE model_profile ADD COLUMN capabilities      TEXT    NOT NULL DEFAULT '{}';
@@ -214,3 +228,115 @@ CREATE TABLE IF NOT EXISTS intent_rule (
 );
 
 CREATE INDEX IF NOT EXISTS idx_intent_rule_sort ON intent_rule(sort_order ASC, kind ASC);
+
+-- 会话链路观测（一次 chat_send 的分段耗时）
+CREATE TABLE IF NOT EXISTS chat_turn_trace (
+    id            TEXT    PRIMARY KEY,
+    session_id    TEXT    NOT NULL,
+    ts            INTEGER NOT NULL,
+    content_len   INTEGER NOT NULL DEFAULT 0,
+    intent_kind   TEXT    NOT NULL DEFAULT '',
+    needs_tools   INTEGER NOT NULL DEFAULT 0,
+    chat_mode     TEXT    NOT NULL DEFAULT '',
+    model         TEXT    NOT NULL DEFAULT '',
+    base_url      TEXT    NOT NULL DEFAULT '',
+    thinking      INTEGER NOT NULL DEFAULT 0,
+    tools_count   INTEGER NOT NULL DEFAULT 0,
+    msg_count     INTEGER NOT NULL DEFAULT 0,
+    system_chars  INTEGER NOT NULL DEFAULT 0,
+    http_ms       INTEGER,
+    ttft_ms       INTEGER,
+    stream_ms     INTEGER,
+    total_ms      INTEGER NOT NULL DEFAULT 0,
+    ok            INTEGER NOT NULL DEFAULT 1,
+    error         TEXT,
+    input_tokens  INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    tool_rounds   INTEGER NOT NULL DEFAULT 0,
+    phases_json   TEXT    NOT NULL DEFAULT '[]'
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_turn_trace_ts ON chat_turn_trace(ts DESC);
+ALTER TABLE chat_turn_trace ADD COLUMN chat_mode TEXT NOT NULL DEFAULT '';
+
+-- 内容管理 · AI 笔记分组
+CREATE TABLE IF NOT EXISTS cms_note_group (
+    id         TEXT    PRIMARY KEY,
+    name       TEXT    NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    yn         INTEGER NOT NULL DEFAULT 0,
+    created    INTEGER NOT NULL,                     -- Unix 毫秒
+    updated    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cms_note_group_sort ON cms_note_group(sort_order ASC, created ASC);
+
+-- 内容管理 · AI 笔记
+CREATE TABLE IF NOT EXISTS cms_note (
+    id                    TEXT    PRIMARY KEY,
+    title                 TEXT    NOT NULL DEFAULT '',
+    content               TEXT    NOT NULL DEFAULT '',
+    icon                  TEXT    NOT NULL DEFAULT '📄',
+    group_id              TEXT,                        -- cms_note_group.id；空=未分组
+    source_session_id     TEXT,
+    source_session_title  TEXT,
+    source_message_id     TEXT,
+    knowledge_id          TEXT,                        -- 桥接 knowledge.id，供 Agent 检索
+    yn                    INTEGER NOT NULL DEFAULT 0,
+    created               INTEGER NOT NULL,             -- Unix 毫秒
+    updated               INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cms_note_group ON cms_note(group_id);
+CREATE INDEX IF NOT EXISTS idx_cms_note_msg ON cms_note(source_message_id);
+CREATE INDEX IF NOT EXISTS idx_cms_note_updated ON cms_note(updated DESC);
+CREATE INDEX IF NOT EXISTS idx_cms_note_knowledge ON cms_note(knowledge_id);
+
+-- 媒体管理 · 发布平台元数据（原 chatcms.json media_platforms；MultiPost 全量目录）
+CREATE TABLE IF NOT EXISTS media_platform (
+    id         TEXT    PRIMARY KEY,
+    code       TEXT    NOT NULL,
+    name       TEXT    NOT NULL,
+    kind       TEXT    NOT NULL DEFAULT 'dynamic',   -- dynamic | article | video | podcast
+    inject_url TEXT    NOT NULL DEFAULT '',
+    home_url   TEXT    NOT NULL DEFAULT '',
+    enabled    INTEGER NOT NULL DEFAULT 1,
+    notes      TEXT    NOT NULL DEFAULT '',
+    region     TEXT    NOT NULL DEFAULT 'cn',       -- cn | intl
+    updated    INTEGER NOT NULL                      -- Unix 毫秒
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_platform_code ON media_platform(code);
+CREATE INDEX IF NOT EXISTS idx_media_platform_kind ON media_platform(kind);
+CREATE INDEX IF NOT EXISTS idx_media_platform_updated ON media_platform(updated DESC);
+ALTER TABLE media_platform ADD COLUMN region TEXT NOT NULL DEFAULT 'cn';
+
+-- 媒体管理 · 发布填表脚本（原 chatcms.json publish_scripts）
+CREATE TABLE IF NOT EXISTS media_publish_script (
+    id                TEXT    PRIMARY KEY,
+    platform_id       TEXT    NOT NULL,              -- media_platform.id
+    kind              TEXT    NOT NULL DEFAULT 'dynamic',
+    draft_script      TEXT    NOT NULL DEFAULT '',
+    published_script  TEXT    NOT NULL DEFAULT '',
+    published_version INTEGER NOT NULL DEFAULT 0,
+    match_url         TEXT    NOT NULL DEFAULT '',
+    changelog         TEXT    NOT NULL DEFAULT '',
+    updated           INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_publish_script_platform ON media_publish_script(platform_id);
+
+-- 媒体管理 · 采集脚本（原 chatcms.json collect_scripts）
+CREATE TABLE IF NOT EXISTS media_collect_script (
+    id                TEXT    PRIMARY KEY,
+    platform_id       TEXT    NOT NULL,
+    kind              TEXT    NOT NULL DEFAULT 'dynamic',
+    draft_script      TEXT    NOT NULL DEFAULT '',
+    published_script  TEXT    NOT NULL DEFAULT '',
+    published_version INTEGER NOT NULL DEFAULT 0,
+    match_url         TEXT    NOT NULL DEFAULT '',
+    changelog         TEXT    NOT NULL DEFAULT '',
+    updated           INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_collect_script_platform ON media_collect_script(platform_id);

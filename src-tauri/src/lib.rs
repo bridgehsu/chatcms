@@ -1,24 +1,22 @@
 mod agents;
-mod logging;
 mod chat;
+mod core;
+mod common;
 mod mcp;
 mod models;
-mod permission;
-mod provider;
 mod scripts;
 mod accounts;
 mod business_map;
 mod channels;
 mod bridge;
-mod config;
 mod crawler;
 mod db;
 mod images;
 mod kbase;
 mod medias;
 mod mpt;
+mod notes;
 mod bmarks;
-mod persist;
 mod publish;
 mod schedules;
 mod videos;
@@ -30,17 +28,23 @@ use tauri::Manager;
 // ── App bootstrap ─────────────────────────────────────────────────────────────
 
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    crate::logging::log_startup();
+    crate::common::logging::log_startup();
 
     let handle = app.handle().clone();
     let state = handle.state::<AgentState>();
 
     // 先加载配置（data_root / 发布桥端口依赖此项）
-    if let Some(mut config) = persist::load_config(&handle) {
+    if let Some(mut config) = common::persist::load_config(&handle) {
         config.ensure_profiles();
         config.hydrate_general_from_legacy(&handle);
-        persist::save_config(&handle, &config);
+        common::persist::save_config(&handle, &config);
+        crate::common::provider::configure_http_client(
+            config.general.use_system_proxy,
+            &config.general.http_proxy_url,
+        );
         *state.config.lock().unwrap() = config;
+    } else {
+        crate::common::provider::configure_http_client(false, "");
     }
 
     // Publish bridge
@@ -64,13 +68,16 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     *state.knowledge.lock().unwrap() = rt.block_on(kbase::repository::load_all(&handle));
     *state.skills.lock().unwrap() = rt.block_on(scripts::ensure_seeded(&handle));
     *state.agents.lock().unwrap() = rt.block_on(agents::service::ensure_seeded(&handle));
-    rt.block_on(chat::intent::ensure_seeded(&handle));
+    rt.block_on(core::intent::ensure_seeded(&handle));
 
     // 迁移旧 chatcms.json 中的 profiles 到 SQLite model_profile 表（同步执行，确保启动时完成）
     {
         let legacy_profiles = state.config.lock().unwrap().profiles.clone();
         rt.block_on(models::service::migrate_from_legacy(&handle, legacy_profiles));
     }
+
+    // 媒体平台 / 发布·采集脚本：chatcms.json → SQLite，并补种子数据
+    rt.block_on(medias::migrate_and_seed(&handle));
 
     // MCP — connect all enabled servers
     let mcp_configs = mcp::repository::load_configs(&handle);
@@ -85,7 +92,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Channels — restore config
-    let channel_cfg = persist::load_channel_config(&handle);
+    let channel_cfg = common::persist::load_channel_config(&handle);
     let h = handle.clone();
     tauri::async_runtime::spawn(async move {
         let s = h.state::<AgentState>();
@@ -99,9 +106,9 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app_env = logging::AppEnv::detect();
+    let app_env = common::logging::AppEnv::detect();
     tauri::Builder::default()
-        .plugin(logging::plugin(app_env).build())
+        .plugin(common::logging::plugin(app_env).build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(AgentState::new())
@@ -111,41 +118,49 @@ pub fn run() {
             // chat / session
             chat::commands::chat_send,
             chat::commands::chat_abort,
+            chat::commands::chat_complete,
+            chat::commands::chat_trace_list,
             chat::commands::session_list,
             chat::commands::session_get,
             chat::commands::session_delete,
             chat::commands::session_rename,
             chat::commands::session_pin,
-            chat::intent::commands::intent_rule_list,
-            chat::intent::commands::intent_rule_update,
-            chat::intent::commands::intent_rule_reset_defaults,
-            chat::intent::commands::intent_rule_reset_one,
-            chat::intent::commands::intent_eval_cases,
-            chat::intent::commands::intent_eval_run,
+            chat::commands::session_set_group,
+            chat::commands::session_set_agent,
+            chat::commands::session_group_list,
+            chat::commands::session_group_create,
+            chat::commands::session_group_rename,
+            chat::commands::session_group_delete,
+            core::intent::commands::intent_rule_list,
+            core::intent::commands::intent_rule_update,
+            core::intent::commands::intent_rule_reset_defaults,
+            core::intent::commands::intent_rule_reset_one,
+            core::intent::commands::intent_eval_cases,
+            core::intent::commands::intent_eval_run,
             // config / provider
-            config::commands::config_get,
-            config::commands::config_set,
-            config::commands::provider_list,
-            config::commands::provider_add,
-            config::commands::provider_update,
-            config::commands::provider_remove,
-            config::commands::provider_activate,
-            config::commands::provider_set_auto,
-            config::commands::general_config_get,
-            config::commands::general_config_set,
+            common::config::commands::config_get,
+            common::config::commands::config_set,
+            common::config::commands::provider_list,
+            common::config::commands::provider_add,
+            common::config::commands::provider_update,
+            common::config::commands::provider_remove,
+            common::config::commands::provider_activate,
+            common::config::commands::provider_set_auto,
+            common::config::commands::general_config_get,
+            common::config::commands::general_config_set,
             // permission
-            permission::commands::permission_respond,
-            permission::commands::permission_get,
-            permission::commands::permission_set,
-            permission::commands::permission_mode_list,
-            permission::commands::permission_mode_add,
-            permission::commands::permission_mode_update,
-            permission::commands::permission_mode_remove,
-            permission::commands::permission_mode_reorder,
-            permission::commands::permission_mode_set_active,
-            permission::commands::permission_domains,
-            permission::commands::permission_audit_list,
-            permission::commands::permission_clear_session_grants,
+            common::permission::commands::permission_respond,
+            common::permission::commands::permission_get,
+            common::permission::commands::permission_set,
+            common::permission::commands::permission_mode_list,
+            common::permission::commands::permission_mode_add,
+            common::permission::commands::permission_mode_update,
+            common::permission::commands::permission_mode_remove,
+            common::permission::commands::permission_mode_reorder,
+            common::permission::commands::permission_mode_set_active,
+            common::permission::commands::permission_domains,
+            common::permission::commands::permission_audit_list,
+            common::permission::commands::permission_clear_session_grants,
             // mcp
             mcp::commands::mcp_list,
             mcp::commands::mcp_add,
@@ -163,6 +178,16 @@ pub fn run() {
             kbase::commands::knowledge_site_profile_set,
             kbase::commands::knowledge_public_feed,
             kbase::commands::knowledge_export_public,
+            // content notes
+            notes::commands::notes_list,
+            notes::commands::notes_create,
+            notes::commands::notes_update,
+            notes::commands::notes_remove,
+            notes::commands::notes_group_create,
+            notes::commands::notes_group_rename,
+            notes::commands::notes_group_delete,
+            notes::commands::notes_by_message,
+            notes::commands::notes_import_legacy,
             // channels
             channels::commands::channel_list,
             channels::commands::channel_get,
@@ -275,6 +300,7 @@ pub fn run() {
             agents::commands::agent_add,
             agents::commands::agent_update,
             agents::commands::agent_activate,
+            agents::commands::agent_active_id,
             agents::commands::agent_remove,
             // publish
             publish::commands::publish_to_browser,

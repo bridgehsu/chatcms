@@ -44,15 +44,12 @@ const AsyncSelectField: React.FC<{ field: FormField; value?: any; onChange?: (v:
 
 const renderFormField = (field: FormField, form: any) => {
   if (field.renderFormItem) {
+    // 自定义渲染自己负责 name 绑定；外层只出 label，避免再套同名 Item 导致 Switch 关不掉
     return (
       <Form.Item
         key={field.name}
         label={field.label}
-        name={field.name}
-        rules={field.rules}
-        valuePropName={field.valuePropName || 'value'}
-        getValueFromEvent={field.getValueFromEvent}
-        initialValue={field.initialValue}
+        required={field.rules?.some((r: any) => r?.required)}
       >
         {field.renderFormItem(form)}
       </Form.Item>
@@ -101,7 +98,7 @@ const renderFormField = (field: FormField, form: any) => {
       label={field.label}
       name={field.name}
       rules={field.rules}
-      valuePropName={field.valuePropName || 'value'}
+      valuePropName={field.valuePropName || (field.type === 'switch' ? 'checked' : 'value')}
       getValueFromEvent={field.getValueFromEvent}
       initialValue={field.initialValue}
     >
@@ -112,7 +109,6 @@ const renderFormField = (field: FormField, form: any) => {
 
 const Editor: React.FC<DformProps> = ({
                                           title,
-                                          size = 'default',
                                           open,
                                           onClose,
                                           onSubmit,

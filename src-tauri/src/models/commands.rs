@@ -53,9 +53,9 @@ pub async fn model_profile_update(
     weight: i64,
     context_window: i64,
     enabled: bool,
-    // 新增（可选）
+    // 新增（可选）；thinking 必传，避免 false 被 Option 吞掉而不落库
     capabilities: Option<Value>,
-    thinking: Option<bool>,
+    thinking: bool,
     thinking_effort: Option<String>,
     temperature: Option<f64>,
     max_output_tokens: Option<i64>,
@@ -93,7 +93,7 @@ pub fn model_profile_activate(
             cfg.auto_mode = true;
         }
     }
-    crate::persist::save_config(&app, &cfg);
+    crate::common::persist::save_config(&app, &cfg);
     Ok(())
 }
 

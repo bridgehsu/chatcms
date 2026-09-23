@@ -9,7 +9,7 @@ use tauri::AppHandle;
 use uuid::Uuid;
 
 use super::GeneratedImage;
-use crate::config::{AppConfig, ProviderKind};
+use crate::common::config::{AppConfig, ProviderKind};
 use super::repository as repo;
 
 fn now_ms() -> i64 {
@@ -20,7 +20,7 @@ fn now_ms() -> i64 {
 }
 
 fn images_dir(app: &AppHandle) -> Result<PathBuf> {
-    let dir = crate::config::resolve_data_root(app).join("images");
+    let dir = crate::common::config::resolve_data_root(app).join("images");
     fs::create_dir_all(&dir).context("创建图片目录失败")?;
     Ok(dir)
 }

@@ -6,7 +6,7 @@ use super::types::{now_ms, validate_name, Skill, SkillSource};
 use super::repository as repo;
 
 fn skills_dir(app: &AppHandle, source: &str) -> std::path::PathBuf {
-    let base = crate::config::resolve_data_root(app)
+    let base = crate::common::config::resolve_data_root(app)
         .join("skills")
         .join(source);
     let _ = std::fs::create_dir_all(&base);

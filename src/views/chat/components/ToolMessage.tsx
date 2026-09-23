@@ -17,7 +17,7 @@ const TOOL_META: Record<
   read_file: { label: "读取文件", kind: "file" },
   write_file: { label: "写入文件", kind: "file" },
   bash: { label: "终端命令", kind: "shell" },
-  spawn_agent: { label: "子代理", kind: "agent" },
+  spawn_agent: { label: "委派子代理", kind: "agent" },
 };
 
 const asRecord = (v: unknown): Record<string, unknown> | null => {
@@ -49,10 +49,18 @@ const summarizeInput = (
     return typeof path === "string" ? path : JSON.stringify(input);
   }
   if (name === "spawn_agent") {
+    const agent = input.agent;
     const prompt = input.prompt;
-    if (typeof prompt === "string") {
-      return prompt.length > 120 ? `${prompt.slice(0, 120)}…` : prompt;
-    }
+    const who = typeof agent === "string" && agent.trim() ? agent.trim() : "";
+    const task =
+      typeof prompt === "string"
+        ? prompt.length > 100
+          ? `${prompt.slice(0, 100)}…`
+          : prompt
+        : "";
+    if (who && task) return `${who} · ${task}`;
+    if (who) return who;
+    if (task) return task;
   }
   const keys = Object.keys(input);
   if (keys.length === 1 && typeof input[keys[0]] === "string") {

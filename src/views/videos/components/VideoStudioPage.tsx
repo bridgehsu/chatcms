@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { App as AntdApp } from "antd";
 import { Select } from "@/components/Select";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/components/icons";
 import { PageShell } from "@/layout/components/PageShell";
 import { convertFileSrc, invoke } from "@/hooks/useTauri";
-import type { GeneratedVideo } from "../types";
+import { VIDEO_MODELS, VIDEO_SECONDS, type GeneratedVideo } from "../types";
 import {
   defaultMptParams,
   emptyStudioConfig,
@@ -47,6 +47,20 @@ const textToKeys = (text: string) =>
     .map((s) => s.trim())
     .filter(Boolean);
 
+const sizeFromAspect = (aspect: string) =>
+  aspect === "9:16" ? "720x1280" : "1280x720";
+
+const nearestModelSeconds = (raw: string) => {
+  const n = Number(raw);
+  const best = [4, 8, 12].reduce((a, b) =>
+    Math.abs(b - n) < Math.abs(a - n) ? b : a,
+  );
+  return String(best);
+};
+
+const sharedPrompt = (subject: string, script: string) =>
+  [subject.trim(), script.trim()].filter(Boolean).join("\n\n");
+
 const PARAM_MENUS = [
   { id: "visual" as const, label: "画面", Icon: IconMptVisual },
   { id: "voice" as const, label: "配音", Icon: IconMptVoice },
@@ -58,7 +72,10 @@ export const VideoStudioPage = () => {
   const cancelled = useRef(false);
 
   const [baseUrl, setBaseUrl] = useState("http://127.0.0.1:6060");
-  const [params, setParams] = useState<MptVideoParams>(defaultMptParams);
+  const [params, setParams] = useState<MptVideoParams>(() => ({
+    ...defaultMptParams(),
+    video_clip_duration: Number(VIDEO_SECONDS[1].value),
+  }));
   const [studio, setStudio] = useState<MptStudioConfig>(emptyStudioConfig);
   const [options, setOptions] = useState<MptMetaOptions | null>(null);
   const [voices, setVoices] = useState<MptVoiceItem[]>([]);
@@ -77,9 +94,9 @@ export const VideoStudioPage = () => {
   const [scriptBusy, setScriptBusy] = useState(false);
   const [termsBusy, setTermsBusy] = useState(false);
   const [error, setError] = useState("");
-  const [statusText, setStatusText] = useState("");
+  const [, setStatusText] = useState("");
   const [progress, setProgress] = useState(0);
-  const [taskId, setTaskId] = useState("");
+  const [, setTaskId] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [healthOk, setHealthOk] = useState<string>("");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -88,6 +105,10 @@ export const VideoStudioPage = () => {
   >(null);
   const [results, setResults] = useState<GeneratedVideo[]>([]);
   const [selectedId, setSelectedId] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const makeMode = searchParams.get("mode") === "model" ? "model" : "clip";
+  const [modelId, setModelId] = useState<string>(VIDEO_MODELS[0].value);
+  const [pieceSeconds, setPieceSeconds] = useState<string>(VIDEO_SECONDS[1].value);
 
   const publishHealth = useCallback((ok: string) => {
     setHealthOk(ok);
@@ -487,6 +508,38 @@ export const VideoStudioPage = () => {
     [results, selectedId],
   );
 
+  const setMakeMode = (mode: "clip" | "model") => {
+    const next = new URLSearchParams(searchParams);
+    if (mode === "model") next.set("mode", "model");
+    else next.delete("mode");
+    setSearchParams(next, { replace: true });
+    setParamPanel(null);
+    setSettingsOpen(false);
+  };
+
+  const onModelGenerate = useCallback(async () => {
+    const text = sharedPrompt(params.video_subject, params.video_script);
+    if (!text || busy) return;
+    setBusy(true);
+    setError("");
+    setProgress(8);
+    try {
+      const created = await invoke<GeneratedVideo>("video_generate", {
+        prompt: text,
+        model: modelId,
+        size: sizeFromAspect(params.video_aspect),
+        seconds: nearestModelSeconds(pieceSeconds),
+      });
+      setProgress(100);
+      setResults((prev) => [created, ...prev.filter((v) => v.id !== created.id)]);
+      setSelectedId(created.id);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, modelId, params.video_aspect, params.video_script, params.video_subject, pieceSeconds]);
+
   const isPortrait = (params.video_aspect || "9:16") === "9:16";
 
   const anyBusy = busy || scriptBusy || termsBusy;
@@ -504,21 +557,24 @@ export const VideoStudioPage = () => {
 
   const scriptChars = params.video_script.trim().length;
   const canGenerate =
-    !anyBusy &&
-    (!!params.video_subject.trim() || !!params.video_script.trim());
+    makeMode === "model"
+      ? !busy && !!sharedPrompt(params.video_subject, params.video_script)
+      : !anyBusy &&
+        (!!params.video_subject.trim() || !!params.video_script.trim());
 
   useEffect(() => {
     const emit = () => {
       window.dispatchEvent(
         new CustomEvent("mpt:topbar-state", {
-          detail: { busy, canGenerate, progress },
+          detail: { busy, canGenerate, progress, mode: makeMode },
         }),
       );
     };
     emit();
     const onRequest = () => emit();
     const onGen = () => {
-      void onGenerate();
+      if (makeMode === "model") void onModelGenerate();
+      else void onGenerate();
     };
     const onCancel = () => {
       cancelled.current = true;
@@ -531,7 +587,7 @@ export const VideoStudioPage = () => {
       window.removeEventListener("mpt:generate", onGen);
       window.removeEventListener("mpt:cancel-generate", onCancel);
     };
-  }, [busy, canGenerate, progress]);
+  }, [busy, canGenerate, progress, makeMode, onModelGenerate]);
 
   return (
     <PageShell scroll={false}>
@@ -539,72 +595,139 @@ export const VideoStudioPage = () => {
     <div className="page mpt-page">
       <div className="mpt-shell">
         <div className="mpt-workspace">
-          <section className="mpt-main" aria-label="文案编辑">
+          <section className="mpt-main" aria-label="成片设置">
             <div className="mpt-main__bar">
               <div className="mpt-main__bar-left">
                 <span className="mpt-step">1</span>
                 <div className="mpt-main__heading">
-                  <h3 className="mpt-panel__title">文案</h3>
-                  <p className="mpt-panel__hint">主题与口播，决定成片节奏</p>
+                  <h3 className="mpt-panel__title">成片</h3>
+                  <p className="mpt-panel__hint">
+                    主题、文案、画幅和时长两种方式共用
+                  </p>
                 </div>
               </div>
-              <div className="mpt-studio__actions">
-                <button
-                  type="button"
-                  className="btn-mcp-action"
-                  disabled={anyBusy || !params.video_subject.trim()}
-                  onClick={() => void onGenerateScript()}
-                >
-                  {scriptBusy ? "生成中…" : "AI 生成文案"}
-                </button>
-                <button
-                  type="button"
-                  className="btn-mcp-action"
-                  disabled={anyBusy}
-                  onClick={() => void onGenerateTerms()}
-                >
-                  {termsBusy ? "生成中…" : "关键词"}
-                </button>
-              </div>
+              {makeMode === "clip" ? (
+                <div className="mpt-studio__actions">
+                  <button
+                    type="button"
+                    className="btn-mcp-action"
+                    disabled={anyBusy || !params.video_subject.trim()}
+                    onClick={() => void onGenerateScript()}
+                  >
+                    {scriptBusy ? "生成中…" : "AI 生成文案"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-mcp-action"
+                    disabled={anyBusy}
+                    onClick={() => void onGenerateTerms()}
+                  >
+                    {termsBusy ? "生成中…" : "关键词"}
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             <div className="mpt-main__toolbar">
+              <div className="mpt-studio__field mpt-studio__field--sm">
+                <label className="images-generate__label">制作方式</label>
+                <Select
+                  aria-label="制作方式"
+                  value={makeMode}
+                  options={[
+                    { value: "clip", label: "口播剪辑" },
+                    { value: "model", label: "模型生成" },
+                  ]}
+                  onChange={(v) => setMakeMode(v === "model" ? "model" : "clip")}
+                />
+              </div>
               <div className="mpt-studio__field mpt-studio__field--grow">
-                <label className="images-generate__label">视频主题</label>
+                <label className="images-generate__label">主题</label>
                 <input
                   className="mpt-studio__input"
                   value={params.video_subject}
                   disabled={busy}
                   onChange={(e) => patch({ video_subject: e.target.value })}
-                  placeholder="例如：三分钟整理桌面"
+                  placeholder="例如：雨后街道的霓虹倒影"
                 />
               </div>
               <div className="mpt-studio__field mpt-studio__field--sm">
-                <label className="images-generate__label">语言</label>
+                <label className="images-generate__label">画幅</label>
                 <Select
-                  aria-label="语言"
-                  value={params.video_language}
-                  options={toSelectOptions(options?.script_languages)}
-                  onChange={(v) => patch({ video_language: v })}
+                  aria-label="画幅"
+                  value={params.video_aspect}
+                  options={
+                    options?.video_aspects?.length
+                      ? toSelectOptions(options.video_aspects)
+                      : [
+                          { value: "9:16", label: "9:16 竖屏" },
+                          { value: "16:9", label: "16:9 横屏" },
+                        ]
+                  }
+                  onChange={(v) => patch({ video_aspect: v })}
                 />
               </div>
               <div className="mpt-studio__field mpt-studio__field--sm">
-                <label className="images-generate__label">段落</label>
+                <label className="images-generate__label">时长</label>
                 <Select
-                  aria-label="段落数"
-                  value={String(params.paragraph_number)}
-                  options={[1, 2, 3, 4, 5].map((n) => ({
-                    value: String(n),
-                    label: String(n),
-                  }))}
-                  onChange={(v) => patch({ paragraph_number: Number(v) })}
+                  aria-label="时长"
+                  value={pieceSeconds}
+                  options={[
+                    ...VIDEO_SECONDS,
+                    ...(VIDEO_SECONDS.some((item) => item.value === pieceSeconds)
+                      ? []
+                      : [{ value: pieceSeconds, label: `${pieceSeconds} 秒` }]),
+                  ]}
+                  onChange={(v) => {
+                    setPieceSeconds(v);
+                    patch({ video_clip_duration: Number(v) });
+                  }}
                 />
               </div>
+            </div>
+            <div className="mpt-main__extras">
+              {makeMode === "model" ? (
+                <div className="mpt-studio__field mpt-studio__field--sm">
+                  <label className="images-generate__label">模型</label>
+                  <Select
+                    aria-label="生视频模型"
+                    value={modelId}
+                    options={[...VIDEO_MODELS]}
+                    onChange={setModelId}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="mpt-studio__field mpt-studio__field--sm">
+                    <label className="images-generate__label">语言</label>
+                    <Select
+                      aria-label="语言"
+                      value={params.video_language}
+                      options={toSelectOptions(options?.script_languages)}
+                      onChange={(v) => patch({ video_language: v })}
+                    />
+                  </div>
+                  <div className="mpt-studio__field mpt-studio__field--sm">
+                    <label className="images-generate__label">段落</label>
+                    <Select
+                      aria-label="段落数"
+                      value={String(params.paragraph_number)}
+                      options={[1, 2, 3, 4, 5].map((n) => ({
+                        value: String(n),
+                        label: String(n),
+                      }))}
+                      onChange={(v) => patch({ paragraph_number: Number(v) })}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="mpt-studio__field mpt-main__script">
               <div className="mpt-main__script-label">
-                <label className="images-generate__label">口播文案</label>
+                <label className="images-generate__label">
+                  {makeMode === "clip" ? "口播文案" : "画面描述"}
+                </label>
                 <span className="mpt-panel__meta">{scriptChars} 字</span>
               </div>
               <textarea
@@ -612,10 +735,15 @@ export const VideoStudioPage = () => {
                 value={params.video_script}
                 disabled={busy}
                 onChange={(e) => patch({ video_script: e.target.value })}
-                placeholder="粘贴或编写口播文案；也可先填主题，再点 AI 生成文案"
+                placeholder={
+                  makeMode === "clip"
+                    ? "粘贴或编写口播文案；也可先填主题，再点 AI 生成文案"
+                    : "补充镜头、运动和光影。留空时只用主题作为提示词"
+                }
               />
             </div>
 
+            {makeMode === "clip" ? (
             <div className="mpt-main__footer">
               <div className="mpt-studio__field">
                 <label className="images-generate__label">素材关键词</label>
@@ -656,6 +784,7 @@ export const VideoStudioPage = () => {
                 </div>
               </div>
             </div>
+            ) : null}
           </section>
 
           <section className="mpt-results" aria-label="成片预览">
@@ -792,7 +921,11 @@ export const VideoStudioPage = () => {
         </div>
       </div>
 
-      <aside className="mpt-rail" aria-label="成片参数菜单">
+      <aside
+        className={makeMode === "model" ? "mpt-rail mpt-rail--idle" : "mpt-rail"}
+        aria-label="成片参数菜单"
+        title={makeMode === "model" ? "画面、配音、字幕仅口播剪辑使用" : undefined}
+      >
         <div className="mpt-rail__top">
           <button
             type="button"
@@ -803,6 +936,7 @@ export const VideoStudioPage = () => {
             }
             aria-label="设置"
             aria-pressed={settingsOpen}
+            disabled={makeMode === "model"}
             onClick={() => {
               setParamPanel(null);
               setSettingsOpen((v) => !v);
@@ -826,6 +960,7 @@ export const VideoStudioPage = () => {
               }
               aria-label={label}
               aria-pressed={paramPanel === id}
+              disabled={makeMode === "model"}
               onClick={() => {
                 setSettingsOpen(false);
                 setParamPanel((cur) => (cur === id ? null : id));
@@ -917,9 +1052,10 @@ export const VideoStudioPage = () => {
                         aria-label="片段时长"
                         value={String(params.video_clip_duration)}
                         options={numOptions(options?.clip_durations, "s")}
-                        onChange={(v) =>
-                          patch({ video_clip_duration: Number(v) })
-                        }
+                        onChange={(v) => {
+                          setPieceSeconds(v);
+                          patch({ video_clip_duration: Number(v) });
+                        }}
                       />
                     </div>
                     <div className="mpt-studio__field">

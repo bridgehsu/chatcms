@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use super::repository as repo;
 use super::{bundled_agents, create_workspace, now_ms, validate_slug, AgentProfile};
-use crate::permission::DomainPolicy;
+use crate::common::permission::DomainPolicy;
 
 pub async fn ensure_seeded(app: &AppHandle) -> Vec<AgentProfile> {
     let mut list = repo::load_all(app).await;

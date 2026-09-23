@@ -15,10 +15,10 @@ use tauri::{Emitter, Listener, Manager};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::agents::AgentState;
-use crate::chat::service::send_message;
+use crate::core::start_turn as send_message;
 use crate::chat::Session;
-use crate::persist;
-use crate::provider::StreamChunk;
+use crate::common::persist;
+use crate::common::provider::StreamChunk;
 use crate::publish::PublishBridge;
 
 #[derive(Debug, Deserialize)]
@@ -44,6 +44,9 @@ pub struct ChatSendRequest {
     /// 为 true 时忽略 page_key 已有绑定，新建会话（对齐桌面「发起新会话」）
     #[serde(default)]
     pub force_new: bool,
+    /// Ask / Agent / Search（对齐桌面 chat_mode；缺省 ask）
+    #[serde(default)]
+    pub chat_mode: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -99,6 +102,31 @@ struct SetModelConfigRequest {
     base_url: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+struct ModelProfileItem {
+    id: String,
+    name: String,
+    model: String,
+    tier: String,
+    thinking: bool,
+    enabled: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct ModelProfilesResponse {
+    profiles: Vec<ModelProfileItem>,
+    /// None / 空 = Auto 模式
+    active_profile_id: Option<String>,
+    auto_mode: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct ActivateModelProfileRequest {
+    /// None / 空字符串 / 省略 → Auto
+    #[serde(default)]
+    id: Option<String>,
+}
+
 /// 扩展路由，state 与发布桥共用 `PublishBridge`。
 pub fn routes() -> Router<PublishBridge> {
     Router::new()
@@ -118,6 +146,10 @@ pub fn routes() -> Router<PublishBridge> {
             post(set_active_permission_mode),
         )
         .route("/chat/model", get(get_model_config).post(set_model_config))
+        .route(
+            "/chat/model-profiles",
+            get(list_model_profiles).post(activate_model_profile),
+        )
 }
 
 fn normalize_page_key(raw: &str) -> String {
@@ -149,7 +181,7 @@ async fn list_permission_modes(State(bridge): State<PublishBridge>) -> Response 
     let state = app.state::<AgentState>();
     let mut cfg = state.config.lock().unwrap().permission.clone();
     cfg.ensure_defaults();
-    let modes = crate::permission::list_modes(&cfg)
+    let modes = crate::common::permission::list_modes(&cfg)
         .into_iter()
         .map(|m| PermissionModeItem {
             id: m.id,
@@ -180,7 +212,7 @@ async fn set_active_permission_mode(
     let state = app.state::<AgentState>();
     let mut app_cfg = state.config.lock().unwrap();
     app_cfg.permission.ensure_defaults();
-    match crate::permission::set_active_mode(&mut app_cfg.permission, &id) {
+    match crate::common::permission::set_active_mode(&mut app_cfg.permission, &id) {
         Ok(mode) => {
             persist::save_config(&app, &app_cfg);
             Json(PermissionModeItem {
@@ -201,8 +233,8 @@ async fn get_model_config(State(bridge): State<PublishBridge>) -> Response {
     };
     let cfg = app.state::<AgentState>().config.lock().unwrap().clone();
     let kind = match cfg.provider.kind {
-        crate::config::ProviderKind::OpenAI => "openai",
-        crate::config::ProviderKind::Anthropic => "anthropic",
+        crate::common::config::ProviderKind::OpenAI => "openai",
+        crate::common::config::ProviderKind::Anthropic => "anthropic",
     };
     Json(ModelConfigResponse {
         kind: kind.to_string(),
@@ -225,8 +257,8 @@ async fn set_model_config(
         return (StatusCode::BAD_REQUEST, "model 不能为空").into_response();
     }
     let kind = match body.provider.trim() {
-        "openai" => crate::config::ProviderKind::OpenAI,
-        _ => crate::config::ProviderKind::Anthropic,
+        "openai" => crate::common::config::ProviderKind::OpenAI,
+        _ => crate::common::config::ProviderKind::Anthropic,
     };
     let base_url = body
         .base_url
@@ -244,14 +276,106 @@ async fn set_model_config(
     persist::save_config(&app, &cfg);
 
     let kind_str = match cfg.provider.kind {
-        crate::config::ProviderKind::OpenAI => "openai",
-        crate::config::ProviderKind::Anthropic => "anthropic",
+        crate::common::config::ProviderKind::OpenAI => "openai",
+        crate::common::config::ProviderKind::Anthropic => "anthropic",
     };
     Json(ModelConfigResponse {
         kind: kind_str.to_string(),
         model: cfg.provider.model.clone(),
         base_url: cfg.provider.base_url.clone().unwrap_or_default(),
         has_api_key: !cfg.provider.api_key.trim().is_empty(),
+    })
+    .into_response()
+}
+
+async fn list_model_profiles(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let profiles = crate::models::service::list(&app)
+        .await
+        .into_iter()
+        .filter(|p| p.enabled)
+        .map(|p| ModelProfileItem {
+            id: p.id,
+            name: p.name,
+            model: p.model,
+            tier: p.tier,
+            thinking: p.thinking,
+            enabled: p.enabled,
+        })
+        .collect::<Vec<_>>();
+    let cfg = app.state::<AgentState>().config.lock().unwrap().clone();
+    Json(ModelProfilesResponse {
+        profiles,
+        active_profile_id: if cfg.auto_mode {
+            None
+        } else {
+            cfg.active_profile_id
+        },
+        auto_mode: cfg.auto_mode,
+    })
+    .into_response()
+}
+
+async fn activate_model_profile(
+    State(bridge): State<PublishBridge>,
+    Json(body): Json<ActivateModelProfileRequest>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let id = body
+        .id
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
+    let list = crate::models::service::list(&app).await;
+    let state = app.state::<AgentState>();
+    let mut cfg = state.config.lock().unwrap();
+
+    if let Some(ref profile_id) = id {
+        let Some(p) = list.iter().find(|x| x.id == *profile_id) else {
+            return (StatusCode::BAD_REQUEST, "模型配置不存在").into_response();
+        };
+        cfg.active_profile_id = Some(profile_id.clone());
+        cfg.auto_mode = false;
+        cfg.provider.kind = match p.kind.as_str() {
+            "openai" => crate::common::config::ProviderKind::OpenAI,
+            _ => crate::common::config::ProviderKind::Anthropic,
+        };
+        cfg.provider.model = p.model.clone();
+        cfg.provider.base_url = p.base_url.clone();
+        if !p.api_key.trim().is_empty() {
+            cfg.provider.api_key = p.api_key.clone();
+        }
+    } else {
+        cfg.auto_mode = true;
+    }
+    persist::save_config(&app, &cfg);
+    let auto_mode = cfg.auto_mode;
+    let active_profile_id = if auto_mode {
+        None
+    } else {
+        cfg.active_profile_id.clone()
+    };
+    drop(cfg);
+
+    Json(ModelProfilesResponse {
+        profiles: list
+            .into_iter()
+            .filter(|p| p.enabled)
+            .map(|p| ModelProfileItem {
+                id: p.id,
+                name: p.name,
+                model: p.model,
+                tier: p.tier,
+                thinking: p.thinking,
+                enabled: p.enabled,
+            })
+            .collect(),
+        active_profile_id,
+        auto_mode,
     })
     .into_response()
 }
@@ -545,14 +669,22 @@ async fn chat_send_sse(
     let bridge2 = bridge.clone();
     let page_key_for_bind = page_key.clone();
     let sid_for_send = session_id.clone();
+    let chat_mode = body
+        .chat_mode
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
     tauri::async_runtime::spawn(async move {
         let state = app2.state::<AgentState>();
         let result = send_message(
             app2.clone(),
             state,
             Some(sid_for_send.clone()),
-            None,
             content,
+            chat_mode,
+            None,
+            None,
         )
         .await;
 

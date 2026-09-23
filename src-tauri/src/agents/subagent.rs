@@ -4,8 +4,8 @@ use anyhow::{bail, Result};
 use serde_json::json;
 use tauri::{AppHandle, Manager};
 
-use crate::provider;
-use super::tools;
+use crate::common::provider;
+use crate::core::tools;
 
 use super::dispatch::dispatch_sub_tool;
 use super::state::AgentState;
@@ -69,6 +69,7 @@ pub async fn run_sub_agent(
             api_messages.clone(),
             sub_tools,
             system_prompt.clone(),
+            None,
         )
         .await;
 

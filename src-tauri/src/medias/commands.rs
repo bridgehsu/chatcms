@@ -33,8 +33,11 @@ pub fn media_platform_upsert(
     home_url: String,
     enabled: bool,
     notes: String,
+    region: Option<String>,
 ) -> Result<MediaPlatform, String> {
-    super::upsert_platform(&app, id, code, name, kind, inject_url, home_url, enabled, notes)
+    super::upsert_platform(
+        &app, id, code, name, kind, inject_url, home_url, enabled, notes, region,
+    )
 }
 
 #[tauri::command]

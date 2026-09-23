@@ -8,6 +8,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "package": "bash bin/package.sh",
     "package:mac": "bash bin/package-mac.sh",
     "package:win": "bash bin/package-windows.sh",
@@ -20,22 +23,24 @@
     "@tauri-apps/plugin-store": "^2.4.4",
     "@xyflow/react": "^12.11.2",
     "antd": "^6.6.0",
+    "lucide-react": "^1.45.0",
+    "marked": "^18.0.13",
+    "novel": "^1.0.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.1",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "tippy.js": "^6.3.7",
+    "turndown": "^7.2.4",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@tauri-apps/cli": "^2",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
+    "mermaid": "^11.17.2",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "vitepress": "^1.6.4"
   }
 }

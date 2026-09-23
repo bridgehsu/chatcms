@@ -1,53 +1,118 @@
+use std::collections::HashMap;
+
 use tauri::AppHandle;
 use uuid::Uuid;
 
 use super::{
     BridgePlatform, BridgeScript, MediaPlatform, MediaPlatformPage, MediaPlatformPageItem,
-    PublishScript, PublishScriptView, now_ms, normalize_kind, script_view,
+    PublishScript, PublishScriptView, now_ms, normalize_kind, normalize_region, script_view,
 };
+use super::multipost_catalog::MULTIPOST_CATALOG;
 use super::repository as repo;
 
+/// 启动时：从旧 chatcms.json 迁入 SQLite，再按 MultiPost 目录补齐平台。
+pub async fn migrate_and_seed(app: &AppHandle) {
+    repo::migrate_from_legacy_store(app).await;
+    sync_multipost_catalog(app).await;
+}
+
+/// 按 code 合并 MultiPost 全量目录：保留已有 id/enabled/notes，补齐缺失并刷新元数据。
+async fn sync_multipost_catalog(app: &AppHandle) {
+    let mut list = repo::load_platforms_async(app).await;
+    let ts = now_ms();
+    let mut index: HashMap<String, usize> = list
+        .iter()
+        .enumerate()
+        .map(|(i, p)| (p.code.clone(), i))
+        .collect();
+    let mut changed = false;
+    let mut inserted = 0usize;
+    let mut refreshed = 0usize;
+
+    for entry in MULTIPOST_CATALOG {
+        let code = entry.code.to_string();
+        let region = normalize_region(entry.region);
+        if let Some(&idx) = index.get(&code) {
+            let p = &mut list[idx];
+            let mut dirty = false;
+            if p.name != entry.name {
+                p.name = entry.name.into();
+                dirty = true;
+            }
+            if p.kind != entry.kind {
+                p.kind = entry.kind.into();
+                dirty = true;
+            }
+            if p.region != region {
+                p.region = region.clone();
+                dirty = true;
+            }
+            if p.inject_url != entry.inject_url {
+                p.inject_url = entry.inject_url.into();
+                dirty = true;
+            }
+            if p.home_url != entry.home_url {
+                p.home_url = entry.home_url.into();
+                dirty = true;
+            }
+            if dirty {
+                p.updated_at = ts;
+                changed = true;
+                refreshed += 1;
+            }
+        } else {
+            let platform = MediaPlatform {
+                id: Uuid::new_v4().to_string(),
+                code: code.clone(),
+                name: entry.name.into(),
+                kind: entry.kind.into(),
+                inject_url: entry.inject_url.into(),
+                home_url: entry.home_url.into(),
+                enabled: true,
+                notes: String::new(),
+                region,
+                updated_at: ts,
+            };
+            index.insert(code, list.len());
+            list.push(platform);
+            changed = true;
+            inserted += 1;
+        }
+    }
+
+    if !changed {
+        return;
+    }
+    if let Err(e) = repo::save_platforms_async(app, &list).await {
+        log::warn!(target: "chatcms_lib::medias", "sync MultiPost catalog failed: {e}");
+        return;
+    }
+    log::info!(
+        target: "chatcms_lib::medias",
+        "MultiPost catalog synced: +{inserted} inserted, {refreshed} refreshed, total {}",
+        list.len()
+    );
+}
+
 pub fn ensure_seeded(app: &AppHandle) {
+    // 同步路径：仅当库完全为空时写入目录（正常启动已由 migrate_and_seed 覆盖）
     let platforms = repo::load_platforms(app);
     if !platforms.is_empty() {
         return;
     }
     let ts = now_ms();
-    let seed: Vec<(&str, &str, &str, &str, &str)> = vec![
-        ("DYNAMIC_REDNOTE", "小红书", "dynamic", "https://creator.xiaohongshu.com/publish/publish?target=image", "https://creator.xiaohongshu.com/"),
-        ("DYNAMIC_DOUYIN", "抖音", "dynamic", "https://creator.douyin.com/creator-micro/content/upload?default-tab=3", "https://creator.douyin.com/"),
-        ("DYNAMIC_WEIBO", "微博", "dynamic", "https://weibo.com", "https://weibo.com"),
-        ("DYNAMIC_BILIBILI", "B站动态", "dynamic", "https://t.bilibili.com", "https://t.bilibili.com"),
-        ("DYNAMIC_ZHIHU", "知乎想法", "dynamic", "https://www.zhihu.com", "https://www.zhihu.com"),
-        ("DYNAMIC_WEIXINCHANNEL", "视频号", "dynamic", "https://channels.weixin.qq.com/platform/post/create", "https://channels.weixin.qq.com/"),
-        ("DYNAMIC_KUAISHOU", "快手", "dynamic", "https://cp.kuaishou.com/", "https://cp.kuaishou.com/"),
-        ("DYNAMIC_TOUTIAO", "今日头条", "dynamic", "https://www.toutiao.com/", "https://www.toutiao.com/"),
-        ("DYNAMIC_JUEJIN", "掘金", "dynamic", "https://juejin.cn/creator/post/publish", "https://juejin.cn/"),
-        ("ARTICLE_WEIXIN", "微信公众号", "article", "https://mp.weixin.qq.com/", "https://mp.weixin.qq.com/"),
-        ("ARTICLE_ZHIHU", "知乎文章", "article", "https://zhuanlan.zhihu.com/write", "https://www.zhihu.com/"),
-        ("ARTICLE_CSDN", "CSDN", "article", "https://editor.csdn.net/md/", "https://www.csdn.net/"),
-        ("ARTICLE_JUEJIN", "掘金文章", "article", "https://juejin.cn/editor/drafts/new?v=2", "https://juejin.cn/"),
-        ("ARTICLE_JIANSHU", "简书", "article", "https://www.jianshu.com/writer", "https://www.jianshu.com/"),
-        ("ARTICLE_TOUTIAO", "头条号", "article", "https://mp.toutiao.com/", "https://mp.toutiao.com/"),
-        ("VIDEO_DOUYIN", "抖音视频", "video", "https://creator.douyin.com/creator-micro/content/upload", "https://creator.douyin.com/"),
-        ("VIDEO_REDNOTE", "小红书视频", "video", "https://creator.xiaohongshu.com/publish/publish?target=video", "https://creator.xiaohongshu.com/"),
-        ("VIDEO_BILIBILI", "B站视频", "video", "https://member.bilibili.com/platform/upload/video/frame", "https://member.bilibili.com/"),
-        ("VIDEO_KUAISHOU", "快手视频", "video", "https://cp.kuaishou.com/article/publish/video", "https://cp.kuaishou.com/"),
-        ("VIDEO_WEIXINCHANNEL", "视频号视频", "video", "https://channels.weixin.qq.com/platform/post/create", "https://channels.weixin.qq.com/"),
-        ("VIDEO_ZHIHU", "知乎视频", "video", "https://www.zhihu.com/zvideo/upload-video", "https://www.zhihu.com/"),
-    ];
-
-    let list: Vec<MediaPlatform> = seed
-        .into_iter()
-        .map(|(code, name, kind, inject, home)| MediaPlatform {
+    let list: Vec<MediaPlatform> = MULTIPOST_CATALOG
+        .iter()
+        .map(|entry| MediaPlatform {
             id: Uuid::new_v4().to_string(),
-            code: code.into(),
-            name: name.into(),
-            kind: kind.into(),
-            inject_url: inject.into(),
-            home_url: home.into(),
+            code: entry.code.into(),
+            name: entry.name.into(),
+            kind: entry.kind.into(),
+            inject_url: entry.inject_url.into(),
+            home_url: entry.home_url.into(),
             enabled: true,
             notes: String::new(),
+            region: normalize_region(entry.region),
             updated_at: ts,
         })
         .collect();
@@ -175,9 +240,11 @@ pub fn upsert_platform(
     home_url: String,
     enabled: bool,
     notes: String,
+    region: Option<String>,
 ) -> Result<MediaPlatform, String> {
     ensure_seeded(app);
     let kind = normalize_kind(&kind)?;
+    let region = normalize_region(region.as_deref().unwrap_or("cn"));
     let code = code.trim().to_uppercase();
     let name = name.trim().to_string();
     if code.is_empty() {
@@ -204,6 +271,7 @@ pub fn upsert_platform(
         item.home_url = home_url.trim().to_string();
         item.enabled = enabled;
         item.notes = notes.trim().to_string();
+        item.region = region;
         item.updated_at = ts;
         let updated = item.clone();
         repo::save_platforms(app, &list);
@@ -221,6 +289,7 @@ pub fn upsert_platform(
             home_url: home_url.trim().to_string(),
             enabled,
             notes: notes.trim().to_string(),
+            region,
             updated_at: ts,
         };
         list.insert(0, platform.clone());
@@ -377,6 +446,7 @@ pub fn bridge_list_platforms(app: &AppHandle) -> Vec<BridgePlatform> {
                 kind: p.kind,
                 inject_url: p.inject_url,
                 home_url: p.home_url,
+                region: p.region,
                 has_script: script
                     .map(|s| s.published_version > 0 && !s.published_script.is_empty())
                     .unwrap_or(false),

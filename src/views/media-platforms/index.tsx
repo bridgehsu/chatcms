@@ -11,15 +11,29 @@ const KIND_SEARCH_OPTIONS = [
     { label: '动态', value: 'dynamic' },
     { label: '文章', value: 'article' },
     { label: '视频', value: 'video' },
+    { label: '播客', value: 'podcast' },
 ];
 
 const KIND_FORM_OPTIONS = [
     { label: '动态', value: 'dynamic' },
     { label: '文章', value: 'article' },
     { label: '视频', value: 'video' },
+    { label: '播客', value: 'podcast' },
 ];
 
-const KIND_LABEL: Record<string, string> = { dynamic: '动态', article: '文章', video: '视频' };
+const KIND_LABEL: Record<string, string> = {
+    dynamic: '动态',
+    article: '文章',
+    video: '视频',
+    podcast: '播客',
+};
+
+const REGION_FORM_OPTIONS = [
+    { label: '国内', value: 'cn' },
+    { label: '海外', value: 'intl' },
+];
+
+const REGION_LABEL: Record<string, string> = { cn: '国内', intl: '海外' };
 
 const scriptStatus = (row: MediaPlatformPageItem) => {
     if (!row.script_is_published) return <span className="model-status-idle">未发布</span>;
@@ -63,6 +77,7 @@ export const MediaPlatformsPage = () => {
         code: record.code,
         name: record.name,
         kind: record.kind || 'dynamic',
+        region: record.region || 'cn',
         injectUrl: record.inject_url,
         homeUrl: record.home_url,
         enabled: record.enabled,
@@ -120,6 +135,20 @@ export const MediaPlatformsPage = () => {
                 initialValue: 'dynamic',
             },
             render: (kind: string) => KIND_LABEL[kind] ?? kind,
+        },
+        {
+            title: '地区',
+            dataIndex: 'region',
+            key: 'region',
+            width: 72,
+            editor: {
+                name: 'region',
+                label: '地区',
+                type: 'select',
+                options: REGION_FORM_OPTIONS,
+                initialValue: 'cn',
+            },
+            render: (region: string) => REGION_LABEL[region] ?? region ?? '国内',
         },
         {
             title: '注入页',
@@ -200,8 +229,8 @@ export const MediaPlatformsPage = () => {
         },
         {
             title: '更新',
-            dataIndex: 'updated',
-            key: 'updated',
+            dataIndex: 'updated_at',
+            key: 'updated_at',
             render: (ms: number) => formatTime(ms),
         },
     ];

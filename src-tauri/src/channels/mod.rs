@@ -464,11 +464,11 @@ async fn route_to_agent(
     content: String,
 ) -> Option<String> {
     use crate::agents::AgentState;
-    use crate::chat::service::send_message;
+    use crate::core::start_turn as send_message;
     use tauri::Manager;
 
     let state = app.state::<AgentState>();
-    match send_message(app.clone(), state, session_id, None, content).await {
+    match send_message(app.clone(), state, session_id, content, None, None, None).await {
         Ok(sid) => Some(sid),
         Err(e) => {
             log::error!(target: "chatcms_lib::channels", "telegram agent error: {e:#}");

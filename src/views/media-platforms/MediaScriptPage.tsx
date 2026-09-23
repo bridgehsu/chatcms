@@ -18,7 +18,11 @@ const CMDS = {
     publish: "publish_script_publish",
     discard: "publish_script_discard_draft",
     title: "填表脚本",
-    placeholder: "// 发布填表 JS；仅「发布」后扩展可通过桥拉取",
+    placeholder:
+      "// 发布填表 JS（函数体，入参 data）\n" +
+      "// data: { title, content, images: [{url,name,type?}], isAutoPublish, platform }\n" +
+      "// 例：await waitForElement(...); return { ok: true }\n" +
+      "// 仅「发布」后扩展可通过桥 GET /publish/script 拉取",
     okPublish: (v: number) => `已发布为 v${v}（扩展桥 GET /publish/script）`,
   },
   collect: {

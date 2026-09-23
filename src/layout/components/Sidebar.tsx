@@ -26,11 +26,11 @@ const GROUPS_KEY = "chatcms.sidebar.groups.v1";
 const readGroupOpen = (): Record<string, boolean> => {
   try {
     const raw = localStorage.getItem(GROUPS_KEY);
-    if (!raw) return { workspace: true, settings: true };
+    if (!raw) return { workbench: true, workspace: true, settings: true, "media-ops": true };
     const parsed = JSON.parse(raw) as Record<string, boolean>;
-    return { workspace: true, settings: true, ...parsed };
+    return { workbench: true, workspace: true, settings: true, "media-ops": true, ...parsed };
   } catch {
-    return { workspace: true, settings: true };
+    return { workbench: true, workspace: true, settings: true, "media-ops": true };
   }
 };
 
@@ -263,19 +263,39 @@ export const Sidebar = () => {
           )}
 
           {customEntries.length > 0 ? (
-            <div className="nav-divider" role="separator" />
+            <div className={`nav-group${groupOpen.custom !== false ? " is-open" : ""}`}>
+              <div className="nav-divider" role="separator" />
+              {expanded ? (
+                <button
+                  type="button"
+                  className="nav-item nav-item--group"
+                  aria-expanded={groupOpen.custom !== false}
+                  onClick={() => toggleGroup("custom")}
+                >
+                  <span className="nav-icon">
+                    <IconNav />
+                  </span>
+                  <span className="nav-label">我的导航</span>
+                  <span className="nav-group__chevron" aria-hidden="true">
+                    <IconChevron open={groupOpen.custom !== false} />
+                  </span>
+                </button>
+              ) : null}
+              {(expanded ? groupOpen.custom !== false : true) &&
+                customEntries.map((entry) => (
+                  <LeafLink
+                    key={entry.id}
+                    path={entry.path}
+                    label={entry.label}
+                    Icon={IconNav}
+                    sidebarExpanded={expanded}
+                    nested={expanded}
+                    onEdit={() => setModal(entry)}
+                    onRemove={() => remove(entry.id)}
+                  />
+                ))}
+            </div>
           ) : null}
-          {customEntries.map((entry) => (
-            <LeafLink
-              key={entry.id}
-              path={entry.path}
-              label={entry.label}
-              Icon={IconNav}
-              sidebarExpanded={expanded}
-              onEdit={() => setModal(entry)}
-              onRemove={() => remove(entry.id)}
-            />
-          ))}
         </nav>
 
         <div className="sidebar-bottom">

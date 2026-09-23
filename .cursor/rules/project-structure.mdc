@@ -27,31 +27,38 @@ chatcms/
 │       ├── image-brief.md
 │       └── skill-creator.md
 ├── bin/                 # 打包脚本（mac / windows）
-├── doc/                 # 原理说明（如 how-it-works.md）
+├── docs/                # VitePress 文档站（对外；pnpm docs:dev / docs:build）
+│   ├── .vitepress/      # 站点配置
+│   ├── guide/           # 概览 / 启动
+│   ├── concepts/        # Agent Loop、多 Agent
+│   ├── features/        # 功能说明
+│   └── public/          # 静态资源
+├── doc/                 # 工程文稿与 drawio 源（非站点；对外内容同步到 docs/）
 ├── resume/              # 简历用项目经历文稿（非运行时）
+├── .github/workflows/   # CI（含 docs.yml → GitHub Pages）
 ├── .cursor/rules/       # Cursor rules（含本文件）
 ├── .cursor/skills/      # 项目 skills
-├── package.json         # 前端依赖；脚本 pnpm tauri / pnpm package*
+├── package.json         # 前端 + 文档站依赖；pnpm tauri / docs:* / package*
 └── prompt.md            # 开发进度备忘（非运行时）
 ```
 
-忽略：`node_modules/`、`src-tauri/target/`、`dist/`、`release/`。
+忽略：`node_modules/`、`src-tauri/target/`、`dist/`、`release/`、`docs/.vitepress/dist`。
 
 ## 前端 `src/`
 
-**规范**：`.cursor/rules/chatcms-ui.mdc`（目录、ES6、箭头函数）。
+**规范**：`.cursor/rules/chatcms-ui.mdc`（目录、ES6、箭头函数）；主列表表格见 `.cursor/rules/cabinx-table.mdc`。
 
 ```text
 src/
 ├── App.tsx / main.tsx      # HashRouter + 一级路由
 ├── layout/
 │   ├── AppLayout.tsx       # Sidebar + Topbar + Outlet
-│   ├── nav.ts              # 导航：干活区 + 媒体管理 / 智能配置 / 系统设置二级
+│   ├── nav.ts              # 导航：工作台 / 媒体管理 / 智能配置 / 系统设置分组
 │   └── components/         # Sidebar、Topbar、ThemeToggle、PageShell
 ├── views/
-│   ├── chat/               # 智能会话（SessionList + ChatWindow + PermissionPrompt）
+│   ├── chat/               # 智能会话（助手回复：一键保存 / AI整理；可回跳）
 │   ├── map/                # 业务地图看板（分区入口 / 笔记 / 时钟）
-│   ├── content/            # 内容管理 · AI 笔记（Notion 风格）
+│   ├── content/            # 内容管理 · AI 笔记（SQLite cms_note；Novel 富文本；桥接 knowledge 供 Agent 检索）
 │   ├── images/             # 图片工厂 · AI 生图与本地保存
 │   ├── videos/             # 视频工厂 · AI 生视频 / MPT 口播工程页 / 本地保存
 │   ├── schedules/          # 调度中心 · 项目列表 + n8n 风格工作流画布
@@ -61,7 +68,7 @@ src/
 │   ├── models/             # 模型配置表格 + 弹窗 CRUD
 │   ├── intents/            # 意图规则 · 关键词/权重/启用（软路由配置）
 │   ├── permissions/        # 权限模式面板组件（路由在 settings）
-│   ├── settings/           # 全局配置 / 权限 / 意图评测 / 运行观测 / 渠道；知识库页文件亦在此（导航在智能配置）
+│   ├── settings/           # 全局配置 / 权限 / 意图评测 / 运行观测（审计+会话链路）/ 渠道；知识库页文件亦在此（导航在智能配置）
 │   ├── media-platforms/    # 插件脚本（导航在媒体管理）· 发布/采集注入页
 │   ├── crawler/            # 媒体采集（列表 + /crawler/:id 配置页 · chatcms-collect）
 │   ├── accounts/           # 账号管理（媒体管理 · 本地密码本）
@@ -83,6 +90,7 @@ src/
 │   ├── useChatStore.ts
 │   ├── useProviderStore.ts
 │   ├── usePermissionStore.ts # 权限模式列表 + 当前激活
+│   ├── useNotesStore.ts    # 内容管理笔记（SQLite via notes_*；可写知识库桥接）
 │   └── useThemeStore.ts    # 外观：system / light / dark
 ├── config/
 │   ├── modelPresets.ts     # 模型预设（Claude/GPT/DeepSeek/Kimi/千问）
@@ -100,90 +108,61 @@ src/
 src-tauri/src/
 ├── main.rs              # 二进制入口 → lib::run
 ├── lib.rs               # Tauri commands 注册 + bootstrap（setup）
-├── db.rs                # SQLite 连接池；路径走 config::resolve_data_root；schema include_str!
-├── logging/             # 应用日志（tauri-plugin-log + AppEnv）
-│   ├── mod.rs           # plugin 注册、启动摘要
-│   └── env.rs           # Dev / Test / Prod 环境识别
+├── db.rs                # SQLite 连接池；路径走 common::config::resolve_data_root；schema include_str!
+├── common/              # 跨域基础能力
+│   ├── mod.rs           # logging / config / persist / permission / provider
+│   ├── logging/         # 应用日志（tauri-plugin-log + AppEnv）
+│   ├── config/          # AppConfig、数据根路径、全局配置命令
+│   ├── persist/         # 尚无独立 repository 的域的 store JSON 暂存
+│   ├── permission/      # 权限内核：模式、裁决、会话授权、审计
+│   └── provider/        # 模型流式请求与一次性补全
 │
-├── agent/               # Agent 运行时（单一职责拆分）
-│   ├── mod.rs           # 再导出：AgentState / send_message / …
-│   ├── core/            # 核心会话循环
-│   │   ├── mod.rs       # 再导出 core 内各项
-│   │   ├── state.rs     # AgentState（含 session_grants / skills / agents / sessions）
-│   │   ├── chat.rs      # 主会话 + agent loop，组装 system prompt；workspace 从 session 读
-│   │   ├── dispatch.rs  # 工具路由前 authorize（spawn / MCP / 内置）
-│   │   ├── subagent.rs  # 子 agent loop（workspace 直接取 AgentProfile.workspace_dir）
-│   │   ├── permission.rs# 权限请求弹窗与 resolve（含 remember）
-│   │   └── turns.rs     # tool 事件 emit（emit_tool_call / emit_tool_result）
-│   ├── mcp/             # MCP stdio 子进程管理
-│   │   ├── mod.rs
-│   │   ├── manager.rs   # McpManager：connect / disconnect / reconnect
-│   │   ├── client.rs    # stdio 子进程 JSON-RPC 客户端
-│   │   ├── config.rs    # McpServerConfig
-│   │   ├── types.rs
-│   │   └── commands.rs  # mcp_* Tauri commands
-│   ├── permission/      # 权限内核
-│   │   ├── mod.rs       # 再导出
-│   │   ├── types.rs     # PermissionMode / DomainPolicy / Decision
-│   │   ├── config.rs    # PermissionConfig CRUD
-│   │   ├── authz.rs     # 决策引擎（evaluate_request）
-│   │   ├── grants.rs    # 会话级临时授权（session_grants）
-│   │   ├── audit.rs     # 审计日志写入
-│   │   └── commands.rs  # permission_* Tauri commands
-│   ├── provider/        # AI Provider 流式请求
-│   │   ├── mod.rs       # stream_chat 分发
-│   │   ├── anthropic.rs # Claude API（SSE + tools）
-│   │   ├── openai.rs    # OpenAI 兼容（SSE + tools）
-│   │   └── types.rs     # ProviderConfig / StreamChunk
-│   ├── scripts/         # OpenClaw 风格 Skills（SKILL.md）
-│   │   ├── mod.rs       # 再导出：Skill / ensure_seeded / list / format_for_prompt
-│   │   ├── types.rs     # Skill / SkillSource
-│   │   ├── seed.rs      # 首次启动写出内置 .md 并入库；include_str! 从 scripts/skills/
-│   │   ├── store.rs     # CRUD + npx 安装（调 persist 层）
-│   │   ├── prompt.rs    # format_for_prompt / to_skill_md
-│   │   └── commands.rs  # skill_* Tauri commands
-│   └── tools/           # 内置工具实现
-│       ├── mod.rs       # ToolDef / execute 分发
-│       ├── types.rs
-│       ├── bash.rs
-│       ├── read_file.rs
-│       ├── write_file.rs
-│       └── spawn_agent.rs
+├── mcp/                 # MCP stdio 子进程管理
+│   ├── mod.rs
+│   ├── manager.rs       # McpManager：connect / disconnect / reconnect
+│   ├── client.rs        # stdio 子进程 JSON-RPC 客户端
+│   ├── config.rs        # McpServerConfig
+│   ├── types.rs
+│   └── commands.rs      # mcp_* Tauri commands
+├── scripts/             # OpenClaw 风格 Skills（SKILL.md）
+│   ├── mod.rs           # 再导出：Skill / ensure_seeded / list / format_for_prompt
+│   ├── types.rs         # Skill / SkillSource
+│   ├── seed.rs          # 首次启动写出内置 .md 并入库；include_str! 从 scripts/skills/
+│   ├── store.rs         # CRUD + npx 安装（调 persist 层）
+│   ├── prompt.rs        # format_for_prompt / to_skill_md
+│   └── commands.rs      # skill_* Tauri commands
 │
-├── chat/                # 智能会话（标准四层：mod/repository/service/commands）
-│   ├── mod.rs           # Session / Message / Role 类型；Session.workspace_dir 创建时锁定
-│   ├── repository.rs    # SQLite sessions + messages 读写
-│   ├── service.rs       # ensure_session（锁定 workspace）/ push_user_message / save_snapshot / list / get / delete / rename / pin
-│   ├── intent/          # 会话意图识别流水线（软路由，不短路 Agent Loop）
-│   │   ├── mod.rs           # 入口 run：编排流水线；再导出 Intent / format_for_prompt / ensure_seeded
-│   │   ├── intent_result.rs # Intent / IntentKind / IntentSource
-│   │   ├── normalize.rs     # 输入规范化
-│   │   ├── rules.rs         # 内置默认规则（种子 + 缓存 fallback）
-│   │   ├── cache.rs         # 启用规则内存缓存（热路径同步读）
-│   │   ├── repository.rs    # intent_rule 表读写
-│   │   ├── service.rs       # ensure_seeded / list / update / reset
-│   │   ├── commands.rs      # intent_rule_* / intent_eval_* Tauri commands
-│   │   ├── eval.rs          # 意图离线评测 case bank + 批跑报告
-│   │   ├── score.rs         # 规则打分（读 cache）
-│   │   ├── confidence.rs    # 置信度 + High/Low
-│   │   ├── classify.rs      # Local Classifier（低置信补判，预留）
-│   │   ├── fusion.rs        # 规则与本地结果融合
-│   │   ├── enrich.rs        # 派生字段（needs_tools 等）
-│   │   ├── validate.rs      # 边界校验
-│   │   ├── fallback.rs      # 短句等兜底
-│   │   └── inject.rs        # Intent → system prompt 块
-│   ├── compress.rs      # 上下文压缩 / 截断
-│   ├── truncate.rs      # tool 结果截断
-│   └── commands.rs      # chat_send + session_* Tauri commands
+├── chat/                # 智能会话数据与命令（运行分层在 core/）
+│   ├── mod.rs           # Session / SessionGroup / Message / Role
+│   ├── repository.rs    # SQLite sessions + messages + session_group 读写
+│   ├── service.rs       # 会话 CRUD（ensure / list / 分组）
+│   ├── commands.rs      # chat_send + chat_complete + session_* + session_group_* + chat_trace_list
+│   └── trace.rs         # 会话链路观测（分段耗时 + 落库）
+├── core/                # Agent 运行分层
+│   ├── mod.rs           # 门面：分层声明 + start_turn
+│   ├── turn.rs          # 总编排（Dispatcher）：按层调用 run
+│   ├── context.rs       # TurnContext（一轮对话上下文）
+│   ├── pipeline.rs      # 层间钩子（日志 / trace）
+│   ├── session/         # 会话层 run
+│   ├── intent/          # 意图层 run / infer
+│   ├── decision/        # 决策层 run：模式、角色、工具集合
+│   ├── plan/            # 编排层 run：prompt + Agent Loop
+│   ├── execute/         # 执行层 run：工具回合（委托 agents::dispatch）
+│   ├── memory/          # 记忆协作：知识注入、截断、快照
+│   ├── response/        # 响应层 run：助手终态 + 链路落库
+│   └── tools/           # 内置工具（bash / read_file / write_file / spawn_agent / …）
 ├── accounts/            # 多平台账号 CRUD + 主密码保险柜
 │   ├── mod.rs
 │   ├── vault.rs         # Argon2id + AES-256-GCM
 │   └── commands.rs      # account_* / vault_* commands
-├── agents/              # 多代理档案（标准四层：mod/repository/service/commands）
-│   ├── mod.rs           # AgentProfile / bundled_agents / validate_slug / format_persona
+├── agents/              # 多代理档案与权限分流
+│   ├── mod.rs           # AgentProfile / bundled_agents；再导出运行分层
 │   ├── repository.rs    # SQLite agent 表读写 + AppConfig 委托
 │   ├── service.rs       # ensure_seeded / list / add / update / activate / remove
-│   └── commands.rs      # agent_* Tauri commands
+│   ├── commands.rs      # agent_* Tauri commands
+│   ├── state.rs         # AgentState（sessions / skills / agents / grants）
+│   ├── dispatch.rs      # 工具路由前 authorize（spawn / MCP / 内置）
+│   ├── subagent.rs      # 子 agent loop
 ├── bmarks/              # 导航书签 CRUD
 │   ├── mod.rs
 │   └── commands.rs
@@ -195,10 +174,6 @@ src-tauri/src/
 ├── channels/            # IM 渠道运行时（Telegram 等）
 │   ├── mod.rs
 │   └── commands.rs
-├── config/              # AppConfig / Provider CRUD / 全局配置（存储根、外挂服务、发布桥）
-│   ├── mod.rs           # AppConfig、GeneralSettings
-│   ├── paths.rs         # resolve_data_root / resolve_bridge_port
-│   └── commands.rs      # config_* / provider_* / general_config_*
 ├── crawler/             # 采集器（chatcms-collect worker）HTTP 客户端 + 任务 CRUD；base_url 与 AppConfig.general 同步
 │   ├── mod.rs
 │   ├── repository.rs
@@ -214,30 +189,19 @@ src-tauri/src/
 │   ├── feed.rs
 │   ├── export.rs
 │   └── commands.rs
-├── medias/              # 媒体平台 + 稿件（发布 / 采集脚本）
+├── medias/              # 媒体平台 + 稿件（发布 / 采集脚本 · SQLite）
 │   ├── mod.rs
+│   ├── repository.rs    # media_platform / media_publish_script / media_collect_script
+│   ├── service.rs
+│   └── commands.rs
+├── notes/               # 内容管理笔记（cms_note / cms_note_group；桥接 knowledge）
+│   ├── mod.rs
+│   ├── repository.rs
+│   ├── service.rs
 │   └── commands.rs
 ├── mpt/                 # chatcms-video 客户端；base_url 与 AppConfig.general 同步
 │   ├── mod.rs
 │   └── commands.rs      # mpt_* Tauri commands
-├── persist/             # 持久化层（SQLite + tauri-plugin-store）；有独立 repository 的域不在此处
-│   ├── mod.rs           # 统一导出所有 save_* / load_* / delete_*
-│   ├── knowledge.rs     # SQLite
-│   ├── permission.rs    # SQLite（审计日志）
-│   ├── skills.rs        # SQLite（skill_pkg 表）
-│   ├── images.rs        # SQLite
-│   ├── videos.rs        # SQLite
-│   ├── config.rs        # store JSON
-│   ├── mcp.rs           # store JSON
-│   ├── channels.rs      # store JSON
-│   ├── mpt.rs           # store JSON
-│   ├── accounts.rs      # store JSON（加密）
-│   ├── media_platforms.rs # store JSON
-│   ├── nav.rs           # store JSON
-│   ├── schedules.rs     # store JSON
-│   ├── business_map.rs  # store JSON
-│   ├── bridge.rs        # store JSON
-│   └── crawler.rs       # store JSON
 ├── publish/             # 本机发布桥 axum server（端口读 AppConfig.general.publish_bridge_port）
 │   ├── mod.rs
 │   └── commands.rs
@@ -252,28 +216,26 @@ src-tauri/src/
 ## 关键数据流
 
 ```text
-ChatWindow（前端已选 agent） → invoke chat_send { agent_id, session_id?, content }
-  → chat::commands::chat_send
-  → agent::core::chat::send_message
-      → chat::service::ensure_session   # 新建时从 AgentProfile 锁定 workspace_dir 写入 session
-      → chat::service::push_user_message
-      → build_system_prompt（persona + knowledge + skills）
-      → run_agent_loop
-          → provider::stream_chat → emit stream-chunk
-          → [tool] dispatch_tool(session.workspace_dir)
-              → 权限裁决 → ask → emit permission-request
-              → spawn_agent / MCP / 内置工具（bash/read_file/write_file）
-                  └─ check_workspace(session.workspace_dir, path)  # 文件操作沙箱
-          → emit tool-call / tool-result
-  → store/chat.ts → UI
+ChatWindow → invoke chat_send { session_id?, content, mode?, group_id? }
+ → chat::commands::chat_send
+ → core::start_turn
+ → session::run
+ → intent::run
+ → decision::run（会话已绑定 agent 则沿用；Agent 模式可按意图选角并绑定）
+ → plan::run → plan::run_agent_loop
+ → common::provider::stream_chat（SSE）
+ → execute::run → agents::dispatch
+ → response::finalize_assistant_turn
+ → response::run（链路落库）
+ → memory（知识注入 / 工具结果截断 / 会话快照）
 
 workspace 绑定规则：
-  每个 Agent 有且仅有一个 workspace（~/…/workspaces/<slug>/）
-  会话创建时从 AgentProfile.workspace_dir 快照写入 Session.workspace_dir
-  整个会话生命周期内路径不变，切换 Agent 不影响历史会话的 workspace
+ 每个 Agent 有且仅有一个 workspace（~/…/workspaces/<slug>/）
+ 新建会话时 workspace 暂取全局激活 Agent；decision 绑定角色时可写入 Session.agent_id / workspace_dir
+ 整个会话生命周期内路径不变，切换 Agent 不影响历史会话的 workspace
 ```
 
-工具分流见 `agent/core/dispatch.rs`；原理文档：`doc/how-it-works.md`。
+工具分流见 `agents/dispatch.rs`；原理文档：`doc/how-it-works.md`、`doc/agent-loop.md`。
 
 ## 改结构时怎么动本文件
 

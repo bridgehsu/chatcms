@@ -9,7 +9,7 @@ const id = () =>
 export const createSeedState = (): BusinessMapState => ({
   note: "",
   favorites: [
-    { id: id(), title: "智能会话", desc: "AI 创作与问答工作台", mark: "聊", url: "#/chat", tone: "red" },
+    { id: id(), title: "智能会话", desc: "Ask / Agent / Search 工作台", mark: "聊", url: "#/chat", tone: "red" },
     { id: id(), title: "内容发布", desc: "多平台一键分发", mark: "发", url: "#/media-platforms", tone: "teal" },
     { id: id(), title: "图片生成", desc: "AI 生成封面与配图", mark: "图", url: "#/images/generate", tone: "violet" },
     { id: id(), title: "视频工厂", desc: "素材库与成片管理", mark: "视", url: "#/videos", tone: "blue" },
@@ -31,7 +31,7 @@ export const createSeedState = (): BusinessMapState => ({
         { id: id(), title: "图片素材", desc: "封面与配图资源池", mark: "图", url: "#/images", tone: "violet" },
         { id: id(), title: "AI 生图", desc: "一键生成封面与插图", mark: "绘", url: "#/images/generate", tone: "blue" },
         { id: id(), title: "视频素材", desc: "成片、切片与混剪管理", mark: "剪", url: "#/videos", tone: "teal" },
-        { id: id(), title: "AI 生视频", desc: "文生视频与图生视频", mark: "生", url: "#/videos/generate", tone: "red" },
+        { id: id(), title: "AI 生视频", desc: "文生视频与图生视频", mark: "生", url: "#/videos/studio?mode=model", tone: "red" },
         { id: id(), title: "知识库", desc: "写入 Agent 可检索知识条目", mark: "库", url: "#/settings/knowledge", tone: "slate" },
         { id: id(), title: "剪映创作", desc: "专业视频剪辑工具", mark: "剪", url: "https://www.capcut.cn", tone: "blue" },
       ],

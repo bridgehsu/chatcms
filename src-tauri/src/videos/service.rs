@@ -9,7 +9,7 @@ use tokio::time::sleep;
 use uuid::Uuid;
 
 use super::GeneratedVideo;
-use crate::config::{AppConfig, ProviderKind};
+use crate::common::config::{AppConfig, ProviderKind};
 use super::repository as repo;
 
 fn now_ms() -> i64 {
@@ -20,7 +20,7 @@ fn now_ms() -> i64 {
 }
 
 fn videos_dir(app: &AppHandle) -> Result<PathBuf> {
-    let dir = crate::config::resolve_data_root(app).join("videos");
+    let dir = crate::common::config::resolve_data_root(app).join("videos");
     fs::create_dir_all(&dir).context("创建视频目录失败")?;
     Ok(dir)
 }

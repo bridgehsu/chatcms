@@ -6,9 +6,6 @@ pub mod service;
 pub mod state;
 pub mod dispatch;
 pub mod subagent;
-pub mod tools;
-
-pub use tools::{ToolCall, ToolDef, ToolResult};
 
 pub use state::{AgentState, PermissionUserReply};
 
@@ -37,7 +34,7 @@ pub struct AgentProfile {
     pub spawnable: bool,
     /// 域策略覆盖（domain id → allow|ask|deny）
     #[serde(default)]
-    pub perms: std::collections::HashMap<String, crate::permission::DomainPolicy>,
+    pub perms: std::collections::HashMap<String, crate::common::permission::DomainPolicy>,
     /// 独立工作目录，新增时自动创建，路径基于 slug
     #[serde(default)]
     pub workspace_dir: Option<String>,
@@ -76,7 +73,7 @@ pub(super) fn validate_slug(slug: &str) -> Result<String, String> {
 
 /// 创建 workspace 目录树，返回根路径字符串
 pub(super) fn create_workspace(app: &AppHandle, slug: &str) -> Result<String, String> {
-    let base = crate::config::resolve_data_root(app)
+    let base = crate::common::config::resolve_data_root(app)
         .join("workspaces")
         .join(slug);
     for sub in &["input", "output", "tmp", "memory", "logs"] {
