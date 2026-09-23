@@ -4,12 +4,13 @@ Tauri + React 桌面 Agent。侧栏「媒体采集 → 采集任务」通过 HTT
 
 ## 文档
 
-- 在线文档站：[https://chatcms.org/](https://chatcms.org/)（GitHub Pages）
+- 在线文档站：[https://chatcms.org/](https://chatcms.org/)
+- 请勿用 `https://bridgehsu.github.io/chatcms/`（会自动跳到上面；该路径下样式会错乱）
 - 本地预览：在**仓库根目录**执行 `pnpm docs:dev` → [http://localhost:5173/](http://localhost:5173/)  
   （也可 `cd docs && pnpm dev`；不要在 docs 里跑 `pnpm run dev`，那是桌面应用）
 - 流程图源文件：[`docs/drawio/`](./docs/drawio/)
 
-自定义域名已绑 `chatcms.org`（`docs/public/CNAME`）；CI 使用 `DOCS_BASE=/` 构建。Pages **Source 须为 GitHub Actions**（不要用 Deploy from a branch，否则只会显示 README）。
+自定义域名 `chatcms.org`（`docs/public/CNAME`）；CI 使用 `DOCS_BASE=/`。Pages **Source 须为 GitHub Actions**。
 
 ## 启动
 

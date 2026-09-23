@@ -7,6 +7,9 @@ import { defineConfig } from "vitepress";
  */
 const base = process.env.DOCS_BASE || "/";
 
+/** 访问 github.io/chatcms/* 时跳到自定义域名（base=/ 时项目站资源路径会错） */
+const githubIoRedirect = `(function(){var h=location.hostname;if(h!=="bridgehsu.github.io")return;var p=location.pathname;if(p!=="/chatcms"&&p.indexOf("/chatcms/")!==0)return;var rest=p.slice("/chatcms".length)||"/";location.replace("https://chatcms.org"+rest+location.search+location.hash);})();`;
+
 export default defineConfig({
   title: "ChatCMS",
   description: "Tauri + React 桌面 Agent · 内容生产与智能会话",
@@ -18,7 +21,10 @@ export default defineConfig({
   /** 与桌面端默认深色主题一致 */
   appearance: "dark",
 
-  head: [["link", { rel: "icon", href: `${base}favicon.svg` }]],
+  head: [
+    ["link", { rel: "icon", href: `${base}favicon.svg` }],
+    ["script", {}, githubIoRedirect],
+  ],
 
   markdown: {
     config(md) {
