@@ -41,9 +41,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        # 项目站：https://<user>.github.io/chatcms/
-        # 自定义域名改为：DOCS_BASE=/ pnpm docs:build
-        run: DOCS_BASE=/chatcms/ pnpm docs:build
+        # 自定义域名 chatcms.org：根路径 base=/
+        # 若改回项目站 https://<user>.github.io/chatcms/ 则用 DOCS_BASE=/chatcms/
+        run: DOCS_BASE=/ pnpm docs:build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

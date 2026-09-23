@@ -2,8 +2,8 @@ import { defineConfig } from "vitepress";
 
 /**
  * 本地默认 `/`（http://localhost:5173/）。
- * CI 项目站：DOCS_BASE=/chatcms/
- * 自定义域名：DOCS_BASE=/
+ * 自定义域名 chatcms.org：CI 使用 DOCS_BASE=/
+ * 项目站回退：DOCS_BASE=/chatcms/
  */
 const base = process.env.DOCS_BASE || "/";
 
