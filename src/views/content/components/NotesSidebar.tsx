@@ -2,16 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DeleteOutlined,
   EditOutlined,
-  FolderAddOutlined,
   MoreOutlined,
-  PlusOutlined,
   PushpinFilled,
   PushpinOutlined,
-  SearchOutlined,
 } from "@ant-design/icons";
-import { App as AntdApp, Button, Dropdown, Empty, Input, Tooltip, Typography } from "antd";
-import type { InputRef } from "antd";
-import { IconChevron } from "@/components/icons";
+import { App as AntdApp, Button, Dropdown, Tooltip } from "antd";
+import { IconChevron, IconPlus } from "@/components/icons";
 import type { AiNote, AiNoteGroup } from "../types";
 
 type Props = {
@@ -60,7 +56,9 @@ const sortNotes = (items: AiNote[]) =>
   [...items].sort((a, b) => b.updatedAt - a.updatedAt);
 
 const buildGroups = (notes: AiNote[], groups: AiNoteGroup[]): UiGroup[] => {
-  const sortedGroups = [...groups].sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt - b.createdAt);
+  const sortedGroups = [...groups].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.createdAt - b.createdAt,
+  );
   const custom: UiGroup[] = sortedGroups.map((g) => ({
     id: `g:${g.id}`,
     label: g.name,
@@ -82,6 +80,30 @@ const readOpen = (): Record<string, boolean> => {
   }
 };
 
+const SearchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+    <path
+      d="M16.5 16.5L20 20"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const IconFolder = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l1.8 1.8H19.5A1.5 1.5 0 0 1 21 9.3v8.2a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-10Z"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/** 内容管理 · 左侧笔记栏（布局对齐智能会话 session-pane） */
 export const NotesSidebar = ({
   notes,
   groups,
@@ -104,8 +126,8 @@ export const NotesSidebar = ({
   const [newGroupName, setNewGroupName] = useState("");
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [draftGroupName, setDraftGroupName] = useState("");
-  const newGroupRef = useRef<InputRef>(null);
-  const renameGroupRef = useRef<InputRef>(null);
+  const newGroupRef = useRef<HTMLInputElement>(null);
+  const renameGroupRef = useRef<HTMLInputElement>(null);
   const skipRenameBlurRef = useRef(false);
   const renameReadyRef = useRef(false);
 
@@ -124,6 +146,11 @@ export const NotesSidebar = ({
     [filtered, groups],
   );
 
+  const focusedLabel = useMemo(() => {
+    if (!focusedGroupId) return "未分组";
+    return groups.find((g) => g.id === focusedGroupId)?.name ?? "未分组";
+  }, [focusedGroupId, groups]);
+
   useEffect(() => {
     try {
       localStorage.setItem(OPEN_KEY, JSON.stringify(groupOpen));
@@ -131,7 +158,9 @@ export const NotesSidebar = ({
   }, [groupOpen]);
 
   useEffect(() => {
-    if (creatingGroup) newGroupRef.current?.focus();
+    if (!creatingGroup) return;
+    const t = window.setTimeout(() => newGroupRef.current?.focus(), 0);
+    return () => window.clearTimeout(t);
   }, [creatingGroup]);
 
   useEffect(() => {
@@ -141,14 +170,14 @@ export const NotesSidebar = ({
     }
     renameReadyRef.current = false;
     const t = window.setTimeout(() => {
-      renameGroupRef.current?.focus({ cursor: "all" });
+      renameGroupRef.current?.focus();
+      renameGroupRef.current?.select();
       renameReadyRef.current = true;
     }, 50);
     return () => window.clearTimeout(t);
   }, [editingGroupId]);
 
   const startRenameGroup = (g: AiNoteGroup) => {
-    // 等 Dropdown 关闭后再进入编辑，避免立刻 blur 取消重命名
     window.setTimeout(() => {
       skipRenameBlurRef.current = false;
       setEditingGroupId(g.id);
@@ -167,18 +196,26 @@ export const NotesSidebar = ({
   const toggle = (id: string) =>
     setGroupOpen((prev) => ({ ...prev, [id]: !(prev[id] !== false) }));
 
+  const startCreateGroup = () => {
+    setCreatingGroup(true);
+    setNewGroupName("");
+  };
+
+  const cancelCreateGroup = () => {
+    setCreatingGroup(false);
+    setNewGroupName("");
+  };
+
   const commitCreateGroup = async () => {
     const name = newGroupName.trim();
     if (!name) {
-      setCreatingGroup(false);
-      setNewGroupName("");
+      cancelCreateGroup();
       return;
     }
     try {
       const g = await onCreateGroup(name);
       setGroupOpen((prev) => ({ ...prev, [`g:${g.id}`]: true }));
-      setCreatingGroup(false);
-      setNewGroupName("");
+      cancelCreateGroup();
       message.success(`已创建分组「${g.name}」`);
     } catch (e) {
       message.error(e instanceof Error ? e.message : String(e));
@@ -219,66 +256,28 @@ export const NotesSidebar = ({
   return (
     <aside className="notes-sidebar">
       <div className="notes-sidebar__head">
-        <div className="notes-sidebar__brand">
-          <Typography.Text className="notes-sidebar__brand-title">笔记</Typography.Text>
-          <div className="notes-sidebar__brand-actions">
-            <Tooltip title="新建分组">
-              <Button
-                type="text"
-                size="small"
-                icon={<FolderAddOutlined />}
-                aria-label="新建分组"
-                onClick={() => {
-                  setCreatingGroup(true);
-                  setNewGroupName("");
-                }}
-              />
-            </Tooltip>
-            <Button type="primary" size="small" icon={<PlusOutlined />} onClick={onCreate}>
-              新笔记
-            </Button>
-          </div>
-        </div>
-        <Input
-          allowClear
-          size="small"
-          prefix={<SearchOutlined style={{ color: "var(--text-dim)" }} />}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜索"
-          className="notes-sidebar__search-input"
-          aria-label="搜索笔记"
-        />
+        <label className="notes-sidebar__search-wrap">
+          <span className="notes-sidebar__search-icon" aria-hidden>
+            <SearchIcon />
+          </span>
+          <input
+            className="notes-sidebar__search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="搜索笔记…"
+            aria-label="搜索笔记"
+          />
+        </label>
       </div>
 
-      {creatingGroup && (
-        <div className="notes-sidebar__create-group">
-          <Input
-            ref={newGroupRef}
-            size="small"
-            value={newGroupName}
-            maxLength={40}
-            placeholder="分组名称，回车创建"
-            onChange={(e) => setNewGroupName(e.target.value)}
-            onPressEnter={commitCreateGroup}
-            onBlur={commitCreateGroup}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setCreatingGroup(false);
-                setNewGroupName("");
-              }
-            }}
-          />
-        </div>
-      )}
-
-      <div className="notes-sidebar__list">
+      <nav className="notes-sidebar__list">
         {filtered.length === 0 && groups.length === 0 && !creatingGroup ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={query.trim() ? "无匹配笔记" : "还没有笔记"}
-            style={{ marginTop: 40 }}
-          />
+          <p className="notes-sidebar__empty">
+            {query.trim() ? "无匹配笔记" : "暂无笔记"}
+            <span className="notes-sidebar__empty-hint">
+              {query.trim() ? "试试其他关键词" : "点击下方「新笔记」开始"}
+            </span>
+          </p>
         ) : null}
 
         {uiGroups.map((g) => {
@@ -292,25 +291,35 @@ export const NotesSidebar = ({
           return (
             <div
               key={g.id}
-              className={`notes-group${open ? " is-open" : ""}${pinned ? " is-focused" : ""}`}
+              className={[
+                "notes-group",
+                open ? "is-open" : "",
+                pinned ? "is-focused" : "",
+                g.custom ? "is-custom" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               <div className="notes-group__header-row">
                 {renaming ? (
-                  <Input
+                  <input
                     ref={renameGroupRef}
-                    size="small"
+                    className="notes-sidebar__inline-input notes-group__rename-input"
                     value={draftGroupName}
                     maxLength={40}
                     aria-label="编辑分组名称"
                     onChange={(e) => setDraftGroupName(e.target.value)}
-                    onPressEnter={() => void commitRenameGroup()}
-                    onBlur={() => void commitRenameGroup()}
+                    onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => {
-                      if (e.key === "Escape") {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void commitRenameGroup();
+                      } else if (e.key === "Escape") {
                         e.preventDefault();
                         cancelRenameGroup();
                       }
                     }}
+                    onBlur={() => void commitRenameGroup()}
                   />
                 ) : (
                   <button
@@ -365,7 +374,7 @@ export const NotesSidebar = ({
                           icon: <DeleteOutlined />,
                           label: "删除分组",
                           danger: true,
-                          onClick: () => handleDeleteGroup(g.custom!),
+                          onClick: () => void handleDeleteGroup(g.custom!),
                         },
                       ],
                     }}
@@ -384,35 +393,36 @@ export const NotesSidebar = ({
               {open && (
                 <div className="notes-group__items">
                   {g.items.length === 0 ? (
-                    <Typography.Text type="secondary" className="notes-group__empty">
-                      暂无笔记
-                    </Typography.Text>
+                    <p className="notes-group__empty">暂无笔记</p>
                   ) : (
                     g.items.map((n) => (
                       <div
                         key={n.id}
-                        className={`notes-sidebar__item${n.id === activeId ? " is-active" : ""}${
-                          n.id === flashNoteId ? " is-flash" : ""
-                        }`}
-                        onClick={() => onSelect(n.id)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onSelect(n.id);
-                          }
-                        }}
+                        className={[
+                          "notes-sidebar__item",
+                          n.id === activeId ? "is-active" : "",
+                          n.id === flashNoteId ? "is-flash" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
                       >
-                        <span className="notes-sidebar__icon" aria-hidden="true">
-                          {n.icon || "📄"}
-                        </span>
-                        <div className="notes-sidebar__meta">
-                          <div className="notes-sidebar__name">
-                            {n.title.trim() || "无标题"}
-                          </div>
-                          <div className="notes-sidebar__time">{formatRelative(n.updatedAt)}</div>
-                        </div>
+                        <button
+                          type="button"
+                          className="notes-sidebar__item-main"
+                          onClick={() => onSelect(n.id)}
+                        >
+                          <span className="notes-sidebar__icon" aria-hidden="true">
+                            {n.icon || "📄"}
+                          </span>
+                          <span className="notes-sidebar__meta">
+                            <span className="notes-sidebar__name">
+                              {n.title.trim() || "无标题"}
+                            </span>
+                            <span className="notes-sidebar__time">
+                              {formatRelative(n.updatedAt)}
+                            </span>
+                          </span>
+                        </button>
                         <Dropdown
                           trigger={["click"]}
                           menu={{
@@ -476,6 +486,58 @@ export const NotesSidebar = ({
             </div>
           );
         })}
+      </nav>
+
+      {creatingGroup && (
+        <div className="notes-sidebar__create-group notes-sidebar__create-group--footer">
+          <input
+            ref={newGroupRef}
+            className="notes-sidebar__inline-input"
+            value={newGroupName}
+            maxLength={40}
+            placeholder="分组名称，回车创建"
+            aria-label="新建分组名称"
+            onChange={(e) => setNewGroupName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void commitCreateGroup();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                cancelCreateGroup();
+              }
+            }}
+            onBlur={() => void commitCreateGroup()}
+          />
+        </div>
+      )}
+
+      <div className="notes-sidebar__footer">
+        <p className="notes-sidebar__focus-hint">
+          新建到 <strong>{focusedLabel}</strong>
+        </p>
+        <div className="notes-sidebar__footer-actions">
+          <button
+            type="button"
+            className="btn-new-note"
+            onClick={onCreate}
+            title={`新笔记将创建在「${focusedLabel}」`}
+          >
+            <span className="btn-new-note__icon">
+              <IconPlus />
+            </span>
+            新笔记
+          </button>
+          <button
+            type="button"
+            className="notes-sidebar__folder-btn"
+            onClick={startCreateGroup}
+            title="新建分组"
+            aria-label="新建分组"
+          >
+            <IconFolder />
+          </button>
+        </div>
       </div>
     </aside>
   );

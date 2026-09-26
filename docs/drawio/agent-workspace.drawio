@@ -1,83 +1,85 @@
-<mxfile host="app.diagrams.net">
-  <diagram name="Agent Workspace" id="agent-workspace-v1">
-    <mxGraphModel background="#ffffff" dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="780" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-
-        <mxCell id="title" value="&lt;b&gt;Agent ↔ Workspace&lt;/b&gt;　一对一归属 · 目录组成" style="text;html=1;fontSize=16;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="40" y="16" width="520" height="26" as="geometry" />
-        </mxCell>
-        <mxCell id="sub" value="agents::create_workspace　｜　路径 {data_root}/workspaces/&amp;lt;slug&amp;gt;/　｜　工具读写限制在 workspace 根内" style="text;html=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="42" width="780" height="18" as="geometry" />
-        </mxCell>
-
-        <mxCell id="note" value="&lt;b&gt;规则&lt;/b&gt;　1 Agent 档案 ↔ 1 Workspace（按 slug）　｜　Session 持有 workspace_dir 副本，顶栏换角时同步　｜　五子目录为约定骨架，当前未强制分目录写入" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="40" y="72" width="980" height="40" as="geometry" />
-        </mxCell>
-
-        <!-- Agent -->
-        <mxCell id="agent" value="&lt;b&gt;Agent 档案&lt;/b&gt;&lt;br&gt;AgentProfile&lt;br&gt;&lt;br&gt;name · slug&lt;br&gt;system_prompt（人设）&lt;br&gt;skills 白名单&lt;br&gt;perms · spawnable&lt;br&gt;workspace_dir →" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;verticalAlign=top;spacingTop=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="60" y="160" width="220" height="200" as="geometry" />
-        </mxCell>
-
-        <!-- Arrow -->
-        <mxCell id="e1" edge="1" parent="1" source="agent" target="ws" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;fontColor=#666666;">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e1l" value="1 : 1" style="edgeLabel;html=1;align=center;fontSize=11;fontStyle=1" vertex="1" connectable="0" parent="e1">
-          <mxGeometry x="-0.1" relative="1" as="geometry">
-            <mxPoint as="offset" />
-          </mxGeometry>
-        </mxCell>
-
-        <!-- Workspace container -->
-        <mxCell id="ws" value="&lt;b&gt;Workspace&lt;/b&gt;　workspaces/&amp;lt;slug&amp;gt;/" style="swimlane;startSize=36;rounded=1;fillColor=#f5f5f5;strokeColor=#82b366;fontSize=13;fontStyle=1;html=1;" vertex="1" parent="1">
-          <mxGeometry x="360" y="150" width="640" height="280" as="geometry" />
-        </mxCell>
-
-        <mxCell id="d_input" value="&lt;b&gt;input/&lt;/b&gt;&lt;br&gt;输入素材" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="ws">
-          <mxGeometry x="20" y="56" width="110" height="64" as="geometry" />
-        </mxCell>
-        <mxCell id="d_output" value="&lt;b&gt;output/&lt;/b&gt;&lt;br&gt;产出结果" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="ws">
-          <mxGeometry x="144" y="56" width="110" height="64" as="geometry" />
-        </mxCell>
-        <mxCell id="d_tmp" value="&lt;b&gt;tmp/&lt;/b&gt;&lt;br&gt;临时文件" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="ws">
-          <mxGeometry x="268" y="56" width="110" height="64" as="geometry" />
-        </mxCell>
-        <mxCell id="d_memory" value="&lt;b&gt;memory/&lt;/b&gt;&lt;br&gt;本地记忆" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="ws">
-          <mxGeometry x="392" y="56" width="110" height="64" as="geometry" />
-        </mxCell>
-        <mxCell id="d_logs" value="&lt;b&gt;logs/&lt;/b&gt;&lt;br&gt;运行日志" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="ws">
-          <mxGeometry x="516" y="56" width="100" height="64" as="geometry" />
-        </mxCell>
-
-        <mxCell id="ws_note" value="&lt;b&gt;运行约束&lt;/b&gt;&lt;br&gt;read_file / write_file / bash / search_files / glob_files&lt;br&gt;路径必须落在本 workspace 根目录内（check_workspace）&lt;br&gt;spawn_agent 子循环：工作目录 clamp 到父会话 workspace，不另建会话主目录" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="ws">
-          <mxGeometry x="20" y="144" width="596" height="110" as="geometry" />
-        </mxCell>
-
-        <!-- Session side note -->
-        <mxCell id="session" value="&lt;b&gt;Session 绑定&lt;/b&gt;&lt;br&gt;&lt;br&gt;agent_id&lt;br&gt;workspace_dir（副本）&lt;br&gt;&lt;br&gt;新建：可预绑手选 Agent&lt;br&gt;换角：session_set_agent&lt;br&gt;　　　同步 workspace_dir&lt;br&gt;&lt;br&gt;历史消息仍在本会话" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="60" y="460" width="220" height="220" as="geometry" />
-        </mxCell>
-
-        <mxCell id="e2" edge="1" parent="1" source="session" target="agent" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;fontSize=10;fontColor=#666666;">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e2l" value="绑定 / 同步" style="edgeLabel;html=1;align=center;fontSize=10;" vertex="1" connectable="0" parent="e2">
-          <mxGeometry x="-0.2" relative="1" as="geometry">
-            <mxPoint as="offset" />
-          </mxGeometry>
-        </mxCell>
-
-        <mxCell id="ex" value="&lt;b&gt;示例&lt;/b&gt;&lt;br&gt;Agent slug = main&lt;br&gt;→ …/workspaces/main/&lt;br&gt;　　input/ output/ tmp/ memory/ logs/" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="360" y="460" width="280" height="100" as="geometry" />
-        </mxCell>
-
-        <mxCell id="related" value="&lt;b&gt;相关图&lt;/b&gt;&lt;br&gt;session.drawio　会话绑角与 workspace&lt;br&gt;execute.drawio　工具执行与沙箱&lt;br&gt;multi-agent.md　多 Agent 协作" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="660" y="460" width="340" height="100" as="geometry" />
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="jHyrcwcKfGCNGlJjOwDY" name="Page-1">
+        <mxGraphModel dx="1133" dy="843" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="4" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="2" target="3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="agent" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="300" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="workspace" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="300" width="120" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram name="Agent Workspace" id="agent-workspace-v1">
+        <mxGraphModel dx="680" dy="506" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="780" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="&lt;b&gt;Agent ↔ Workspace&lt;/b&gt;　一对一归属 · 目录组成" style="text;html=1;fontSize=16;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="40" y="16" width="520" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="sub" value="agents::create_workspace　｜　路径 {data_root}/workspaces/&amp;lt;slug&amp;gt;/　｜　工具读写限制在 workspace 根内" style="text;html=1;fontSize=11;fontColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="42" width="780" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="note" value="&lt;b&gt;规则&lt;/b&gt;　1 Agent 档案 ↔ 1 Workspace（按 slug）　｜　Session 持有 workspace_dir 副本，顶栏换角时同步　｜　五子目录为约定骨架，当前未强制分目录写入" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="72" width="980" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="agent" value="&lt;b&gt;Agent 档案&lt;/b&gt;&lt;br&gt;AgentProfile&lt;br&gt;&lt;br&gt;name · slug&lt;br&gt;system_prompt（人设）&lt;br&gt;skills 白名单&lt;br&gt;perms · spawnable&lt;br&gt;workspace_dir →" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;verticalAlign=top;spacingTop=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="160" width="220" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;fontColor=#666666;" parent="1" source="agent" target="ws" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1l" value="1 : 1" style="edgeLabel;html=1;align=center;fontSize=11;fontStyle=1" parent="e1" vertex="1" connectable="0">
+                    <mxGeometry x="-0.1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="ws" value="&lt;b&gt;Workspace&lt;/b&gt;　workspaces/&amp;lt;slug&amp;gt;/" style="swimlane;startSize=36;rounded=1;fillColor=#f5f5f5;strokeColor=#82b366;fontSize=13;fontStyle=1;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="150" width="640" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="d_input" value="&lt;b&gt;input/&lt;/b&gt;&lt;br&gt;输入素材" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="ws" vertex="1">
+                    <mxGeometry x="20" y="56" width="110" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="d_output" value="&lt;b&gt;output/&lt;/b&gt;&lt;br&gt;产出结果" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="ws" vertex="1">
+                    <mxGeometry x="144" y="56" width="110" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="d_tmp" value="&lt;b&gt;tmp/&lt;/b&gt;&lt;br&gt;临时文件" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="ws" vertex="1">
+                    <mxGeometry x="268" y="56" width="110" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="d_memory" value="&lt;b&gt;memory/&lt;/b&gt;&lt;br&gt;本地记忆" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="ws" vertex="1">
+                    <mxGeometry x="392" y="56" width="110" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="d_logs" value="&lt;b&gt;logs/&lt;/b&gt;&lt;br&gt;运行日志" style="rounded=1;whiteSpace=wrap;html=1;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="ws" vertex="1">
+                    <mxGeometry x="516" y="56" width="100" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="ws_note" value="&lt;b&gt;运行约束&lt;/b&gt;&lt;br&gt;read_file / write_file / bash / search_files / glob_files&lt;br&gt;路径必须落在本 workspace 根目录内（check_workspace）&lt;br&gt;spawn_agent 子循环：工作目录 clamp 到父会话 workspace，不另建会话主目录" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" parent="ws" vertex="1">
+                    <mxGeometry x="20" y="144" width="596" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="session" value="&lt;b&gt;Session 绑定&lt;/b&gt;&lt;br&gt;&lt;br&gt;agent_id&lt;br&gt;workspace_dir（副本）&lt;br&gt;&lt;br&gt;新建：可预绑手选 Agent&lt;br&gt;换角：session_set_agent&lt;br&gt;　　　同步 workspace_dir&lt;br&gt;&lt;br&gt;历史消息仍在本会话" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;verticalAlign=top;spacingTop=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="460" width="220" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;fontSize=10;fontColor=#666666;" parent="1" source="session" target="agent" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2l" value="绑定 / 同步" style="edgeLabel;html=1;align=center;fontSize=10;" parent="e2" vertex="1" connectable="0">
+                    <mxGeometry x="-0.2" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="ex" value="&lt;b&gt;示例&lt;/b&gt;&lt;br&gt;Agent slug = main&lt;br&gt;→ …/workspaces/main/&lt;br&gt;　　input/ output/ tmp/ memory/ logs/" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="460" width="280" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="related" value="&lt;b&gt;相关图&lt;/b&gt;&lt;br&gt;session.drawio　会话绑角与 workspace&lt;br&gt;execute.drawio　工具执行与沙箱&lt;br&gt;multi-agent.md　多 Agent 协作" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="660" y="460" width="340" height="100" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>
