@@ -21,7 +21,7 @@ pub async fn model_profile_add(
     tier: String,
     weight: i64,
     context_window: i64,
-    // 新增（可选，前端不传则使用默认值）
+    modality: Option<String>,
     capabilities: Option<Value>,
     thinking: Option<bool>,
     thinking_effort: Option<String>,
@@ -32,9 +32,22 @@ pub async fn model_profile_add(
 ) -> Result<ProviderProfile, String> {
     service::add(
         &app,
-        name, kind, api_key, model, base_url, tier, weight, context_window,
-        capabilities, thinking, thinking_effort, temperature, max_output_tokens,
-        extra_body, tags,
+        name,
+        kind,
+        api_key,
+        model,
+        base_url,
+        tier,
+        weight,
+        context_window,
+        modality,
+        capabilities,
+        thinking,
+        thinking_effort,
+        temperature,
+        max_output_tokens,
+        extra_body,
+        tags,
     )
     .await
 }
@@ -53,7 +66,7 @@ pub async fn model_profile_update(
     weight: i64,
     context_window: i64,
     enabled: bool,
-    // 新增（可选）；thinking 必传，避免 false 被 Option 吞掉而不落库
+    modality: Option<String>,
     capabilities: Option<Value>,
     thinking: bool,
     thinking_effort: Option<String>,
@@ -64,9 +77,24 @@ pub async fn model_profile_update(
 ) -> Result<ProviderProfile, String> {
     service::update(
         &app,
-        id, name, kind, api_key, model, base_url, tier, weight, context_window, enabled,
-        capabilities, thinking, thinking_effort, temperature, max_output_tokens,
-        extra_body, tags,
+        id,
+        name,
+        kind,
+        api_key,
+        model,
+        base_url,
+        tier,
+        weight,
+        context_window,
+        enabled,
+        modality,
+        capabilities,
+        thinking,
+        thinking_effort,
+        temperature,
+        max_output_tokens,
+        extra_body,
+        tags,
     )
     .await
 }

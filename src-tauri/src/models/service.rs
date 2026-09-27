@@ -11,6 +11,59 @@ fn now_ms() -> i64 {
         .as_millis() as i64
 }
 
+fn normalize_modality(raw: Option<String>) -> String {
+    match raw.as_deref().map(str::trim).unwrap_or("chat") {
+        "image" => "image".into(),
+        "video" => "video".into(),
+        _ => "chat".into(),
+    }
+}
+
+fn normalize_image_kind(kind: &str) -> String {
+    match kind.trim().to_ascii_lowercase().as_str() {
+        "dashscope" | "qwen" => "dashscope".into(),
+        _ => "openai".into(),
+    }
+}
+
+/// 按用途整理参数：图片/视频不走会话思考与路由权重语义
+fn apply_modality_defaults(p: &mut ProviderProfile) {
+    match p.modality_key() {
+        "image" => {
+            p.thinking = false;
+            p.thinking_effort = "medium".into();
+            p.temperature = None;
+            p.max_output_tokens = None;
+            // 图片：kind = 生图协议（openai Images API / dashscope 多模态）
+            p.kind = normalize_image_kind(&p.kind);
+            let mut caps = serde_json::Map::new();
+            caps.insert("image".into(), Value::Bool(true));
+            p.capabilities = Value::Object(caps);
+            if !p.tags.iter().any(|t| t == "image") {
+                p.tags.push("image".into());
+            }
+        }
+        "video" => {
+            p.thinking = false;
+            p.thinking_effort = "medium".into();
+            p.temperature = None;
+            p.max_output_tokens = None;
+            if p.kind != "openai" {
+                p.kind = "openai".into();
+            }
+            let mut caps = serde_json::Map::new();
+            caps.insert("video".into(), Value::Bool(true));
+            p.capabilities = Value::Object(caps);
+            if !p.tags.iter().any(|t| t == "video") {
+                p.tags.push("video".into());
+            }
+        }
+        _ => {
+            p.modality = "chat".into();
+        }
+    }
+}
+
 pub async fn list(app: &AppHandle) -> Vec<ProviderProfile> {
     repo::list(app).await
 }
@@ -30,7 +83,7 @@ pub async fn add(
     tier: String,
     weight: i64,
     context_window: i64,
-    // 新增参数（均有默认值，前端可不传）
+    modality: Option<String>,
     capabilities: Option<Value>,
     thinking: Option<bool>,
     thinking_effort: Option<String>,
@@ -43,7 +96,7 @@ pub async fn add(
     if name.is_empty() {
         return Err("名称不能为空".into());
     }
-    let p = ProviderProfile {
+    let mut p = ProviderProfile {
         id: Uuid::new_v4().to_string(),
         name,
         kind,
@@ -51,8 +104,9 @@ pub async fn add(
         model,
         base_url,
         tier,
+        modality: normalize_modality(modality),
         weight: weight.clamp(1, 4),
-        context_window,
+        context_window: if context_window > 0 { context_window } else { 8192 },
         enabled: true,
         created: now_ms(),
         updated: now_ms(),
@@ -64,7 +118,10 @@ pub async fn add(
         extra_body: extra_body.unwrap_or_else(|| Value::Object(Default::default())),
         tags: tags.unwrap_or_default(),
     };
-    repo::insert(app, &p).await.map_err(|e| format!("写入失败：{e}"))?;
+    apply_modality_defaults(&mut p);
+    repo::insert(app, &p)
+        .await
+        .map_err(|e| format!("写入失败：{e}"))?;
     Ok(p)
 }
 
@@ -81,7 +138,7 @@ pub async fn update(
     weight: i64,
     context_window: i64,
     enabled: bool,
-    // 新增参数；thinking 必传，确保「关闭」一定写回 false
+    modality: Option<String>,
     capabilities: Option<Value>,
     thinking: bool,
     thinking_effort: Option<String>,
@@ -102,16 +159,32 @@ pub async fn update(
     p.base_url = base_url;
     p.tier = tier;
     p.weight = weight.clamp(1, 4);
-    p.context_window = context_window;
+    p.context_window = if context_window > 0 { context_window } else { 8192 };
     p.enabled = enabled;
     p.thinking = thinking;
     p.updated = now_ms();
-    if let Some(v) = capabilities    { p.capabilities = v; }
-    if let Some(v) = thinking_effort { p.thinking_effort = v; }
-    if temperature.is_some()         { p.temperature = temperature; }
-    if max_output_tokens.is_some()   { p.max_output_tokens = max_output_tokens; }
-    if let Some(v) = extra_body      { p.extra_body = v; }
-    if let Some(v) = tags            { p.tags = v; }
+    if let Some(m) = modality {
+        p.modality = normalize_modality(Some(m));
+    }
+    if let Some(v) = capabilities {
+        p.capabilities = v;
+    }
+    if let Some(v) = thinking_effort {
+        p.thinking_effort = v;
+    }
+    if temperature.is_some() {
+        p.temperature = temperature;
+    }
+    if max_output_tokens.is_some() {
+        p.max_output_tokens = max_output_tokens;
+    }
+    if let Some(v) = extra_body {
+        p.extra_body = v;
+    }
+    if let Some(v) = tags {
+        p.tags = v;
+    }
+    apply_modality_defaults(&mut p);
     repo::update(app, &p).await?;
     Ok(p)
 }
@@ -125,12 +198,10 @@ pub async fn remove(app: &AppHandle, id: String) -> Result<(), String> {
 }
 
 /// 启动时补齐 model_profile（幂等）。
-///
-/// 顺序：
-/// 1. 若使用自定义 `data_root`，从系统默认目录的 `chatcms.db` 导入缺失档案
-///    （避免换数据目录后扩展/桥只剩 JSON 里的「默认」）
-/// 2. 若仍为空，再从旧 `chatcms.json` profiles 迁移
-pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::common::config::ProviderProfile>) {
+pub async fn migrate_from_legacy(
+    app: &AppHandle,
+    legacy_profiles: Vec<crate::common::config::ProviderProfile>,
+) {
     import_missing_from_default_app_db(app).await;
 
     let existing = repo::list(app).await;
@@ -151,6 +222,7 @@ pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::co
             model: lp.model.clone(),
             base_url: lp.base_url.clone(),
             tier: "cloud".to_string(),
+            modality: "chat".into(),
             weight: 2,
             context_window: 8192,
             enabled: true,
@@ -168,7 +240,6 @@ pub async fn migrate_from_legacy(app: &AppHandle, legacy_profiles: Vec<crate::co
     }
 }
 
-/// 自定义 data_root 时，把默认 app_data_dir 里已有的模型档案补进当前库（按 id 跳过已存在）。
 async fn import_missing_from_default_app_db(app: &AppHandle) {
     use sqlx::Row;
 
@@ -195,23 +266,38 @@ async fn import_missing_from_default_app_db(app: &AppHandle) {
         "SELECT id, name, kind, api_key, model, base_url, tier, weight, context_window,
                 enabled, created, updated,
                 capabilities, thinking, thinking_effort, temperature, max_output_tokens,
-                extra_body, tags
+                extra_body, tags, modality
          FROM model_profile",
     )
     .fetch_all(&src_pool)
     .await
-    .unwrap_or_default();
+    .unwrap_or_else(|_| {
+        // 旧库可能尚无 modality 列
+        Vec::new()
+    });
+
+    let rows = if rows.is_empty() {
+        sqlx::query(
+            "SELECT id, name, kind, api_key, model, base_url, tier, weight, context_window,
+                    enabled, created, updated,
+                    capabilities, thinking, thinking_effort, temperature, max_output_tokens,
+                    extra_body, tags
+             FROM model_profile",
+        )
+        .fetch_all(&src_pool)
+        .await
+        .unwrap_or_default()
+    } else {
+        rows
+    };
     src_pool.close().await;
 
     if rows.is_empty() {
         return;
     }
 
-    let existing: std::collections::HashSet<String> = repo::list(app)
-        .await
-        .into_iter()
-        .map(|p| p.id)
-        .collect();
+    let existing: std::collections::HashSet<String> =
+        repo::list(app).await.into_iter().map(|p| p.id).collect();
 
     for r in rows {
         let id: String = r.get("id");
@@ -223,6 +309,7 @@ async fn import_missing_from_default_app_db(app: &AppHandle) {
         let capabilities_str: String = r.try_get("capabilities").unwrap_or_else(|_| "{}".into());
         let extra_body_str: String = r.try_get("extra_body").unwrap_or_else(|_| "{}".into());
         let tags_str: String = r.try_get("tags").unwrap_or_else(|_| "[]".into());
+        let modality_raw: String = r.try_get("modality").unwrap_or_else(|_| "chat".into());
         let p = ProviderProfile {
             id,
             name: r.get("name"),
@@ -231,6 +318,7 @@ async fn import_missing_from_default_app_db(app: &AppHandle) {
             model: r.get("model"),
             base_url: r.get("base_url"),
             tier: r.get("tier"),
+            modality: normalize_modality(Some(modality_raw)),
             weight: r.get("weight"),
             context_window: r.get("context_window"),
             enabled: enabled != 0,
@@ -239,7 +327,9 @@ async fn import_missing_from_default_app_db(app: &AppHandle) {
             capabilities: serde_json::from_str(&capabilities_str)
                 .unwrap_or_else(|_| Value::Object(Default::default())),
             thinking: thinking != 0,
-            thinking_effort: r.try_get("thinking_effort").unwrap_or_else(|_| "medium".into()),
+            thinking_effort: r
+                .try_get("thinking_effort")
+                .unwrap_or_else(|_| "medium".into()),
             temperature: r.try_get("temperature").unwrap_or(None),
             max_output_tokens: r.try_get("max_output_tokens").unwrap_or(None),
             extra_body: serde_json::from_str(&extra_body_str)

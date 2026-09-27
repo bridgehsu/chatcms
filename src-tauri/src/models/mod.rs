@@ -6,6 +6,10 @@ pub mod service;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+fn default_modality() -> String {
+    "chat".into()
+}
+
 /// 模型 Provider 档案（持久化到 SQLite）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderProfile {
@@ -18,7 +22,10 @@ pub struct ProviderProfile {
     pub base_url: Option<String>,
     /// "local" | "cloud"
     pub tier: String,
-    /// 路由权重 1~4，越大越优先    
+    /// 用途："chat"（会话）| "image"（生图）| "video"（生视频）
+    #[serde(default = "default_modality")]
+    pub modality: String,
+    /// 路由权重 1~4，越大越优先
     pub weight: i64,
     /// 最大 context token 数
     pub context_window: i64,
@@ -58,5 +65,25 @@ impl ProviderProfile {
 
     pub fn is_local(&self) -> bool {
         self.tier == "local"
+    }
+
+    /// 归一化用途；旧数据缺省视为会话
+    pub fn modality_key(&self) -> &str {
+        match self.modality.as_str() {
+            "image" | "video" => self.modality.as_str(),
+            _ => "chat",
+        }
+    }
+
+    pub fn is_chat(&self) -> bool {
+        self.modality_key() == "chat"
+    }
+
+    pub fn is_image(&self) -> bool {
+        self.modality_key() == "image"
+    }
+
+    pub fn is_video(&self) -> bool {
+        self.modality_key() == "video"
     }
 }

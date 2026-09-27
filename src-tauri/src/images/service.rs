@@ -1,10 +1,10 @@
 use anyhow::{bail, Context, Result};
 use base64::Engine;
 use reqwest::Client;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::AppHandle;
 use uuid::Uuid;
 
@@ -25,27 +25,32 @@ fn images_dir(app: &AppHandle) -> Result<PathBuf> {
     Ok(dir)
 }
 
-fn resolve_images_endpoint(config: &AppConfig) -> Result<(String, String)> {
-    let key = config.provider.api_key.trim();
-    if key.is_empty() {
-        bail!("API Key 未配置，请先到「模型配置」填写密钥");
+/// 图片用途下的协议：openai（Images API）| dashscope（通义多模态）
+fn normalize_image_kind(kind: &str) -> &'static str {
+    match kind.trim().to_ascii_lowercase().as_str() {
+        "dashscope" | "qwen" => "dashscope",
+        _ => "openai",
     }
+}
 
-    let base = config
-        .provider
-        .base_url
-        .as_deref()
-        .unwrap_or("")
-        .trim()
-        .trim_end_matches('/');
+fn require_api_key(api_key: &str) -> Result<String> {
+    let key = api_key.trim();
+    if key.is_empty() {
+        bail!("该模型配置未填写 API Key，请先到「模型配置」补全");
+    }
+    Ok(key.to_string())
+}
 
-    if matches!(config.provider.kind, ProviderKind::Anthropic)
+fn resolve_openai_images_endpoint(kind: &str, base_url: Option<&str>) -> Result<String> {
+    let base = base_url.unwrap_or("").trim().trim_end_matches('/');
+
+    if kind.eq_ignore_ascii_case("anthropic")
         && (base.is_empty() || base.contains("anthropic.com"))
     {
-        bail!("当前模型为 Anthropic，不支持生图。请切换到 OpenAI 兼容配置（如 GPT / 通义 / DeepSeek 等带图像接口的服务）");
+        bail!("Anthropic 配置不支持生图。请选择 OpenAI 兼容或 DashScope 协议的图片模型");
     }
 
-    let endpoint = if base.is_empty() {
+    Ok(if base.is_empty() {
         "https://api.openai.com/v1/images/generations".to_string()
     } else if base.ends_with("/v1") {
         format!("{base}/images/generations")
@@ -53,14 +58,79 @@ fn resolve_images_endpoint(config: &AppConfig) -> Result<(String, String)> {
         format!("{}/images/generations", base.trim_end_matches('/'))
     } else {
         format!("{base}/v1/images/generations")
-    };
-
-    Ok((endpoint, key.to_string()))
+    })
 }
 
+fn resolve_dashscope_endpoint(base_url: Option<&str>) -> String {
+    const PATH: &str = "/api/v1/services/aigc/multimodal-generation/generation";
+    let base = base_url.unwrap_or("").trim().trim_end_matches('/');
+    if base.is_empty() {
+        return format!("https://dashscope.aliyuncs.com{PATH}");
+    }
+    if base.ends_with("/generation") || base.contains("/multimodal-generation/") {
+        return base.to_string();
+    }
+    format!("{base}{PATH}")
+}
+
+/// UI 用 `1024x1024`；DashScope 参数用 `1024*1024`
+fn to_dashscope_size(size: &str) -> String {
+    let s = size.trim();
+    if s.is_empty() {
+        return "1024*1024".into();
+    }
+    s.replace('×', "*")
+        .replace('x', "*")
+        .replace('X', "*")
+}
+
+/// 兼容旧调用：用当前激活的 AppConfig.provider
 pub async fn generate(
     app: &AppHandle,
     config: AppConfig,
+    prompt: String,
+    model: String,
+    size: String,
+) -> Result<GeneratedImage> {
+    generate_with_credentials(
+        app,
+        config.provider.api_key.clone(),
+        config.provider.base_url.clone(),
+        match config.provider.kind {
+            ProviderKind::Anthropic => "anthropic".into(),
+            ProviderKind::OpenAI => "openai".into(),
+        },
+        prompt,
+        model,
+        size,
+    )
+    .await
+}
+
+/// 使用指定模型配置档案生图（图片工厂主路径）
+pub async fn generate_with_profile(
+    app: &AppHandle,
+    profile: &crate::models::ProviderProfile,
+    prompt: String,
+    size: String,
+) -> Result<GeneratedImage> {
+    generate_with_credentials(
+        app,
+        profile.api_key.clone(),
+        profile.base_url.clone(),
+        profile.kind.clone(),
+        prompt,
+        profile.model.clone(),
+        size,
+    )
+    .await
+}
+
+async fn generate_with_credentials(
+    app: &AppHandle,
+    api_key: String,
+    base_url: Option<String>,
+    kind: String,
     prompt: String,
     model: String,
     size: String,
@@ -70,8 +140,12 @@ pub async fn generate(
         bail!("请填写图片描述");
     }
 
+    let protocol = normalize_image_kind(&kind);
     let model = if model.trim().is_empty() {
-        "dall-e-3".to_string()
+        match protocol {
+            "dashscope" => "qwen-image-3.0-pro".to_string(),
+            _ => "dall-e-3".to_string(),
+        }
     } else {
         model.trim().to_string()
     };
@@ -81,9 +155,44 @@ pub async fn generate(
         size.trim().to_string()
     };
 
-    let (endpoint, api_key) = resolve_images_endpoint(&config)?;
-    let client = Client::new();
+    let api_key = require_api_key(&api_key)?;
+    let client = Client::builder()
+        .timeout(Duration::from_secs(180))
+        .build()
+        .context("创建 HTTP 客户端失败")?;
 
+    let bytes = match protocol {
+        "dashscope" => {
+            generate_dashscope(&client, &api_key, base_url.as_deref(), &model, &prompt, &size)
+                .await?
+        }
+        _ => {
+            generate_openai(
+                &client,
+                &api_key,
+                &kind,
+                base_url.as_deref(),
+                &model,
+                &prompt,
+                &size,
+            )
+            .await?
+        }
+    };
+
+    persist_generated(app, bytes, prompt, model, size).await
+}
+
+async fn generate_openai(
+    client: &Client,
+    api_key: &str,
+    kind: &str,
+    base_url: Option<&str>,
+    model: &str,
+    prompt: &str,
+    size: &str,
+) -> Result<Vec<u8>> {
+    let endpoint = resolve_openai_images_endpoint(kind, base_url)?;
     let body = json!({
         "model": model,
         "prompt": prompt,
@@ -108,32 +217,120 @@ pub async fn generate(
     }
 
     #[derive(serde::Deserialize)]
-    struct ImagesResponse { data: Vec<ImageData> }
+    struct ImagesResponse {
+        data: Vec<ImageData>,
+    }
     #[derive(serde::Deserialize)]
-    struct ImageData { b64_json: Option<String>, url: Option<String> }
+    struct ImageData {
+        b64_json: Option<String>,
+        url: Option<String>,
+    }
 
     let parsed: ImagesResponse =
         serde_json::from_str(&text).context(format!("生图响应解析失败: {text}"))?;
     let item = parsed.data.into_iter().next().context("生图响应为空")?;
 
-    let bytes = if let Some(b64) = item.b64_json {
+    if let Some(b64) = item.b64_json {
         base64::engine::general_purpose::STANDARD
             .decode(b64.trim())
-            .context("图片 Base64 解码失败")?
+            .context("图片 Base64 解码失败")
     } else if let Some(url) = item.url {
-        let bin = client
-            .get(&url)
-            .send()
-            .await
-            .context("下载生成图片失败")?
-            .bytes()
-            .await
-            .context("读取图片内容失败")?;
-        bin.to_vec()
+        download_image_bytes(client, &url).await
     } else {
         bail!("生图响应缺少 b64_json / url");
-    };
+    }
+}
 
+async fn generate_dashscope(
+    client: &Client,
+    api_key: &str,
+    base_url: Option<&str>,
+    model: &str,
+    prompt: &str,
+    size: &str,
+) -> Result<Vec<u8>> {
+    let endpoint = resolve_dashscope_endpoint(base_url);
+    let body = json!({
+        "model": model,
+        "input": {
+            "messages": [{
+                "role": "user",
+                "content": [{ "text": prompt }]
+            }]
+        },
+        "parameters": {
+            "prompt_extend": true,
+            "size": to_dashscope_size(size),
+            "n": 1
+        }
+    });
+
+    let resp = client
+        .post(&endpoint)
+        .header("Authorization", format!("Bearer {api_key}"))
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .context("DashScope 生图请求失败")?;
+
+    let status = resp.status();
+    let text = resp.text().await.unwrap_or_default();
+    if !status.is_success() {
+        bail!("DashScope 生图失败 ({status}): {text}");
+    }
+
+    let parsed: Value =
+        serde_json::from_str(&text).context(format!("DashScope 响应解析失败: {text}"))?;
+
+    if let Some(code) = parsed.get("code").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+        let msg = parsed
+            .get("message")
+            .and_then(|v| v.as_str())
+            .unwrap_or("未知错误");
+        bail!("DashScope 生图失败 ({code}): {msg}");
+    }
+
+    let image_url = extract_dashscope_image_url(&parsed)
+        .with_context(|| format!("DashScope 响应中未找到图片 URL: {text}"))?;
+
+    download_image_bytes(client, &image_url).await
+}
+
+fn extract_dashscope_image_url(parsed: &Value) -> Option<String> {
+    let content = parsed
+        .pointer("/output/choices/0/message/content")
+        .and_then(|v| v.as_array())?;
+    for item in content {
+        if let Some(url) = item.get("image").and_then(|v| v.as_str()) {
+            let url = url.trim();
+            if !url.is_empty() {
+                return Some(url.to_string());
+            }
+        }
+    }
+    None
+}
+
+async fn download_image_bytes(client: &Client, url: &str) -> Result<Vec<u8>> {
+    let bin = client
+        .get(url)
+        .send()
+        .await
+        .context("下载生成图片失败")?
+        .bytes()
+        .await
+        .context("读取图片内容失败")?;
+    Ok(bin.to_vec())
+}
+
+async fn persist_generated(
+    app: &AppHandle,
+    bytes: Vec<u8>,
+    prompt: String,
+    model: String,
+    size: String,
+) -> Result<GeneratedImage> {
     let id = Uuid::new_v4().to_string();
     let path = images_dir(app)?.join(format!("{id}.png"));
     fs::write(&path, &bytes).context("保存图片失败")?;

@@ -129,7 +129,7 @@ export const NotesSidebar = ({
   const newGroupRef = useRef<HTMLInputElement>(null);
   const renameGroupRef = useRef<HTMLInputElement>(null);
   const skipRenameBlurRef = useRef(false);
-  const renameReadyRef = useRef(false);
+  const renameStartTimerRef = useRef<number | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -164,32 +164,40 @@ export const NotesSidebar = ({
   }, [creatingGroup]);
 
   useEffect(() => {
-    if (!editingGroupId) {
-      renameReadyRef.current = false;
-      return;
-    }
-    renameReadyRef.current = false;
+    if (!editingGroupId) return;
     const t = window.setTimeout(() => {
       renameGroupRef.current?.focus();
       renameGroupRef.current?.select();
-      renameReadyRef.current = true;
     }, 50);
     return () => window.clearTimeout(t);
   }, [editingGroupId]);
 
-  const startRenameGroup = (g: AiNoteGroup) => {
-    window.setTimeout(() => {
+  useEffect(
+    () => () => {
+      if (renameStartTimerRef.current != null) {
+        window.clearTimeout(renameStartTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  /** 延迟进入编辑，避开 Dropdown 关闭时抢焦点导致立刻 blur */
+  const startRenameGroup = (g: AiNoteGroup, delayMs = 0) => {
+    if (renameStartTimerRef.current != null) {
+      window.clearTimeout(renameStartTimerRef.current);
+    }
+    renameStartTimerRef.current = window.setTimeout(() => {
+      renameStartTimerRef.current = null;
       skipRenameBlurRef.current = false;
       setEditingGroupId(g.id);
       setDraftGroupName(g.name);
-    }, 0);
+    }, delayMs);
   };
 
   const cancelRenameGroup = () => {
     skipRenameBlurRef.current = true;
     setEditingGroupId(null);
     setDraftGroupName("");
-    renameReadyRef.current = false;
   };
 
   const isOpen = (id: string) => groupOpen[id] !== false;
@@ -228,13 +236,11 @@ export const NotesSidebar = ({
       skipRenameBlurRef.current = false;
       return;
     }
-    if (!renameReadyRef.current) return;
     const id = editingGroupId;
     const name = draftGroupName.trim();
     const cur = groups.find((g) => g.id === id);
     setEditingGroupId(null);
     setDraftGroupName("");
-    renameReadyRef.current = false;
     if (!name || !cur || name === cur.name) return;
     try {
       await onRenameGroup(id, name);
@@ -319,74 +325,122 @@ export const NotesSidebar = ({
                         cancelRenameGroup();
                       }
                     }}
-                    onBlur={() => void commitRenameGroup()}
+                    onBlur={() => {
+                      if (skipRenameBlurRef.current) {
+                        skipRenameBlurRef.current = false;
+                        return;
+                      }
+                      void commitRenameGroup();
+                    }}
                   />
                 ) : (
-                  <button
-                    type="button"
-                    className="notes-group__header"
-                    onClick={() => toggle(g.id)}
-                    onDoubleClick={(e) => {
-                      if (!g.custom) return;
-                      e.preventDefault();
-                      e.stopPropagation();
-                      startRenameGroup(g.custom);
-                    }}
-                    title="展开 / 折叠 · 双击重命名"
-                  >
-                    <span className="notes-group__chevron" aria-hidden>
-                      <IconChevron open={open} />
-                    </span>
-                    <span className="notes-group__label">{g.label}</span>
-                    <span className="notes-group__count">{g.items.length}</span>
-                  </button>
+                  <div className="notes-group__header">
+                    <button
+                      type="button"
+                      className="notes-group__toggle"
+                      onClick={() => toggle(g.id)}
+                      title="展开 / 折叠"
+                      aria-expanded={open}
+                      aria-label={`${open ? "折叠" : "展开"}「${g.label}」`}
+                    >
+                      <span className="notes-group__chevron" aria-hidden>
+                        <IconChevron open={open} />
+                      </span>
+                    </button>
+                    {g.custom ? (
+                      <button
+                        type="button"
+                        className="notes-group__label notes-group__label--editable"
+                        title="点击修改名称"
+                        onClick={() => startRenameGroup(g.custom!)}
+                      >
+                        {g.label}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="notes-group__label"
+                        onClick={() => toggle(g.id)}
+                        title="展开 / 折叠"
+                      >
+                        {g.label}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="notes-group__count"
+                      onClick={() => toggle(g.id)}
+                      title="展开 / 折叠"
+                      tabIndex={-1}
+                    >
+                      {g.items.length}
+                    </button>
+                  </div>
                 )}
 
                 {!renaming && (
-                  <Tooltip title={pinned ? "当前新建目标" : "设为新建目标"}>
-                    <Button
-                      type="text"
-                      size="small"
-                      className={`notes-sidebar__pin${pinned ? " is-on" : ""}`}
-                      icon={pinned ? <PushpinFilled /> : <PushpinOutlined />}
-                      aria-label={pinned ? "当前新建目标" : "设为新建目标"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onFocusGroup(pinTarget);
-                      }}
-                    />
-                  </Tooltip>
-                )}
+                  <div className="notes-group__actions">
+                    <Tooltip title={pinned ? "当前新建目标" : "设为新建目标"}>
+                      <Button
+                        type="text"
+                        size="small"
+                        className={`notes-sidebar__pin${pinned ? " is-on" : ""}`}
+                        icon={pinned ? <PushpinFilled /> : <PushpinOutlined />}
+                        aria-label={pinned ? "当前新建目标" : "设为新建目标"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFocusGroup(pinTarget);
+                        }}
+                      />
+                    </Tooltip>
 
-                {g.custom && !renaming && (
-                  <Dropdown
-                    trigger={["click"]}
-                    menu={{
-                      items: [
-                        {
-                          key: "rename",
-                          icon: <EditOutlined />,
-                          label: "重命名",
-                          onClick: () => startRenameGroup(g.custom!),
-                        },
-                        {
-                          key: "delete",
-                          icon: <DeleteOutlined />,
-                          label: "删除分组",
-                          danger: true,
-                          onClick: () => void handleDeleteGroup(g.custom!),
-                        },
-                      ],
-                    }}
-                  >
-                    <Button
-                      type="text"
-                      size="small"
-                      className="notes-sidebar__more"
-                      icon={<MoreOutlined />}
-                      aria-label={`分组操作：${g.label}`}
-                    />
-                  </Dropdown>
+                    {g.custom && (
+                      <>
+                        <Tooltip title="重命名">
+                          <Button
+                            type="text"
+                            size="small"
+                            className="notes-sidebar__rename"
+                            icon={<EditOutlined />}
+                            aria-label={`重命名分组：${g.label}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startRenameGroup(g.custom!);
+                            }}
+                          />
+                        </Tooltip>
+                        <Dropdown
+                          trigger={["click"]}
+                          menu={{
+                            items: [
+                              {
+                                key: "rename",
+                                icon: <EditOutlined />,
+                                label: "重命名",
+                                onClick: () => startRenameGroup(g.custom!, 120),
+                              },
+                              {
+                                key: "delete",
+                                icon: <DeleteOutlined />,
+                                label: "删除分组",
+                                danger: true,
+                                onClick: () => void handleDeleteGroup(g.custom!),
+                              },
+                            ],
+                          }}
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            className="notes-sidebar__more"
+                            icon={<MoreOutlined />}
+                            aria-label={`分组操作：${g.label}`}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </Dropdown>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
 

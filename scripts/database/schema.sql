@@ -215,6 +215,8 @@ ALTER TABLE model_profile ADD COLUMN temperature       REAL;
 ALTER TABLE model_profile ADD COLUMN max_output_tokens INTEGER;
 ALTER TABLE model_profile ADD COLUMN extra_body        TEXT    NOT NULL DEFAULT '{}';
 ALTER TABLE model_profile ADD COLUMN tags              TEXT    NOT NULL DEFAULT '[]';
+-- 用途：chat=会话 / image=生图 / video=生视频（旧数据默认 chat）
+ALTER TABLE model_profile ADD COLUMN modality          TEXT    NOT NULL DEFAULT 'chat';
 
 -- Intent classification rules (soft routing keywords)
 CREATE TABLE IF NOT EXISTS intent_rule (

@@ -201,6 +201,36 @@ const VideoStudioActions = () => {
   );
 };
 
+/** 图片工厂 · AI 生成页顶栏操作 */
+const ImageGenerateActions = () => {
+  const [state, setState] = useState({ busy: false, canGenerate: false });
+
+  useEffect(() => {
+    const onState = (e: Event) => {
+      const detail = (e as CustomEvent<typeof state>).detail;
+      if (!detail) return;
+      setState({ busy: !!detail.busy, canGenerate: !!detail.canGenerate });
+    };
+    window.addEventListener("images-gen:topbar-state", onState);
+    window.dispatchEvent(new CustomEvent("images-gen:topbar-request"));
+    return () => window.removeEventListener("images-gen:topbar-state", onState);
+  }, []);
+
+  return (
+    <button
+      type="button"
+      className="topbar-action-btn topbar-action-btn--primary"
+      disabled={state.busy || !state.canGenerate}
+      onClick={() =>
+        window.dispatchEvent(new CustomEvent("images-gen:generate"))
+      }
+    >
+      <IconPlay />
+      <span>{state.busy ? "生成中…" : "生成并保存"}</span>
+    </button>
+  );
+};
+
 type CrawlerTopbarState = {
   busy: boolean;
   running: boolean;
@@ -424,6 +454,7 @@ export const Topbar = () => {
   const pageSub = subtitleForPath(pathname);
   const isMap = pathname === "/map";
   const isImages = pathname === "/images";
+  const isImageGenerate = pathname === "/images/generate";
   const isVideos = pathname === "/videos";
   const isVideoStudio = pathname === "/videos/studio";
   const isCrawlerConfig = /^\/crawler\/[^/]+$/.test(pathname);
@@ -446,6 +477,7 @@ export const Topbar = () => {
         {isChat ? <ChatAgentActions /> : null}
         {isMap ? <MapActions /> : null}
         {isImages ? <ImagesFactoryActions /> : null}
+        {isImageGenerate ? <ImageGenerateActions /> : null}
         {isVideos ? <VideosFactoryActions /> : null}
         {isVideoStudio ? <VideoStudioActions /> : null}
         {isCrawlerConfig ? <CrawlerConfigActions /> : null}

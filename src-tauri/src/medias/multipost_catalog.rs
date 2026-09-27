@@ -13,7 +13,7 @@ pub const MULTIPOST_CATALOG: &[CatalogEntry] = &[
     CatalogEntry { code: "DYNAMIC_BILIBILI", name: "哔哩哔哩", kind: "dynamic", region: "cn", inject_url: "https://t.bilibili.com", home_url: "https://t.bilibili.com" },
     CatalogEntry { code: "DYNAMIC_DOUYIN", name: "抖音", kind: "dynamic", region: "cn", inject_url: "https://creator.douyin.com/creator-micro/content/upload?default-tab=3", home_url: "https://creator.douyin.com/" },
     CatalogEntry { code: "DYNAMIC_X", name: "X", kind: "dynamic", region: "intl", inject_url: "https://x.com/home", home_url: "https://x.com/home" },
-    CatalogEntry { code: "DYNAMIC_REDNOTE", name: "小红书", kind: "dynamic", region: "cn", inject_url: "https://creator.xiaohongshu.com/publish/publish?target=image", home_url: "https://creator.xiaohongshu.com/" },
+    CatalogEntry { code: "DYNAMIC_REDNOTE", name: "小红书", kind: "dynamic", region: "cn", inject_url: "https://creator.xiaohongshu.com/publish/publish?from=homepage&target=image", home_url: "https://creator.xiaohongshu.com/" },
     CatalogEntry { code: "DYNAMIC_WEIBO", name: "微博", kind: "dynamic", region: "cn", inject_url: "https://weibo.com", home_url: "https://weibo.com" },
     CatalogEntry { code: "DYNAMIC_XUEQIU", name: "雪球", kind: "dynamic", region: "cn", inject_url: "https://xueqiu.com", home_url: "https://xueqiu.com" },
     CatalogEntry { code: "DYNAMIC_ZHIHU", name: "知乎想法", kind: "dynamic", region: "cn", inject_url: "https://www.zhihu.com", home_url: "https://www.zhihu.com" },

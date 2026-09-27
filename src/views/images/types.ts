@@ -11,6 +11,9 @@ export type GeneratedImage = {
 
 export type MediaSourceKind = "ai" | "upload" | "web";
 
+/** 列表来源筛选（图片 / 视频共用） */
+export type SourceFilter = "all" | MediaSourceKind;
+
 export const mediaSourceOf = (model: string): MediaSourceKind => {
   if (model === "web_import") return "web";
   if (model === "local_upload") return "upload";

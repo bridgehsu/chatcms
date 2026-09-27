@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { App as AntdApp, Button, Form, Input, InputNumber, Select, Switch, Tag } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { invoke } from '@/hooks/useTauri';
@@ -15,6 +15,8 @@ export interface ProviderProfile {
     model: string;
     base_url?: string | null;
     tier: string;
+    /** chat | image | video */
+    modality: string;
     weight: number;
     context_window: number;
     enabled: boolean;
@@ -35,6 +37,19 @@ const TIER_OPTIONS = [
     { label: '全部', value: 'all' },
     { label: '云端', value: 'cloud' },
     { label: '本地', value: 'local' },
+];
+
+const MODALITY_OPTIONS = [
+    { label: '全部', value: 'all' },
+    { label: '会话', value: 'chat' },
+    { label: '图片', value: 'image' },
+    { label: '视频', value: 'video' },
+];
+
+const MODALITY_FORM_OPTIONS = [
+    { label: '会话（Chat）', value: 'chat' },
+    { label: '图片生成（Image）', value: 'image' },
+    { label: '视频生成（Video）', value: 'video' },
 ];
 
 const WEIGHT_OPTIONS = [
@@ -58,7 +73,39 @@ const PRESET_TAGS = [
     { label: 'large-context', value: 'large-context' },
 ];
 
+const modalityLabel = (m: string) =>
+    m === 'image' ? '图片' : m === 'video' ? '视频' : '会话';
+
+const modalityColor = (m: string) =>
+    m === 'image' ? 'magenta' : m === 'video' ? 'purple' : 'geekblue';
+
 // ── 动态子组件（内部使用 Form.useWatch） ──────────────────────────────────────
+
+/** 仅在指定用途下显示整行表单项（含 label） */
+const WhenModality = ({
+    form,
+    allow,
+    label,
+    required,
+    children,
+}: {
+    form: any;
+    allow: string[];
+    label?: ReactNode;
+    required?: boolean;
+    children: ReactNode;
+}) => {
+    const modality = Form.useWatch('modality', form) || 'chat';
+    if (!allow.includes(modality)) return null;
+    if (label != null && label !== '') {
+        return (
+            <Form.Item label={label} required={required}>
+                {children}
+            </Form.Item>
+        );
+    }
+    return <>{children}</>;
+};
 
 /** 思考深度：随 thinking 开关启用（需透传 Form.Item 的 value/onChange） */
 const ThinkingEffortField = ({
@@ -83,15 +130,105 @@ const ThinkingEffortField = ({
     );
 };
 
-/** extra_body JSON 文本域 */
-const ExtraBodyField = () => (
-    <Form.Item name="extraBody" noStyle>
-        <Input.TextArea
-            rows={3}
-            placeholder={'{\n  "think": true\n}'}
-            style={{ fontFamily: 'monospace', fontSize: 12 }}
+/** 模型 ID：按用途 / 协议切换 placeholder */
+const ModelIdField = ({
+    form,
+    value,
+    onChange,
+}: {
+    form: any;
+    value?: string;
+    onChange?: (v: string) => void;
+}) => {
+    const modality = Form.useWatch('modality', form) || 'chat';
+    const kind = Form.useWatch('kind', form) || 'openai';
+    const tip =
+        modality === 'image'
+            ? kind === 'dashscope'
+                ? 'qwen-image-3.0-pro / qwen-image-3.0'
+                : 'dall-e-3 / gpt-image-1'
+            : modality === 'video'
+              ? 'sora-2 / sora-2-pro'
+              : 'claude-sonnet-4-6 / qwen3:14b';
+    return <Input value={value} onChange={(e) => onChange?.(e.target.value)} placeholder={tip} />;
+};
+
+/** 协议：会话 anthropic/openai；图片 openai/dashscope；视频固定 openai（隐藏） */
+const KindField = ({
+    form,
+    value,
+    onChange,
+}: {
+    form: any;
+    value?: string;
+    onChange?: (v: string) => void;
+}) => {
+    const modality = Form.useWatch('modality', form) || 'chat';
+    if (modality === 'video') return null;
+    if (modality === 'image') {
+        return (
+            <Select
+                value={value || 'openai'}
+                onChange={onChange}
+                options={[
+                    { label: 'openai（Images API）', value: 'openai' },
+                    { label: 'dashscope（通义多模态）', value: 'dashscope' },
+                ]}
+            />
+        );
+    }
+    return (
+        <Select
+            value={value}
+            onChange={onChange}
+            options={[
+                { label: 'anthropic', value: 'anthropic' },
+                { label: 'openai', value: 'openai' },
+            ]}
         />
-    </Form.Item>
+    );
+};
+
+/** 接口地址：按协议给示例 */
+const BaseUrlField = ({
+    form,
+    value,
+    onChange,
+}: {
+    form: any;
+    value?: string;
+    onChange?: (v: string) => void;
+}) => {
+    const modality = Form.useWatch('modality', form) || 'chat';
+    const kind = Form.useWatch('kind', form) || 'openai';
+    const tip =
+        modality === 'image' && kind === 'dashscope'
+            ? 'https://maas.qianwenaiapi.com 或 https://dashscope.aliyuncs.com'
+            : '留空使用默认（如 http://localhost:11434）';
+    return (
+        <Input
+            value={value}
+            onChange={(e) => onChange?.(e.target.value)}
+            placeholder={tip}
+        />
+    );
+};
+
+/** extra_body JSON 文本域 */
+const ExtraBodyField = ({
+    value,
+    onChange,
+}: {
+    value?: string;
+    onChange?: (v: string) => void;
+}) => (
+    <Input.TextArea
+        rows={3}
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        placeholder={'{\n  "think": true\n}'}
+        style={{ fontFamily: 'monospace', fontSize: 12 }}
+    />
 );
 
 // ── 主页面 ────────────────────────────────────────────────────────────────────
@@ -107,6 +244,9 @@ export const ModelsPage = () => {
             let list = await invoke<ProviderProfile[]>('model_profile_list');
             if (params?.tier && params.tier !== 'all') {
                 list = list.filter(p => p.tier === params.tier);
+            }
+            if (params?.modality && params.modality !== 'all') {
+                list = list.filter(p => (p.modality || 'chat') === params.modality);
             }
             if (params?.name?.trim()) {
                 const q = params.name.trim().toLowerCase();
@@ -152,6 +292,7 @@ export const ModelsPage = () => {
                 weight:          p.weight,
                 contextWindow:   p.context_window,
                 enabled:         p.enabled,
+                modality:        p.modality || 'chat',
                 capabilities:    p.capabilities ?? null,
                 thinking:        p.thinking === true,
                 thinkingEffort:  p.thinking_effort || 'medium',
@@ -171,6 +312,7 @@ export const ModelsPage = () => {
     const formatRecordForEdit = (record: ProviderProfile) => ({
         id:               record.id,
         name:             record.name,
+        modality:         record.modality || 'chat',
         tier:             record.tier,
         kind:             record.kind,
         apiKey:           record.api_key,
@@ -194,9 +336,16 @@ export const ModelsPage = () => {
 
     // 表单值 → 提交给后端（camelCase 字段名，Tauri 自动转 snake_case）
     const beforeSubmit = (values: any) => {
+        const modality =
+            values.modality === 'image' || values.modality === 'video'
+                ? values.modality
+                : 'chat';
+
         const capabilities: Record<string, boolean> = {};
-        if (values.capReasoning) capabilities.reasoning = true;
-        if (values.capVision)    capabilities.vision    = true;
+        if (modality === 'chat') {
+            if (values.capReasoning) capabilities.reasoning = true;
+            if (values.capVision) capabilities.vision = true;
+        }
 
         let extraBody: Record<string, unknown> | null = null;
         if (typeof values.extraBody === 'string' && values.extraBody.trim()) {
@@ -209,22 +358,32 @@ export const ModelsPage = () => {
             extraBody = values.extraBody;
         }
 
+        const kind =
+            modality === 'image'
+                ? values.kind === 'dashscope'
+                    ? 'dashscope'
+                    : 'openai'
+                : modality === 'video'
+                  ? 'openai'
+                  : values.kind;
+
         const out: Record<string, any> = {
             name:            String(values.name ?? '').trim(),
-            kind:            values.kind,
+            modality,
+            kind,
             apiKey:          values.apiKey ?? '',
             model:           String(values.model ?? '').trim(),
             baseUrl:         String(values.baseUrl ?? '').trim() || null,
             tier:            values.tier === 'local' || values.tier === 'cloud' ? values.tier : 'cloud',
-            weight:          Number(values.weight ?? 2),
-            contextWindow:   Number(values.contextWindow ?? 8192),
+            weight:          modality === 'chat' ? Number(values.weight ?? 2) : 2,
+            contextWindow:   modality === 'chat' ? Number(values.contextWindow ?? 8192) : 8192,
             enabled:         values.enabled !== false,
-            tags:            Array.isArray(values.tags) ? values.tags : [],
+            tags:            modality === 'chat' && Array.isArray(values.tags) ? values.tags : [],
             capabilities:    Object.keys(capabilities).length > 0 ? capabilities : null,
-            thinking:        values.thinking === true || values.thinking === 'true',
+            thinking:        modality === 'chat' && (values.thinking === true || values.thinking === 'true'),
             thinkingEffort:  values.thinkingEffort || 'medium',
-            temperature:     typeof values.temperature === 'number' ? values.temperature : null,
-            maxOutputTokens: typeof values.maxOutputTokens === 'number' ? values.maxOutputTokens : null,
+            temperature:     modality === 'chat' && typeof values.temperature === 'number' ? values.temperature : null,
+            maxOutputTokens: modality === 'chat' && typeof values.maxOutputTokens === 'number' ? values.maxOutputTokens : null,
             extraBody,
         };
         if (values.id) out.id = values.id;
@@ -243,6 +402,7 @@ export const ModelsPage = () => {
                 tier:            record.tier,
                 weight:          record.weight,
                 contextWindow:   record.context_window,
+                modality:        record.modality || 'chat',
                 capabilities:    record.capabilities ?? null,
                 thinking:        record.thinking,
                 thinkingEffort:  record.thinking_effort,
@@ -263,6 +423,7 @@ export const ModelsPage = () => {
                 weight:          copy.weight,
                 contextWindow:   copy.context_window,
                 enabled:         false,
+                modality:        copy.modality || 'chat',
                 capabilities:    copy.capabilities ?? null,
                 thinking:        copy.thinking,
                 thinkingEffort:  copy.thinking_effort,
@@ -307,6 +468,56 @@ export const ModelsPage = () => {
             ),
         },
         {
+            title: '用途',
+            dataIndex: 'modality',
+            key: 'modality',
+            search: {
+                name: 'modality',
+                label: '用途',
+                type: 'select',
+                options: MODALITY_OPTIONS,
+                placeholder: '全部',
+            },
+            editor: {
+                name: 'modality',
+                label: '用途',
+                type: 'select',
+                options: MODALITY_FORM_OPTIONS,
+                rules: [{ required: true, message: '请选择用途' }],
+                initialValue: 'chat',
+                renderFormItem: (form: any) => (
+                    <Form.Item
+                        name="modality"
+                        label="用途"
+                        rules={[{ required: true, message: '请选择用途' }]}
+                        initialValue="chat"
+                    >
+                        <Select
+                            options={MODALITY_FORM_OPTIONS}
+                            onChange={(val: string) => {
+                                if (val === 'image' || val === 'video') {
+                                    form.setFieldsValue({
+                                        modality: val,
+                                        kind: 'openai',
+                                        thinking: false,
+                                        capReasoning: false,
+                                        capVision: false,
+                                        temperature: null,
+                                        maxOutputTokens: null,
+                                    });
+                                } else {
+                                    form.setFieldsValue({ modality: 'chat' });
+                                }
+                            }}
+                        />
+                    </Form.Item>
+                ),
+            },
+            render: (m: string) => (
+                <Tag color={modalityColor(m || 'chat')}>{modalityLabel(m || 'chat')}</Tag>
+            ),
+        },
+        {
             title: '模型 ID',
             dataIndex: 'model',
             key: 'model',
@@ -338,7 +549,7 @@ export const ModelsPage = () => {
                 renderFormItem: (form: any) => (
                     <Form.Item
                         name="tier"
-                        noStyle
+                        label="类型"
                         rules={[{ required: true, message: '请选择类型' }]}
                         initialValue="cloud"
                     >
@@ -381,10 +592,23 @@ export const ModelsPage = () => {
                 type: 'select',
                 options: [
                     { label: 'anthropic', value: 'anthropic' },
-                    { label: 'openai',    value: 'openai' },
+                    { label: 'openai', value: 'openai' },
+                    { label: 'dashscope', value: 'dashscope' },
                 ],
                 rules: [{ required: true, message: '请选择协议' }],
                 initialValue: 'anthropic',
+                renderFormItem: (form: any) => (
+                    <WhenModality form={form} allow={['chat', 'image']} label="协议" required>
+                        <Form.Item
+                            name="kind"
+                            noStyle
+                            rules={[{ required: true, message: '请选择协议' }]}
+                            initialValue="anthropic"
+                        >
+                            <KindField form={form} />
+                        </Form.Item>
+                    </WhenModality>
+                ),
             },
             render: (kind: string) => (
                 <span className="model-table__mono">{kind}</span>
@@ -396,22 +620,35 @@ export const ModelsPage = () => {
             key: 'weight',
             editor: {
                 name: 'weight',
-                label: '权重',
+                label: '权重（会话路由）',
                 type: 'select',
                 options: WEIGHT_OPTIONS,
                 initialValue: 2,
+                renderFormItem: (form: any) => (
+                    <WhenModality form={form} allow={['chat']} label="权重（会话路由）">
+                        <Form.Item name="weight" noStyle initialValue={2}>
+                            <Select options={WEIGHT_OPTIONS} />
+                        </Form.Item>
+                    </WhenModality>
+                ),
             },
-            render: (weight: number) => (
-                <span className="model-table__mono">{weight}</span>
-            ),
+            render: (weight: number, record: ProviderProfile) =>
+                (record.modality || 'chat') === 'chat' ? (
+                    <span className="model-table__mono">{weight}</span>
+                ) : (
+                    <span className="model-table__mono">—</span>
+                ),
         },
         {
             title: 'Context',
             dataIndex: 'context_window',
             key: 'context_window',
-            render: (ctx: number) => (
-                <span className="model-table__mono">{ctx.toLocaleString()}</span>
-            ),
+            render: (ctx: number, record: ProviderProfile) =>
+                (record.modality || 'chat') === 'chat' ? (
+                    <span className="model-table__mono">{ctx.toLocaleString()}</span>
+                ) : (
+                    <span className="model-table__mono">—</span>
+                ),
         },
         {
             title: '接口地址',
@@ -481,7 +718,15 @@ export const ModelsPage = () => {
                 label: '模型 ID',
                 type: 'input',
                 rules: [{ required: true, message: '请输入模型 ID' }],
-                placeholder: 'claude-sonnet-4-6 / qwen3:14b',
+                renderFormItem: (form: any) => (
+                    <Form.Item
+                        name="model"
+                        label="模型 ID"
+                        rules={[{ required: true, message: '请输入模型 ID' }]}
+                    >
+                        <ModelIdField form={form} />
+                    </Form.Item>
+                ),
             },
         },
         {
@@ -494,6 +739,11 @@ export const ModelsPage = () => {
                 label: '接口地址',
                 type: 'input',
                 placeholder: '留空使用默认（如 http://localhost:11434）',
+                renderFormItem: (form: any) => (
+                    <Form.Item name="baseUrl" label="接口地址">
+                        <BaseUrlField form={form} />
+                    </Form.Item>
+                ),
             },
         },
         {
@@ -506,32 +756,34 @@ export const ModelsPage = () => {
                 label: 'Token 限制',
                 type: 'input',
                 initialValue: 8192,
-                renderFormItem: () => (
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Context 窗口</div>
-                            <Form.Item name="contextWindow" noStyle initialValue={8192}>
-                                <InputNumber
-                                    min={1024}
-                                    step={1024}
-                                    style={{ width: '100%' }}
-                                    addonAfter="tokens"
-                                />
-                            </Form.Item>
+                renderFormItem: (form: any) => (
+                    <WhenModality form={form} allow={['chat']} label="Token 限制">
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Context 窗口</div>
+                                <Form.Item name="contextWindow" noStyle initialValue={8192}>
+                                    <InputNumber
+                                        min={1024}
+                                        step={1024}
+                                        style={{ width: '100%' }}
+                                        addonAfter="tokens"
+                                    />
+                                </Form.Item>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>最大输出</div>
+                                <Form.Item name="maxOutputTokens" noStyle>
+                                    <InputNumber
+                                        min={256}
+                                        step={1024}
+                                        style={{ width: '100%' }}
+                                        placeholder="默认"
+                                        addonAfter="tokens"
+                                    />
+                                </Form.Item>
+                            </div>
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>最大输出</div>
-                            <Form.Item name="maxOutputTokens" noStyle>
-                                <InputNumber
-                                    min={256}
-                                    step={1024}
-                                    style={{ width: '100%' }}
-                                    placeholder="默认"
-                                    addonAfter="tokens"
-                                />
-                            </Form.Item>
-                        </div>
-                    </div>
+                    </WhenModality>
                 ),
             },
         },
@@ -544,17 +796,18 @@ export const ModelsPage = () => {
                 name: 'temperature',
                 label: '采样温度',
                 type: 'input',
-                renderFormItem: () => (
-                    <Form.Item name="temperature" noStyle>
-                        <InputNumber
-                            min={0}
-                            max={2}
-                            step={0.1}
-                            precision={1}
-                            style={{ width: '100%' }}
-                            placeholder="留空使用模型默认"
-                        />
-                    </Form.Item>
+                renderFormItem: (form: any) => (
+                    <WhenModality form={form} allow={['chat']} label="采样温度">
+                        <Form.Item name="temperature" noStyle>
+                            <InputNumber
+                                min={0}
+                                max={2}
+                                step={0.1}
+                                style={{ width: '100%' }}
+                                placeholder="默认"
+                            />
+                        </Form.Item>
+                    </WhenModality>
                 ),
             },
         },
@@ -565,7 +818,10 @@ export const ModelsPage = () => {
             dataIndex: 'thinking',
             key: 'thinking',
             width: 88,
-            render: (v: boolean, record: ProviderProfile) => (
+            render: (v: boolean, record: ProviderProfile) =>
+                (record.modality || 'chat') !== 'chat' ? (
+                    <span className="model-table__mono">—</span>
+                ) : (
                 <Switch
                     size="small"
                     checked={!!v}
@@ -581,7 +837,7 @@ export const ModelsPage = () => {
                         });
                     }}
                 />
-            ),
+                ),
             editor: {
                 name: 'thinking',
                 label: '思考模式',
@@ -590,6 +846,13 @@ export const ModelsPage = () => {
                 initialValue: false,
                 checkedChildren: '开启',
                 unCheckedChildren: '关闭',
+                renderFormItem: (form: any) => (
+                    <WhenModality form={form} allow={['chat']} label="思考模式">
+                        <Form.Item name="thinking" noStyle valuePropName="checked" initialValue={false}>
+                            <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+                        </Form.Item>
+                    </WhenModality>
+                ),
             },
         },
         {
@@ -604,9 +867,11 @@ export const ModelsPage = () => {
                 options: EFFORT_OPTIONS,
                 initialValue: 'medium',
                 renderFormItem: (form: any) => (
-                    <Form.Item name="thinkingEffort" noStyle initialValue="medium">
-                        <ThinkingEffortField form={form} />
-                    </Form.Item>
+                    <WhenModality form={form} allow={['chat']} label="思考深度">
+                        <Form.Item name="thinkingEffort" noStyle initialValue="medium">
+                            <ThinkingEffortField form={form} />
+                        </Form.Item>
+                    </WhenModality>
                 ),
             },
         },
@@ -622,21 +887,23 @@ export const ModelsPage = () => {
                 label: '能力',
                 type: 'switch',
                 initialValue: false,
-                renderFormItem: () => (
-                    <div style={{ display: 'flex', gap: 24 }}>
-                        <div>
-                            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>推理 (Reasoning)</div>
-                            <Form.Item name="capReasoning" noStyle valuePropName="checked" initialValue={false}>
-                                <Switch checkedChildren="支持" unCheckedChildren="不支持" />
-                            </Form.Item>
+                renderFormItem: (form: any) => (
+                    <WhenModality form={form} allow={['chat']} label="能力">
+                        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                            <div>
+                                <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>推理 (Reasoning)</div>
+                                <Form.Item name="capReasoning" noStyle valuePropName="checked" initialValue={false}>
+                                    <Switch checkedChildren="支持" unCheckedChildren="不支持" />
+                                </Form.Item>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>视觉 (Vision)</div>
+                                <Form.Item name="capVision" noStyle valuePropName="checked" initialValue={false}>
+                                    <Switch checkedChildren="支持" unCheckedChildren="不支持" />
+                                </Form.Item>
+                            </div>
                         </div>
-                        <div>
-                            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>视觉 (Vision)</div>
-                            <Form.Item name="capVision" noStyle valuePropName="checked" initialValue={false}>
-                                <Switch checkedChildren="支持" unCheckedChildren="不支持" />
-                            </Form.Item>
-                        </div>
-                    </div>
+                    </WhenModality>
                 ),
             },
         },
@@ -651,15 +918,17 @@ export const ModelsPage = () => {
                 name: 'tags',
                 label: '路由标签',
                 type: 'select',
-                renderFormItem: () => (
-                    <Form.Item name="tags" noStyle>
-                        <Select
-                            mode="tags"
-                            options={PRESET_TAGS}
-                            placeholder="选择或输入自定义标签，回车确认"
-                            style={{ width: '100%' }}
-                        />
-                    </Form.Item>
+                renderFormItem: (form: any) => (
+                    <WhenModality form={form} allow={['chat']} label="路由标签">
+                        <Form.Item name="tags" noStyle>
+                            <Select
+                                mode="tags"
+                                options={PRESET_TAGS}
+                                placeholder="选择或输入自定义标签，回车确认"
+                                style={{ width: '100%' }}
+                            />
+                        </Form.Item>
+                    </WhenModality>
                 ),
             },
         },
@@ -674,7 +943,11 @@ export const ModelsPage = () => {
                 name: 'extraBody',
                 label: '额外请求参数 (JSON)',
                 type: 'input',
-                renderFormItem: () => <ExtraBodyField />,
+                renderFormItem: () => (
+                    <Form.Item name="extraBody" label="额外请求参数 (JSON)">
+                        <ExtraBodyField />
+                    </Form.Item>
+                ),
             },
         },
 

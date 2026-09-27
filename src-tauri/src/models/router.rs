@@ -87,6 +87,7 @@ impl ModelRouter {
             .iter()
             .filter(|p| {
                 p.enabled
+                    && p.is_chat()
                     && p.context_window as usize >= buf_tokens
                     && !states
                         .entry(p.id.clone())

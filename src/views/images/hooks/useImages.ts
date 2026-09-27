@@ -54,14 +54,15 @@ export const useImages = () => {
   }, []);
 
   const generate = useCallback(
-    async (prompt: string, model: string, size: string) => {
+    async (prompt: string, profileId: string, size: string) => {
       setBusy(true);
       setError("");
       try {
         const created = await invoke<GeneratedImage>("image_generate", {
           prompt,
-          model,
           size,
+          profileId,
+          model: null,
         });
         await attachPreview(created);
         return created;

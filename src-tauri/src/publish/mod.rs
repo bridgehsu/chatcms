@@ -834,7 +834,7 @@ const BRIDGE_HTML: &str = r#"<!doctype html>
       const timer = setTimeout(() => {
         window.removeEventListener('message', onMsg);
         resolve({ code: 504, message: '插件未响应（请确认已安装并启用）', data: null });
-      }, 15000);
+      }, 8000);
       function onMsg(e) {
         if (e.data && e.data.type === 'response' && e.data.traceId === traceId) {
           clearTimeout(timer);
@@ -845,6 +845,16 @@ const BRIDGE_HTML: &str = r#"<!doctype html>
       window.addEventListener('message', onMsg);
       window.postMessage({ type: 'request', traceId, action, data: data || null }, '*');
     });
+  }
+
+  async function requestWithRetry(action, data, tries) {
+    let last = null;
+    for (let i = 0; i < tries; i++) {
+      last = await request(action, data);
+      if (last && last.code !== 504) return last;
+      await new Promise((r) => setTimeout(r, 400 + i * 200));
+    }
+    return last || { code: 504, message: '插件未响应', data: null };
   }
 
   async function run() {
@@ -867,17 +877,17 @@ const BRIDGE_HTML: &str = r#"<!doctype html>
     }
 
     setStatus('检查插件信任…', 'info');
-    const trust = await request('MULTIPOST_EXTENSION_REQUEST_TRUST_DOMAIN', null);
+    const trust = await requestWithRetry('MULTIPOST_EXTENSION_REQUEST_TRUST_DOMAIN', null, 6);
     if (trust.code === 504) {
-      setStatus('未检测到浏览器插件。请安装 chatcms-extesion，并刷新本页。', 'err');
+      setStatus('未检测到浏览器插件。请安装 chatcms-extension，并刷新本页。', 'err');
       retryBtn.disabled = false;
       return;
     }
 
     setStatus('正在交给插件自动填表…', 'info');
-    const pub = await request('MULTIPOST_EXTENSION_PUBLISH', draft.sync_data);
+    const pub = await requestWithRetry('MULTIPOST_EXTENSION_PUBLISH', draft.sync_data, 3);
     if (pub.code === 0) {
-      setStatus('已交给插件。请看浏览器右侧边栏（若未出现，点击工具栏插件图标打开）。侧栏会自动填表；请在平台页面中确认后发布。', 'ok');
+      setStatus('已交给插件。请看浏览器新开的创作者页（或侧栏）。插件会自动填表；请在平台页面中确认后发布。', 'ok');
     } else if (pub.code === 403) {
       setStatus('域名未受信任。请在弹出窗口中允许信任 127.0.0.1，然后点重试。', 'err');
       retryBtn.disabled = false;

@@ -75,6 +75,7 @@ fn legacy_profile(provider: &ProviderConfig) -> Option<ProviderProfile> {
         model: provider.model.clone(),
         base_url: provider.base_url.clone(),
         tier: "cloud".to_string(),
+        modality: "chat".into(),
         weight: 2,
         context_window: 8192,
         enabled: true,

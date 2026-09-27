@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Select } from "@/components/Select";
 import { PublishModal, type PublishSource } from "@/views/publish/PublishModal";
 import { MediaEditModal } from "../../images/components/MediaEditModal";
-import type { SourceFilter } from "../../images/components/ImageTable";
+import type { SourceFilter } from "../../images/types";
 import type { GeneratedVideo } from "../types";
 import { useVideos } from "../hooks/useVideos";
 import { VideoTable } from "./VideoTable";

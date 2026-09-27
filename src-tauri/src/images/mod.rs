@@ -1,4 +1,7 @@
-//! AI 生图：OpenAI 兼容 `/v1/images/generations`，结果落盘并记入 SQLite。
+//! AI 生图：按模型配置 `kind` 分发协议。
+//! - `openai` → `/v1/images/generations`
+//! - `dashscope` → `/api/v1/services/aigc/multimodal-generation/generation`
+//! 结果落盘并记入 SQLite。
 
 pub mod commands;
 pub mod repository;
@@ -24,4 +27,7 @@ pub struct GeneratedImage {
     pub updated: i64,
 }
 
-pub use service::{generate, import_from_url, import_bytes, upload_base64, update, list, delete, read_data_url};
+pub use service::{
+    generate, generate_with_profile, import_from_url, import_bytes, upload_base64, update, list,
+    delete, read_data_url,
+};

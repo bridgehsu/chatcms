@@ -1,11 +1,11 @@
 import { useEffect, useMemo } from "react";
+import type { SourceFilter } from "../../images/types";
 import type { GeneratedVideo } from "../types";
 import {
   mediaSourceLabel,
   mediaSourceOf,
   mediaUpdatedAt,
 } from "../types";
-import type { SourceFilter } from "../../images/components/ImageTable";
 
 type Props = {
   videos: GeneratedVideo[];

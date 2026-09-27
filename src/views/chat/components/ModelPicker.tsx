@@ -8,6 +8,7 @@ interface Profile {
   tier: string;
   enabled: boolean;
   thinking?: boolean;
+  modality?: string;
 }
 
 const STORAGE_KEY = "chatcms.activeProfileId";
@@ -39,7 +40,11 @@ export const ModelPicker = ({
 
   const refresh = () => {
     invoke<Profile[]>("model_profile_list")
-      .then((list) => setProfiles(list.filter((p) => p.enabled)))
+      .then((list) =>
+        setProfiles(
+          list.filter((p) => p.enabled && (p.modality || "chat") === "chat"),
+        ),
+      )
       .catch(console.error);
   };
 

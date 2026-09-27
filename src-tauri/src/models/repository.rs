@@ -18,6 +18,14 @@ fn parse_json_vec(s: &str) -> Vec<String> {
     serde_json::from_str::<Vec<String>>(s).unwrap_or_default()
 }
 
+fn normalize_modality(raw: String) -> String {
+    match raw.trim() {
+        "image" => "image".into(),
+        "video" => "video".into(),
+        _ => "chat".into(),
+    }
+}
+
 fn row_to_profile(r: sqlx::sqlite::SqliteRow) -> ProviderProfile {
     let enabled: i64 = r.get("enabled");
     let thinking: i64 = r.try_get("thinking").unwrap_or(0);
@@ -25,6 +33,7 @@ fn row_to_profile(r: sqlx::sqlite::SqliteRow) -> ProviderProfile {
     let capabilities_str: String = r.try_get("capabilities").unwrap_or_else(|_| "{}".into());
     let extra_body_str: String = r.try_get("extra_body").unwrap_or_else(|_| "{}".into());
     let tags_str: String = r.try_get("tags").unwrap_or_else(|_| "[]".into());
+    let modality_raw: String = r.try_get("modality").unwrap_or_else(|_| "chat".into());
 
     ProviderProfile {
         id: r.get("id"),
@@ -34,6 +43,7 @@ fn row_to_profile(r: sqlx::sqlite::SqliteRow) -> ProviderProfile {
         model: r.get("model"),
         base_url: r.get("base_url"),
         tier: r.get("tier"),
+        modality: normalize_modality(modality_raw),
         weight: r.get("weight"),
         context_window: r.get("context_window"),
         enabled: enabled != 0,
@@ -57,7 +67,7 @@ pub async fn list(app: &AppHandle) -> Vec<ProviderProfile> {
         "SELECT id, name, kind, api_key, model, base_url, tier, weight, context_window,
                 enabled, created, updated,
                 capabilities, thinking, thinking_effort, temperature, max_output_tokens,
-                extra_body, tags
+                extra_body, tags, modality
          FROM model_profile
          ORDER BY weight DESC, created ASC",
     )
@@ -74,7 +84,7 @@ pub async fn get(app: &AppHandle, id: &str) -> Option<ProviderProfile> {
         "SELECT id, name, kind, api_key, model, base_url, tier, weight, context_window,
                 enabled, created, updated,
                 capabilities, thinking, thinking_effort, temperature, max_output_tokens,
-                extra_body, tags
+                extra_body, tags, modality
          FROM model_profile WHERE id = ?",
     )
     .bind(id)
@@ -90,14 +100,15 @@ pub async fn insert(app: &AppHandle, p: &ProviderProfile) -> Result<(), String> 
     let capabilities = p.capabilities.to_string();
     let extra_body = p.extra_body.to_string();
     let tags = serde_json::to_string(&p.tags).unwrap_or_else(|_| "[]".into());
+    let modality = p.modality_key();
 
     sqlx::query(
         "INSERT INTO model_profile
          (id, name, kind, api_key, model, base_url, tier, weight, context_window,
           enabled, created, updated,
           capabilities, thinking, thinking_effort, temperature, max_output_tokens,
-          extra_body, tags)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          extra_body, tags, modality)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&p.id)
     .bind(&p.name)
@@ -118,6 +129,7 @@ pub async fn insert(app: &AppHandle, p: &ProviderProfile) -> Result<(), String> 
     .bind(p.max_output_tokens)
     .bind(&extra_body)
     .bind(&tags)
+    .bind(modality)
     .execute(&pool)
     .await
     .map(|_| ())
@@ -129,6 +141,7 @@ pub async fn update(app: &AppHandle, p: &ProviderProfile) -> Result<(), String> 
     let capabilities = p.capabilities.to_string();
     let extra_body = p.extra_body.to_string();
     let tags = serde_json::to_string(&p.tags).unwrap_or_else(|_| "[]".into());
+    let modality = p.modality_key();
 
     sqlx::query(
         "UPDATE model_profile SET
@@ -148,7 +161,8 @@ pub async fn update(app: &AppHandle, p: &ProviderProfile) -> Result<(), String> 
            temperature      = ?,
            max_output_tokens = ?,
            extra_body       = ?,
-           tags             = ?
+           tags             = ?,
+           modality         = ?
          WHERE id = ?",
     )
     .bind(&p.name)
@@ -168,6 +182,7 @@ pub async fn update(app: &AppHandle, p: &ProviderProfile) -> Result<(), String> 
     .bind(p.max_output_tokens)
     .bind(&extra_body)
     .bind(&tags)
+    .bind(modality)
     .bind(&p.id)
     .execute(&pool)
     .await

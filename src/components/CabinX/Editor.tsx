@@ -44,15 +44,11 @@ const AsyncSelectField: React.FC<{ field: FormField; value?: any; onChange?: (v:
 
 const renderFormField = (field: FormField, form: any) => {
   if (field.renderFormItem) {
-    // 自定义渲染自己负责 name 绑定；外层只出 label，避免再套同名 Item 导致 Switch 关不掉
+    // 自定义渲染自行负责 Form.Item（含 label）；返回 null 时整行不渲染（如按用途隐藏）
     return (
-      <Form.Item
-        key={field.name}
-        label={field.label}
-        required={field.rules?.some((r: any) => r?.required)}
-      >
+      <React.Fragment key={field.name}>
         {field.renderFormItem(form)}
-      </Form.Item>
+      </React.Fragment>
     );
   }
 
