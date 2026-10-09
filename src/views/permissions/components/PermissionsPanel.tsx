@@ -2,21 +2,11 @@ import { useEffect, useState, type MouseEvent } from "react";
 import { invoke } from "@/hooks/useTauri";
 import { usePermissionStore } from "@/stores/usePermissionStore";
 import type { DomainPolicy, PermissionMode } from "@/types";
+import {
+  DOMAIN_POLICY_SHORT,
+  PERMISSION_DOMAINS,
+} from "@/utils/permissionDomains";
 import { PermissionModeModal } from "./PermissionModeModal";
-
-const POLICY_SHORT: Record<DomainPolicy, string> = {
-  allow: "允",
-  ask: "询",
-  deny: "拒",
-};
-
-const SUMMARY_KEYS = [
-  "file_read",
-  "file_write",
-  "shell",
-  "mcp",
-  "agent",
-] as const;
 
 const SUMMARY_LABEL: Record<string, string> = {
   file_read: "读",
@@ -26,10 +16,14 @@ const SUMMARY_LABEL: Record<string, string> = {
   agent: "代理",
 };
 
+const SUMMARY_KEYS = PERMISSION_DOMAINS.map((d) => d.id).filter(
+  (id) => id in SUMMARY_LABEL,
+);
+
 const domainSummary = (domains: Record<string, DomainPolicy>) =>
   SUMMARY_KEYS.map((k) => {
     const p = domains[k] ?? "ask";
-    return `${SUMMARY_LABEL[k]}${POLICY_SHORT[p]}`;
+    return `${SUMMARY_LABEL[k]}${DOMAIN_POLICY_SHORT[p]}`;
   }).join(" · ");
 
 export const PermissionsPanel = () => {

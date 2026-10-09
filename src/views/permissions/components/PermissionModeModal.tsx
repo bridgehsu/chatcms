@@ -1,35 +1,12 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@/hooks/useTauri";
 import type { DomainPolicy, PermissionMode } from "@/types";
-
-const DOMAIN_ROWS: { id: string; label: string; hint: string }[] = [
-  { id: "file_read", label: "文件读取", hint: "read_file" },
-  { id: "file_write", label: "文件写入", hint: "write_file" },
-  { id: "shell", label: "终端", hint: "bash" },
-  { id: "mcp", label: "MCP", hint: "外部工具" },
-  { id: "agent", label: "子代理", hint: "spawn_agent" },
-  { id: "network", label: "网络", hint: "预留" },
-  { id: "browser", label: "浏览器", hint: "预留" },
-  { id: "app", label: "应用", hint: "预留" },
-];
-
-const POLICIES: DomainPolicy[] = ["allow", "ask", "deny"];
-const POLICY_LABEL: Record<DomainPolicy, string> = {
-  allow: "允许",
-  ask: "询问",
-  deny: "拒绝",
-};
-
-const defaultDomains = (): Record<string, DomainPolicy> => ({
-  file_read: "allow",
-  file_write: "ask",
-  shell: "ask",
-  mcp: "ask",
-  agent: "ask",
-  network: "deny",
-  browser: "deny",
-  app: "deny",
-});
+import {
+  DOMAIN_POLICIES,
+  DOMAIN_POLICY_LABEL,
+  PERMISSION_DOMAINS,
+  defaultDomainPolicies,
+} from "@/utils/permissionDomains";
 
 type Props = {
   mode: "add" | "edit";
@@ -47,7 +24,7 @@ export const PermissionModeModal = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [domains, setDomains] =
-    useState<Record<string, DomainPolicy>>(defaultDomains);
+    useState<Record<string, DomainPolicy>>(defaultDomainPolicies);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,11 +32,11 @@ export const PermissionModeModal = ({
     if (mode === "edit" && editing) {
       setName(editing.name);
       setDescription(editing.description ?? "");
-      setDomains({ ...defaultDomains(), ...editing.domains });
+      setDomains({ ...defaultDomainPolicies(), ...editing.domains });
     } else {
       setName("");
       setDescription("");
-      setDomains(defaultDomains());
+      setDomains(defaultDomainPolicies());
     }
     setError("");
   }, [mode, editing]);
@@ -137,14 +114,16 @@ export const PermissionModeModal = ({
           <div className="mcp-form-row">
             <label>域策略</label>
             <ul className="permission-policy-list">
-              {DOMAIN_ROWS.map((d) => (
+              {PERMISSION_DOMAINS.map((d) => (
                 <li key={d.id} className="permission-policy-row">
                   <div className="permission-policy-row__meta">
                     <span className="permission-policy-row__name">{d.label}</span>
-                    <span className="permission-policy-row__hint">{d.hint}</span>
+                    <span className="permission-policy-row__hint">
+                      {d.toolHint}
+                    </span>
                   </div>
                   <div className="perm-seg perm-seg--policy" role="group">
-                    {POLICIES.map((p) => (
+                    {DOMAIN_POLICIES.map((p) => (
                       <button
                         key={p}
                         type="button"
@@ -153,7 +132,7 @@ export const PermissionModeModal = ({
                           setDomains((prev) => ({ ...prev, [d.id]: p }))
                         }
                       >
-                        {POLICY_LABEL[p]}
+                        {DOMAIN_POLICY_LABEL[p]}
                       </button>
                     ))}
                   </div>

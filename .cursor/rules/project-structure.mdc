@@ -77,11 +77,16 @@ src/
 ├── components/
 │   ├── CabinX/             # 通用业务组件库
 │   ├── Title/              # 页面标题组件
+│   ├── FormSec.tsx         # 表单分区标题（色条 + hint）
 │   ├── Select.tsx
 │   ├── Soon.tsx
 │   └── icons/
 ├── hooks/
 │   └── useTauri.ts
+├── utils/
+│   ├── time.ts             # 时间戳格式化
+│   ├── agentSkills.ts      # 代理 skills ↔ SkillsConfig 编解码
+│   └── permissionDomains.ts # 权限域目录 / 策略文案 / 默认域策略
 ├── styles/
 │   ├── tokens.css
 │   ├── global.css
