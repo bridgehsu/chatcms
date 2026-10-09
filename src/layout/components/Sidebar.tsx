@@ -234,7 +234,7 @@ export const Sidebar = () => {
             aria-label="ChatCMS"
             onClick={() => setExpanded((v) => !v)}
           >
-            C
+            <img src="/logo.svg" alt="" width={30} height={30} draggable={false} />
           </button>
           {expanded ? <span className="sidebar-brand-text">ChatCMS</span> : null}
         </div>

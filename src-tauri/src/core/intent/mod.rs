@@ -21,7 +21,7 @@ mod score;
 mod service;
 
 pub use inject::format_for_prompt;
-pub use intent_result::{Intent, IntentKind, IntentSource};
+pub use intent_result::{Intent, IntentKind};
 pub use service::ensure_seeded;
 
 use anyhow::Result;

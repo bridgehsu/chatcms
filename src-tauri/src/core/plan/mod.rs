@@ -7,7 +7,6 @@ mod profile;
 mod run;
 
 pub use agent_loop::run_agent_loop;
-pub use compress::COMPRESS_THRESHOLD_CHARS;
 pub use profile::resolve_profile;
-pub use prompt::{build_api_messages, build_system_prompt, skills_block};
+pub use prompt::{build_api_messages, build_system_prompt};
 pub use run::run;

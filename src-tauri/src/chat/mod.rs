@@ -76,6 +76,7 @@ impl Session {
         }
     }
 
+    #[allow(dead_code)]
     pub fn new_with_agent(
         title: impl Into<String>,
         agent_id: String,

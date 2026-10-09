@@ -17,6 +17,10 @@ export default defineConfig(async () => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // 桌面壳单包体积偏大属预期，避免无意义的 chunk 告警刷屏
+    chunkSizeWarningLimit: 1500,
+  },
 
   clearScreen: false,
   server: {

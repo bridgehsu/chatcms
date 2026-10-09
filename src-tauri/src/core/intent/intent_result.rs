@@ -40,6 +40,7 @@ impl IntentKind {
     }
 
     /// 可配置规则支持的类别（不含 Unknown）。
+    #[allow(dead_code)]
     pub fn configurable() -> &'static [Self] {
         &[
             Self::ContentPublish,

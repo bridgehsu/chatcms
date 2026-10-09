@@ -6,8 +6,6 @@ pub mod mode;
 mod agent;
 mod run;
 
-pub use mode::{pick_agent_for_intent, ChatMode};
-pub use agent::{
-    collect_tools, maybe_bind_session_agent, resolve_active_agent, resolve_turn_agent,
-};
+pub use agent::resolve_active_agent;
+pub use mode::ChatMode;
 pub use run::run;

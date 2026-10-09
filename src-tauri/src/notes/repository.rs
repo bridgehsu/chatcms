@@ -207,6 +207,7 @@ pub async fn next_group_sort(app: &AppHandle) -> i64 {
     max + 1
 }
 
+#[allow(dead_code)]
 pub async fn clear_notes_group(app: &AppHandle, group_id: &str) -> Result<(), String> {
     let p = pool(app);
     let now = super::now_ms();

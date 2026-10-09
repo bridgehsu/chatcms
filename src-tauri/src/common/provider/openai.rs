@@ -294,7 +294,7 @@ pub(super) async fn stream_openai(
                     } else {
                         // thinking=false：丢掉服务端仍可能返回的 <think> 块，避免当正文刷出来
                         let mut text = content.to_string();
-                        if (text.contains(THINK_OPEN) || text.contains(THINK_CLOSE) || in_think || !tag_buf.is_empty()) {
+                        if text.contains(THINK_OPEN) || text.contains(THINK_CLOSE) || in_think || !tag_buf.is_empty() {
                             let (normals, _thinkings) =
                                 split_think(content, &mut in_think, &mut tag_buf);
                             text = normals.join("");

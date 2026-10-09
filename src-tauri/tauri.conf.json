@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "chatcms",
+  "productName": "ChatCMS",
   "version": "0.0.4",
   "identifier": "org.chatcms",
   "build": {

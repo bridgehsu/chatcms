@@ -8,17 +8,20 @@ pub const COMPRESS_THRESHOLD_CHARS: usize = 240_000; // ≈ 60k tokens
 pub const KEEP_RECENT: usize = 20;
 
 /// 估算消息列表的总字符数（粗略 token 估算）
+#[allow(dead_code)]
 pub fn estimate_chars(messages: &[Message]) -> usize {
     messages.iter().map(|m| m.content.len()).sum()
 }
 
 /// 检查是否需要压缩
+#[allow(dead_code)]
 pub fn needs_compress(messages: &[Message]) -> bool {
     estimate_chars(messages) > COMPRESS_THRESHOLD_CHARS
 }
 
 /// 将历史消息压缩为一条 system 摘要消息（调用方负责实际摘要，这里只做结构处理）。
 /// 返回：(需要摘要的内容, 保留的尾部消息)
+#[allow(dead_code)]
 pub fn prepare_compress(messages: &[Message]) -> (String, Vec<Message>) {
     if messages.len() <= KEEP_RECENT {
         return (String::new(), messages.to_vec());
@@ -66,6 +69,7 @@ pub fn truncate_api_messages(messages: &mut Vec<serde_json::Value>, char_limit: 
 }
 
 /// 将摘要文本 + 保留消息重组为新的消息列表
+#[allow(dead_code)]
 pub fn apply_compress(summary: String, keep: Vec<Message>) -> Vec<Message> {
     use uuid::Uuid;
     let now = std::time::SystemTime::now()

@@ -59,10 +59,12 @@ pub struct ProviderProfile {
 }
 
 impl ProviderProfile {
+    #[allow(dead_code)]
     pub fn is_cloud(&self) -> bool {
         self.tier == "cloud"
     }
 
+    #[allow(dead_code)]
     pub fn is_local(&self) -> bool {
         self.tier == "local"
     }
@@ -83,6 +85,7 @@ impl ProviderProfile {
         self.modality_key() == "image"
     }
 
+    #[allow(dead_code)]
     pub fn is_video(&self) -> bool {
         self.modality_key() == "video"
     }

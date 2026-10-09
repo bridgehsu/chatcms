@@ -23,6 +23,7 @@ pub fn refresh(rules: Vec<Rule>) {
 }
 
 /// 清空缓存（下次打分走内置默认，直至再次 refresh）。
+#[allow(dead_code)]
 pub fn invalidate() {
     let mut guard = CACHE.lock().unwrap_or_else(|e| e.into_inner());
     *guard = None;

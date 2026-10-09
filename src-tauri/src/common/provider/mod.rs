@@ -75,7 +75,7 @@ pub(super) fn http_client() -> Client {
 }
 
 pub use types::{
-    ProviderOutput, StreamChunk, ThinkingChunk, TokenUsageEvent, ToolCallEvent, ToolResultEvent,
+    ProviderOutput, StreamChunk, TokenUsageEvent, ToolCallEvent, ToolResultEvent,
 };
 pub use anthropic::messages_to_anthropic;
 pub use complete::complete_chat;
