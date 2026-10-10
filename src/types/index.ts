@@ -153,6 +153,18 @@ export interface TracePhase {
 
 export type ChatMode = "ask" | "agent" | "search";
 
+/** 会话 @ 附件（脚本 / Skill / MCP） */
+export type ChatAttachmentKind = "script" | "skill" | "mcp";
+
+export interface ChatAttachment {
+  kind: ChatAttachmentKind;
+  /** 稳定 id：脚本 key、技能 name、MCP server name */
+  id: string;
+  label: string;
+  /** 脚本编码（kind=script） */
+  code?: string;
+}
+
 /** 一次 chat_send 的链路汇总 */
 export interface ChatTurnTrace {
   id: string;
@@ -415,6 +427,44 @@ export interface PublishScriptView {
   is_published: boolean;
 }
 
+/** 插件脚本（正文在 data_root/scripts/<CODE>/，库内仅元数据） */
+export interface ScriptPackage {
+  id: string;
+  code: string;
+  name: string;
+  enabled: boolean;
+  entry_path: string;
+  published_version: number;
+  notes: string;
+  updated_at: number;
+  is_published: boolean;
+  has_unpublished_draft: boolean;
+  file_count: number;
+  /** 本机绝对路径 */
+  dir_path?: string;
+}
+
+export interface ScriptFile {
+  id: string;
+  package_id: string;
+  path: string;
+  draft_content: string;
+  published_content: string;
+  updated_at: number;
+}
+
+export interface ScriptPackageDetail {
+  package: ScriptPackage;
+  files: ScriptFile[];
+}
+
+export interface ScriptPackagePage {
+  items: ScriptPackage[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 // ── Nav bookmarks ─────────────────────────────────────────────────────────────
 
 export interface NavBookmark {
@@ -520,6 +570,8 @@ export interface AgentProfile {
   enabled: boolean;
   /** null = 全部技能；[] = 无；string[] = 白名单 */
   skills: string[] | null;
+  /** 渠道脚本绑定：script:{packageId} / 旧 collect|publish:{platformId}；空 = 未绑定 */
+  scripts: string[];
   /** 是否允许被 spawn_agent 调用 */
   spawnable: boolean;
   /** 域 id → 策略；空对象 = 继承全局 */
@@ -529,5 +581,18 @@ export interface AgentProfile {
   sort: number;
   created: number;
   updated: number;
+}
+
+/** 渠道脚本绑定项（代理表单 / 插件下拉） */
+export interface AgentChannelScript {
+  key: string;
+  /** script|collect → read；publish → act */
+  role: "read" | "act" | string;
+  kind: "script" | "collect" | "publish" | string;
+  platform_id: string;
+  code: string;
+  label: string;
+  version: number;
+  match_url: string;
 }
 

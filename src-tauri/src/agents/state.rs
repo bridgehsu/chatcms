@@ -12,6 +12,7 @@ use crate::kbase::KnowledgeEntry;
 use crate::mcp::McpManager;
 use crate::chat::Session;
 use crate::common::permission::{RememberScope, SessionGrantStore};
+use crate::core::tools::run_page_script::{PageScriptJob, PageScriptResult};
 use crate::scripts::Skill;
 
 /// 前端权限回执
@@ -35,6 +36,10 @@ pub struct AgentState {
     pub router: Arc<crate::models::router::ModelRouter>,
     /// Agent 运行中断信号：session_id → watch sender（发送 true 触发中断）
     pub abort_handles: Mutex<HashMap<String, tokio::sync::watch::Sender<bool>>>,
+    /// 等待浏览器扩展认领的页面脚本任务
+    pub script_job_queue: Mutex<Vec<PageScriptJob>>,
+    /// job_id → 工具侧 oneshot 回传
+    pub pending_script_runs: Mutex<HashMap<String, oneshot::Sender<PageScriptResult>>>,
 }
 
 impl AgentState {
@@ -51,6 +56,8 @@ impl AgentState {
             channel: tokio::sync::Mutex::new(ChannelState::default()),
             router: Arc::new(crate::models::router::ModelRouter::new()),
             abort_handles: Mutex::new(HashMap::new()),
+            script_job_queue: Mutex::new(Vec::new()),
+            pending_script_runs: Mutex::new(HashMap::new()),
         }
     }
 }

@@ -1,10 +1,14 @@
 //! 智能会话数据与命令。Agent 运行分层在 `crate::core`。
 
+pub mod attachments;
 pub mod commands;
 pub mod repository;
+pub mod script_action;
 pub mod service;
 pub mod trace;
 
+pub use attachments::ChatAttachment;
+pub use script_action::ScriptAction;
 pub use trace::ChatTurnTrace;
 
 use serde::{Deserialize, Serialize};

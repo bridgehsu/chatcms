@@ -13,7 +13,7 @@ pub async fn load_all(app: &AppHandle) -> Vec<AgentProfile> {
     let p = pool(app);
     let rows = sqlx::query(
         "SELECT id, slug, name, remark, system_prompt, enabled,
-                skills, spawnable, perms, workspace_dir, sort, created, updated
+                skills, scripts, spawnable, perms, workspace_dir, sort, created, updated
          FROM agent WHERE yn = 0 ORDER BY sort ASC, enabled DESC, updated DESC",
     )
     .fetch_all(&p)
@@ -27,6 +27,12 @@ pub async fn load_all(app: &AppHandle) -> Vec<AgentProfile> {
                 .as_deref()
                 .and_then(|s| serde_json::from_str(s).ok());
 
+            let scripts: Vec<String> = r
+                .try_get::<String, _>("scripts")
+                .ok()
+                .and_then(|s| serde_json::from_str(&s).ok())
+                .unwrap_or_default();
+
             let perms_str: String = r.get("perms");
             let perms = serde_json::from_str(&perms_str).unwrap_or_default();
 
@@ -38,6 +44,7 @@ pub async fn load_all(app: &AppHandle) -> Vec<AgentProfile> {
                 system_prompt: r.get("system_prompt"),
                 enabled: r.get::<i64, _>("enabled") != 0,
                 skills,
+                scripts,
                 spawnable: r.get::<i64, _>("spawnable") != 0,
                 perms,
                 workspace_dir: r.get("workspace_dir"),
@@ -52,12 +59,13 @@ pub async fn load_all(app: &AppHandle) -> Vec<AgentProfile> {
 pub async fn save(app: &AppHandle, agent: &AgentProfile) {
     let p = pool(app);
     let skills = serde_json::to_string(&agent.skills).unwrap_or_else(|_| "null".into());
+    let scripts = serde_json::to_string(&agent.scripts).unwrap_or_else(|_| "[]".into());
     let perms = serde_json::to_string(&agent.perms).unwrap_or_else(|_| "{}".into());
     let _ = sqlx::query(
         "INSERT INTO agent
          (id, slug, name, remark, system_prompt, enabled,
-          skills, spawnable, perms, workspace_dir, sort, created, updated)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          skills, scripts, spawnable, perms, workspace_dir, sort, created, updated)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            slug          = excluded.slug,
            name          = excluded.name,
@@ -65,6 +73,7 @@ pub async fn save(app: &AppHandle, agent: &AgentProfile) {
            system_prompt = excluded.system_prompt,
            enabled       = excluded.enabled,
            skills        = excluded.skills,
+           scripts       = excluded.scripts,
            spawnable     = excluded.spawnable,
            perms         = excluded.perms,
            workspace_dir = excluded.workspace_dir,
@@ -78,6 +87,7 @@ pub async fn save(app: &AppHandle, agent: &AgentProfile) {
     .bind(&agent.system_prompt)
     .bind(agent.enabled as i64)
     .bind(&skills)
+    .bind(&scripts)
     .bind(agent.spawnable as i64)
     .bind(&perms)
     .bind(&agent.workspace_dir)

@@ -15,7 +15,7 @@ use tauri::{Emitter, Listener, Manager};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::agents::AgentState;
-use crate::core::start_turn as send_message;
+use crate::core::run as send_message;
 use crate::chat::Session;
 use crate::common::persist;
 use crate::common::provider::StreamChunk;
@@ -26,6 +26,9 @@ pub struct SessionEnsureRequest {
     pub page_key: String,
     #[serde(default)]
     pub title: Option<String>,
+    /// 新建会话时写入的分组（已有绑定会话忽略）
+    #[serde(default)]
+    pub group_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -47,6 +50,44 @@ pub struct ChatSendRequest {
     /// Ask / Agent / Search（对齐桌面 chat_mode；缺省 ask）
     #[serde(default)]
     pub chat_mode: Option<String>,
+    /// 本轮首选代理（对齐桌面 chat_send agent_id；会话未绑定时生效）
+    #[serde(default)]
+    pub agent_id: Option<String>,
+    /// 新建会话时写入的分组（已有 session_id 时忽略）
+    #[serde(default)]
+    pub group_id: Option<String>,
+    /// 用户 @ 的脚本 / Skill / MCP
+    #[serde(default)]
+    pub attachments: Option<Vec<crate::chat::ChatAttachment>>,
+}
+
+#[derive(Debug, Serialize)]
+struct AgentItem {
+    id: String,
+    slug: String,
+    name: String,
+    remark: String,
+    enabled: bool,
+    sort: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct SetSessionAgentRequest {
+    agent_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct SetSessionGroupRequest {
+    /// null / 省略 / 空串 → 未分组
+    #[serde(default)]
+    group_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct SessionGroupItem {
+    id: String,
+    name: String,
+    sort_order: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,6 +105,8 @@ pub struct SessionResetRequest {
     pub page_key: String,
     #[serde(default)]
     pub title: Option<String>,
+    #[serde(default)]
+    pub group_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -150,6 +193,31 @@ pub fn routes() -> Router<PublishBridge> {
             "/chat/model-profiles",
             get(list_model_profiles).post(activate_model_profile),
         )
+        .route("/chat/agents", get(list_agents))
+        .route("/chat/agents/{id}/scripts", get(list_agent_scripts))
+        .route("/chat/skills", get(list_chat_skills))
+        .route("/chat/mcp", get(list_chat_mcp))
+        .route("/chat/script-jobs", get(list_script_jobs))
+        .route("/chat/script-jobs/{id}/result", post(complete_script_job))
+        .route("/chat/session-groups", get(list_session_groups))
+        .route("/chat/session/{id}/agent", post(set_session_agent))
+        .route("/chat/session/{id}/group", post(set_session_group))
+}
+
+fn normalize_group_id(raw: Option<String>) -> Option<String> {
+    raw.map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+async fn resolve_group_id(app: &tauri::AppHandle, raw: Option<String>) -> Option<String> {
+    let Some(gid) = normalize_group_id(raw) else {
+        return None;
+    };
+    if crate::chat::repository::get_group(app, &gid).await.is_some() {
+        Some(gid)
+    } else {
+        None
+    }
 }
 
 fn normalize_page_key(raw: &str) -> String {
@@ -288,6 +356,148 @@ async fn set_model_config(
     .into_response()
 }
 
+async fn list_agents(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let mut list = crate::agents::service::list(&app).await;
+    list.retain(|a| a.enabled);
+    list.sort_by(|a, b| a.sort.cmp(&b.sort).then_with(|| a.name.cmp(&b.name)));
+    let items = list
+        .into_iter()
+        .map(|a| AgentItem {
+            id: a.id,
+            slug: a.slug,
+            name: a.name,
+            remark: a.remark,
+            enabled: a.enabled,
+            sort: a.sort,
+        })
+        .collect::<Vec<_>>();
+    Json(items).into_response()
+}
+
+async fn list_agent_scripts(
+    State(bridge): State<PublishBridge>,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    match crate::agents::service::list_bound_scripts(&app, &id).await {
+        Ok(items) => Json(items).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
+}
+
+async fn list_chat_skills(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let state = app.state::<AgentState>();
+    let skills = state
+        .skills
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|s| s.enabled && s.user_invocable)
+        .map(|s| {
+            json!({
+                "id": s.name,
+                "name": s.name,
+                "description": s.description,
+            })
+        })
+        .collect::<Vec<_>>();
+    Json(skills).into_response()
+}
+
+async fn list_chat_mcp(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let state = app.state::<AgentState>();
+    let items = state
+        .mcp
+        .lock()
+        .await
+        .server_infos()
+        .into_iter()
+        .map(|s| {
+            json!({
+                "id": s.name,
+                "name": s.name,
+                "description": s.config.description,
+                "enabled": s.config.enabled,
+            })
+        })
+        .collect::<Vec<_>>();
+    Json(items).into_response()
+}
+
+async fn list_script_jobs(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    Json(crate::core::tools::run_page_script::list_jobs(&app)).into_response()
+}
+
+#[derive(Debug, Deserialize)]
+struct ScriptJobResultBody {
+    ok: bool,
+    #[serde(default)]
+    result: Option<String>,
+    #[serde(default)]
+    error: Option<String>,
+}
+
+async fn complete_script_job(
+    State(bridge): State<PublishBridge>,
+    Path(id): Path<String>,
+    Json(body): Json<ScriptJobResultBody>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    match crate::core::tools::run_page_script::complete_job(
+        &app,
+        &id,
+        crate::core::tools::run_page_script::PageScriptResult {
+            ok: body.ok,
+            result: body.result,
+            error: body.error,
+        },
+    ) {
+        Ok(()) => Json(json!({ "ok": true })).into_response(),
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
+}
+
+async fn set_session_agent(
+    State(bridge): State<PublishBridge>,
+    Path(id): Path<String>,
+    Json(body): Json<SetSessionAgentRequest>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let agent_id = body.agent_id.trim().to_string();
+    if agent_id.is_empty() {
+        return (StatusCode::BAD_REQUEST, "agent_id 不能为空").into_response();
+    }
+    let state = app.state::<AgentState>();
+    match crate::chat::service::set_agent(&app, &state, &id, &agent_id).await {
+        Ok(session) => {
+            let _ = app.emit(
+                "sessions-changed",
+                json!({ "source": "extension", "session_id": session.id }),
+            );
+            Json(session).into_response()
+        }
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
+}
+
 async fn list_model_profiles(State(bridge): State<PublishBridge>) -> Response {
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
@@ -402,10 +612,59 @@ async fn list_sessions(State(bridge): State<PublishBridge>) -> Response {
                 "updated": s.updated,
                 "message_count": s.messages.len(),
                 "pinned": s.pinned,
+                "agent_id": s.agent_id,
+                "group_id": s.group_id,
             })
         })
         .collect();
     Json(payload).into_response()
+}
+
+async fn list_session_groups(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let mut list = crate::chat::service::list_groups(&app).await;
+    list.sort_by(|a, b| {
+        a.sort_order
+            .cmp(&b.sort_order)
+            .then_with(|| a.name.cmp(&b.name))
+    });
+    let items = list
+        .into_iter()
+        .map(|g| SessionGroupItem {
+            id: g.id,
+            name: g.name,
+            sort_order: g.sort_order,
+        })
+        .collect::<Vec<_>>();
+    Json(items).into_response()
+}
+
+async fn set_session_group(
+    State(bridge): State<PublishBridge>,
+    Path(id): Path<String>,
+    Json(body): Json<SetSessionGroupRequest>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let group_id = normalize_group_id(body.group_id);
+    let state = app.state::<AgentState>();
+    match crate::chat::service::set_session_group(&app, &state, &id, group_id).await {
+        Ok(()) => {
+            let session = state.sessions.lock().unwrap().get(&id).cloned();
+            let _ = app.emit(
+                "sessions-changed",
+                json!({ "source": "extension", "session_id": id }),
+            );
+            match session {
+                Some(s) => Json(s).into_response(),
+                None => StatusCode::NO_CONTENT.into_response(),
+            }
+        }
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
 }
 
 async fn delete_session(
@@ -523,7 +782,8 @@ async fn ensure_session(
         .unwrap_or("New Chat")
         .to_string();
 
-    let session = Session::new(title);
+    let mut session = Session::new(title);
+    session.group_id = resolve_group_id(&app, body.group_id).await;
     let sid = session.id.clone();
     crate::chat::repository::save(&app, &session).await;
     {
@@ -560,7 +820,8 @@ async fn reset_session(
         .unwrap_or("New Chat")
         .to_string();
 
-    let session = Session::new(title);
+    let mut session = Session::new(title);
+    session.group_id = resolve_group_id(&app, body.group_id).await;
     let sid = session.id.clone();
     crate::chat::repository::save(&app, &session).await;
     {
@@ -629,9 +890,12 @@ async fn chat_send_sse(
         }
     }
 
+    let create_group_id = resolve_group_id(&app, body.group_id.clone()).await;
+
     if session_id.is_none() {
         let title = "New Chat".to_string();
-        let session = Session::new(title);
+        let mut session = Session::new(title);
+        session.group_id = create_group_id.clone();
         let sid = session.id.clone();
         crate::chat::repository::save(&app, &session).await;
         {
@@ -675,6 +939,13 @@ async fn chat_send_sse(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(|s| s.to_string());
+    let agent_id = body
+        .agent_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    let attachments = body.attachments;
     tauri::async_runtime::spawn(async move {
         let state = app2.state::<AgentState>();
         let result = send_message(
@@ -684,7 +955,8 @@ async fn chat_send_sse(
             content,
             chat_mode,
             None,
-            None,
+            agent_id,
+            attachments,
         )
         .await;
 

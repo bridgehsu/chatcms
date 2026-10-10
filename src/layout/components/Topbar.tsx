@@ -231,6 +231,49 @@ const ImageGenerateActions = () => {
   );
 };
 
+/** 插件脚本 · 编辑顶栏：仅保存 */
+const ScriptPackageEditActions = () => {
+  const [state, setState] = useState({
+    busy: null as string | null,
+    dirty: false,
+  });
+
+  useEffect(() => {
+    const onState = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        busy?: string | null;
+        dirty?: boolean;
+        dirtyFile?: boolean;
+      }>).detail;
+      if (!detail) return;
+      setState({
+        busy: detail.busy ?? null,
+        dirty: !!(detail.dirty ?? detail.dirtyFile),
+      });
+    };
+    window.addEventListener("script-pkg:topbar-state", onState);
+    window.dispatchEvent(new CustomEvent("script-pkg:topbar-request"));
+    return () =>
+      window.removeEventListener("script-pkg:topbar-state", onState);
+  }, []);
+
+  return (
+    <button
+      type="button"
+      className="topbar-action-btn topbar-action-btn--primary"
+      disabled={!!state.busy}
+      onClick={() =>
+        window.dispatchEvent(new CustomEvent("script-pkg:save"))
+      }
+    >
+      <IconSave />
+      <span>
+        {state.busy === "save" ? "保存中…" : state.dirty ? "保存*" : "保存"}
+      </span>
+    </button>
+  );
+};
+
 type CrawlerTopbarState = {
   busy: boolean;
   running: boolean;
@@ -457,6 +500,7 @@ export const Topbar = () => {
   const isImageGenerate = pathname === "/images/generate";
   const isVideos = pathname === "/videos";
   const isVideoStudio = pathname === "/videos/studio";
+  const isScriptPkgEdit = /^\/media-platforms\/[^/]+\/edit$/.test(pathname);
   const isCrawlerConfig = /^\/crawler\/[^/]+$/.test(pathname);
   const isPermissions = pathname === "/settings/permissions";
   const isGeneral = pathname === "/settings/general";
@@ -480,6 +524,7 @@ export const Topbar = () => {
         {isImageGenerate ? <ImageGenerateActions /> : null}
         {isVideos ? <VideosFactoryActions /> : null}
         {isVideoStudio ? <VideoStudioActions /> : null}
+        {isScriptPkgEdit ? <ScriptPackageEditActions /> : null}
         {isCrawlerConfig ? <CrawlerConfigActions /> : null}
         {isGeneral ? <GeneralActions /> : null}
         {isPermissions ? <PermissionsActions /> : null}

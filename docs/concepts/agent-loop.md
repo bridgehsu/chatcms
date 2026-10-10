@@ -79,7 +79,7 @@ flowchart TD
 
 | 层 | 位置 |
 |---|---|
-| 编排入口 | `src-tauri/src/core/turn.rs`（`start_turn`）+ `context.rs` / `pipeline.rs` |
+| 编排入口 | `src-tauri/src/core/turn.rs`（`run`）+ `context.rs` / `pipeline.rs` |
 | 会话 | `src-tauri/src/core/session/`（`run`） |
 | 意图理解 | `src-tauri/src/core/intent/` |
 | 决策/路由 | `src-tauri/src/core/decision/` |

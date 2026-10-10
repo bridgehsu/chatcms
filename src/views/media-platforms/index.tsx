@@ -1,269 +1,212 @@
-import { useMemo } from 'react';
-import { Button, Switch } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { invoke } from '@/hooks/useTauri';
-import type { MediaPlatformPage, MediaPlatformPageItem } from '@/types';
-import CabinX, { type CabinXColumn } from '@/components/CabinX';
-import { formatTime } from '@/utils/time';
+import { useMemo, useState } from "react";
+import { Button, Form, Input, Modal, Switch, Tooltip } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import { invoke } from "@/hooks/useTauri";
+import type { ScriptPackage, ScriptPackageDetail, ScriptPackagePage } from "@/types";
+import CabinX, { ActionOverflow, type CabinXColumn } from "@/components/CabinX";
+import { IconPlus } from "@/components/icons";
+import { formatTime } from "@/utils/time";
 
-const KIND_SEARCH_OPTIONS = [
-    { label: '全部类型', value: 'all' },
-    { label: '动态', value: 'dynamic' },
-    { label: '文章', value: 'article' },
-    { label: '视频', value: 'video' },
-    { label: '播客', value: 'podcast' },
-];
+const NOTES_MAX = 30;
 
-const KIND_FORM_OPTIONS = [
-    { label: '动态', value: 'dynamic' },
-    { label: '文章', value: 'article' },
-    { label: '视频', value: 'video' },
-    { label: '播客', value: 'podcast' },
-];
-
-const KIND_LABEL: Record<string, string> = {
-    dynamic: '动态',
-    article: '文章',
-    video: '视频',
-    podcast: '播客',
-};
-
-const REGION_FORM_OPTIONS = [
-    { label: '国内', value: 'cn' },
-    { label: '海外', value: 'intl' },
-];
-
-const REGION_LABEL: Record<string, string> = { cn: '国内', intl: '海外' };
-
-const scriptStatus = (row: MediaPlatformPageItem) => {
-    if (!row.script_is_published) return <span className="model-status-idle">未发布</span>;
-    if (row.script_has_unpublished_draft) return <span className="model-badge">有草稿 · v{row.script_published_version}</span>;
-    return <span className="model-badge">已发布 · v{row.script_published_version}</span>;
-};
-
-const collectStatus = (row: MediaPlatformPageItem) => {
-    if (!row.collect_script_is_published) return <span className="model-status-idle">未发布</span>;
-    if (row.collect_script_has_unpublished_draft) return <span className="model-badge">有草稿 · v{row.collect_script_published_version}</span>;
-    return <span className="model-badge">已发布 · v{row.collect_script_published_version}</span>;
+const renderNotes = (notes: string | undefined) => {
+  const text = (notes ?? "").trim();
+  if (!text) return <span className="model-status-idle">—</span>;
+  if (text.length <= NOTES_MAX) {
+    return <span className="account-table__notes">{text}</span>;
+  }
+  const short = `${text.slice(0, NOTES_MAX)}…`;
+  return (
+    <Tooltip title={text} placement="topLeft">
+      <span className="account-table__notes script-pkg-notes--clip">{short}</span>
+    </Tooltip>
+  );
 };
 
 export const MediaPlatformsPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form] = Form.useForm<{ code: string; name: string; notes?: string }>();
 
-    const api = useMemo(() => ({
-        paging: async (params: any) => {
-            const result = await invoke<MediaPlatformPage>('media_platform_list_page', {
-                query: params?.name?.trim() || null,
-                kind: params?.kind && params.kind !== 'all' ? params.kind : null,
-                page: params?.pageNum ?? 1,
-                pageSize: params?.pageSize ?? 10,
+  const api = useMemo(
+    () => ({
+      paging: async (params: any) => {
+        const result = await invoke<ScriptPackagePage>("script_pkg_list_page", {
+          query: params?.name?.trim() || null,
+          page: params?.pageNum ?? 1,
+          pageSize: params?.pageSize ?? 10,
+        });
+        return {
+          list: result.items,
+          total: result.total,
+          pageNum: result.page,
+          pageSize: result.page_size,
+        };
+      },
+      del: async (id: string | number) =>
+        invoke("script_pkg_remove", { id: String(id) }),
+    }),
+    [],
+  );
+
+  const columns: CabinXColumn<ScriptPackage>[] = [
+    {
+      title: "名称",
+      dataIndex: "name",
+      key: "name",
+      fixed: "left",
+      width: 168,
+      ellipsis: true,
+      search: {
+        name: "name",
+        label: "关键词",
+        type: "input",
+        placeholder: "搜索名称、编码…",
+      },
+      render: (name: string) => (
+        <span className="model-table__name">{name}</span>
+      ),
+    },
+    {
+      title: "备注",
+      dataIndex: "notes",
+      key: "notes",
+      width: 220,
+      ellipsis: true,
+      render: (notes: string) => renderNotes(notes),
+    },
+    {
+      title: "编码",
+      dataIndex: "code",
+      key: "code",
+      width: 168,
+      ellipsis: true,
+    },
+    {
+      title: "状态",
+      dataIndex: "enabled",
+      key: "enabled",
+      width: 80,
+      render: (enabled: boolean, record: ScriptPackage) => (
+        <Switch
+          size="small"
+          checked={enabled}
+          onChange={async (checked) => {
+            await invoke("script_pkg_set_enabled", {
+              id: record.id,
+              enabled: checked,
             });
-            return {
-                list: result.items,
-                total: result.total,
-                pageNum: result.page,
-                pageSize: result.page_size,
-            };
-        },
-        add: async (data: any) => invoke('media_platform_upsert', { id: null, ...data }),
-        edit: async (data: any) => {
-            const { id, ...rest } = data;
-            return invoke('media_platform_upsert', { id, ...rest });
-        },
-        del: async (id: string | number) => invoke('media_platform_remove', { id: String(id) }),
-    }), []);
+          }}
+        />
+      ),
+    },
+    {
+      title: "更新",
+      dataIndex: "updated_at",
+      key: "updated_at",
+      width: 140,
+      render: (ms: number) => formatTime(ms),
+    },
+  ];
 
-    const formatRecordForEdit = (record: MediaPlatformPageItem) => ({
-        code: record.code,
-        name: record.name,
-        kind: record.kind || 'dynamic',
-        region: record.region || 'cn',
-        injectUrl: record.inject_url,
-        homeUrl: record.home_url,
-        enabled: record.enabled,
-        notes: record.notes,
-    });
+  const onCreate = async () => {
+    const values = await form.validateFields();
+    setCreating(true);
+    try {
+      const detail = await invoke<ScriptPackageDetail>("script_pkg_create", {
+        code: values.code.trim(),
+        name: values.name.trim(),
+        notes: values.notes?.trim() || null,
+      });
+      setCreateOpen(false);
+      form.resetFields();
+      navigate(`/media-platforms/${detail.package.id}/edit`);
+    } catch (e) {
+      Modal.error({ title: "创建失败", content: String(e) });
+    } finally {
+      setCreating(false);
+    }
+  };
 
-    const columns: CabinXColumn<MediaPlatformPageItem>[] = [
-        {
-            title: '名称',
-            dataIndex: 'name',
-            key: 'name',
-            search: { name: 'name', label: '关键词', type: 'input', placeholder: '搜索名称、编码、URL…' },
-            editor: {
-                name: 'name',
-                label: '名称',
-                type: 'input',
-                rules: [{ required: true, message: '请输入名称' }],
-                placeholder: '如：小红书',
-            },
-            render: (name: string, record: MediaPlatformPageItem) => (
-                <>
-                    <span className="model-table__name">{name}</span>
-                    {record.notes && <div className="account-table__notes">{record.notes}</div>}
-                </>
-            ),
-        },
-        {
-            title: '编码',
-            dataIndex: 'code',
-            key: 'code',
-            editor: {
-                name: 'code',
-                label: '编码',
-                type: 'input',
-                rules: [{ required: true, message: '请输入编码' }],
-                placeholder: '如：DYNAMIC_REDNOTE',
-            },
-        },
-        {
-            title: '类型',
-            dataIndex: 'kind',
-            key: 'kind',
-            search: {
-                name: 'kind',
-                label: '类型',
-                type: 'select',
-                options: KIND_SEARCH_OPTIONS,
-                placeholder: '全部类型',
-            },
-            editor: {
-                name: 'kind',
-                label: '类型',
-                type: 'select',
-                options: KIND_FORM_OPTIONS,
-                initialValue: 'dynamic',
-            },
-            render: (kind: string) => KIND_LABEL[kind] ?? kind,
-        },
-        {
-            title: '地区',
-            dataIndex: 'region',
-            key: 'region',
-            width: 72,
-            editor: {
-                name: 'region',
-                label: '地区',
-                type: 'select',
-                options: REGION_FORM_OPTIONS,
-                initialValue: 'cn',
-            },
-            render: (region: string) => REGION_LABEL[region] ?? region ?? '国内',
-        },
-        {
-            title: '注入页',
-            dataIndex: 'inject_url',
-            key: 'inject_url',
-            editor: {
-                name: 'injectUrl',
-                label: '注入页 URL',
-                type: 'input',
-                placeholder: '扩展打开并注入脚本的页面',
-            },
-            render: (v: string) => <span className="model-table__mono model-table__url">{v || '—'}</span>,
-        },
-        {
-            title: '主页',
-            dataIndex: 'home_url',
-            key: 'home_url',
-            hideInTable: true,
-            editor: {
-                name: 'homeUrl',
-                label: '主页 URL',
-                type: 'input',
-                placeholder: '可选',
-            },
-        },
-        {
-            title: '备注',
-            dataIndex: 'notes',
-            key: 'notes',
-            hideInTable: true,
-            editor: {
-                name: 'notes',
-                label: '备注',
-                type: 'input',
-                placeholder: '可选说明',
-            },
-        },
-        {
-            title: '',
-            dataIndex: '__enabled_form',
-            key: '__enabled_form',
-            hideInTable: true,
-            editor: {
-                name: 'enabled',
-                label: '启用（扩展桥仅返回已启用平台）',
-                type: 'switch',
-                valuePropName: 'checked',
-                initialValue: true,
-                checkedChildren: '启用',
-                unCheckedChildren: '停用',
-            },
-        },
-        {
-            title: '发布脚本',
-            dataIndex: 'script_is_published',
-            key: 'script_is_published',
-            render: (_: any, record: MediaPlatformPageItem) => scriptStatus(record),
-        },
-        {
-            title: '采集脚本',
-            dataIndex: 'collect_script_is_published',
-            key: 'collect_script_is_published',
-            render: (_: any, record: MediaPlatformPageItem) => collectStatus(record),
-        },
-        {
-            title: '状态',
-            dataIndex: 'enabled',
-            key: 'enabled',
-            render: (enabled: boolean, record: MediaPlatformPageItem) => (
-                <Switch
-                    size="small"
-                    checked={enabled}
-                    onChange={async (checked) => {
-                        await invoke('media_platform_set_enabled', { id: record.id, enabled: checked });
-                    }}
-                />
-            ),
-        },
-        {
-            title: '更新',
-            dataIndex: 'updated_at',
-            key: 'updated_at',
-            render: (ms: number) => formatTime(ms),
-        },
-    ];
+  return (
+    <div className="page page-scroll">
+      <CabinX
+        api={api}
+        columns={columns}
+        pageTitle="插件脚本"
+        rowKey="id"
+        showActionColumn
+        actionColumnWidth={100}
+        headerActions={
+          <Button
+            variant="outlined"
+            color="primary"
+            icon={<IconPlus />}
+            onClick={() => setCreateOpen(true)}
+          >
+            新增
+          </Button>
+        }
+        actionColumnRender={(record, actions) => (
+          <ActionOverflow
+            items={[
+              {
+                key: "edit",
+                label: "编辑",
+                onClick: () =>
+                  navigate(`/media-platforms/${record.id}/edit`),
+              },
+              {
+                key: "delete",
+                label: "删除",
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => {
+                  if (!window.confirm(`确定删除「${record.name}」？`)) return;
+                  void actions.handleDelete(record.id);
+                },
+              },
+            ]}
+          />
+        )}
+      />
 
-    return (
-        <div className="page page-scroll">
-            <CabinX
-                api={api}
-                columns={columns}
-                pageTitle="插件脚本"
-                rowKey="id"
-                formatRecordForEdit={formatRecordForEdit}
-                formType="D"
-                editorWidth={520}
-                actionBtnComponents={(record: MediaPlatformPageItem) => (
-                    <>
-                        <Button
-                            type="link"
-                            onClick={() => navigate(`/media-platforms/${record.id}/script`)}
-                        >
-                            发布脚本
-                        </Button>
-                        <Button
-                            type="link"
-                            onClick={() => navigate(`/media-platforms/${record.id}/collect-script`)}
-                        >
-                            采集脚本
-                        </Button>
-                    </>
-                )}
-            />
-        </div>
-    );
+      <Modal
+        title="新增脚本"
+        open={createOpen}
+        onCancel={() => {
+          setCreateOpen(false);
+          form.resetFields();
+        }}
+        onOk={() => void onCreate()}
+        confirmLoading={creating}
+        destroyOnClose
+        okText="创建"
+      >
+        <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
+          <Form.Item
+            name="name"
+            label="名称"
+            rules={[{ required: true, message: "请输入名称" }]}
+          >
+            <Input placeholder="如：BOSS直聘·打招呼" />
+          </Form.Item>
+          <Form.Item
+            name="code"
+            label="编码"
+            rules={[{ required: true, message: "请输入编码" }]}
+          >
+            <Input placeholder="如：JOB_BOSS_GREET（自动大写）" />
+          </Form.Item>
+          <Form.Item name="notes" label="备注">
+            <Input.TextArea rows={5} placeholder="可选" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
 };
 
-export { MediaScriptPage, CollectScriptPage } from './MediaScriptPage';
+export { ScriptPackageEditPage } from "./ScriptPackageEditPage";

@@ -12,4 +12,4 @@ mod prompt;
 pub use types::{Skill, SkillSource};
 pub use seed::ensure_seeded;
 pub use service::{list, add, update, remove, install_npx};
-pub use prompt::{format_for_prompt, to_skill_md};
+pub use prompt::{format_for_prompt, format_for_prompt_with_force, to_skill_md};

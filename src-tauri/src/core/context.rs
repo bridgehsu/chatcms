@@ -8,6 +8,7 @@
 
 use tauri::AppHandle;
 
+use crate::chat::attachments::ChatAttachment;
 use crate::chat::trace::ChatTrace;
 use crate::core::decision::ChatMode;
 use crate::core::intent::Intent;
@@ -29,10 +30,12 @@ pub struct TurnContext {
     pub mode_raw: Option<String>,
     /// 入参：用户显式指定的 Agent id（优先于意图选角；会话已绑定则沿用绑定）
     pub agent_id_in: Option<String>,
+    /// 入参：用户 @ 引用的脚本 / Skill / MCP
+    pub attachments: Vec<ChatAttachment>,
 
-    // —— 决策中间结果 ——
+    // —— 会话 / 决策中间结果 ——
 
-    /// 解析后的运行模式（Ask / Agent 等）
+    /// 解析后的运行模式（Ask / Agent 等）；由 session 层唯一解析
     pub mode: ChatMode,
     /// 意图识别结果；intent 层写入
     pub intent: Option<Intent>,
@@ -68,6 +71,7 @@ impl TurnContext {
         mode: Option<String>,
         group_id: Option<String>,
         agent_id: Option<String>,
+        attachments: Vec<ChatAttachment>,
     ) -> Self {
         Self {
             app,
@@ -76,6 +80,7 @@ impl TurnContext {
             group_id_in: group_id,
             mode_raw: mode,
             agent_id_in: agent_id,
+            attachments: ChatAttachment::normalize(attachments),
             mode: ChatMode::Ask,
             intent: None,
             resolved_agent_id: None,

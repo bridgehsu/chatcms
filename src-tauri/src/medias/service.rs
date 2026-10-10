@@ -10,10 +10,125 @@ use super::{
 use super::multipost_catalog::MULTIPOST_CATALOG;
 use super::repository as repo;
 
-/// 启动时：从旧 chatcms.json 迁入 SQLite，再按 MultiPost 目录补齐平台。
+/// 启动时：从旧 chatcms.json 迁入 SQLite，再按 MultiPost 目录补齐平台，并迁移/种子脚本包。
 pub async fn migrate_and_seed(app: &AppHandle) {
     repo::migrate_from_legacy_store(app).await;
     sync_multipost_catalog(app).await;
+    // 旧「平台+脚本」→ 磁盘脚本包；再把 DB 内 script_file 导出到目录
+    super::packages::migrate_from_platforms_async(app).await;
+    super::packages::migrate_db_files_to_disk_async(app).await;
+    super::packages::ensure_boss_package_async(app).await;
+    // 兼容：仍维护旧 BOSS 平台种子（桥 / 历史绑定）
+    ensure_boss_greet_scripts(app).await;
+}
+
+/// BOSS 直聘「打招呼」渠道：平台 + 采集/填表脚本（源码在 `scripts/media/`）。
+async fn ensure_boss_greet_scripts(app: &AppHandle) {
+    const CODE: &str = "JOB_BOSS_GREET";
+    const NAME: &str = "BOSS直聘·打招呼";
+    const INJECT: &str = "https://www.zhipin.com/web/chat/index";
+    const HOME: &str = "https://www.zhipin.com/";
+    const COLLECT: &str = include_str!("../../../scripts/media/boss-greet-collect.js");
+    const FILL: &str = include_str!("../../../scripts/media/boss-greet-fill.js");
+
+    let ts = now_ms();
+    let mut platforms = repo::load_platforms_async(app).await;
+    let platform_id = if let Some(p) = platforms.iter_mut().find(|p| p.code == CODE) {
+        p.name = NAME.into();
+        p.kind = "dynamic".into();
+        p.inject_url = INJECT.into();
+        p.home_url = HOME.into();
+        p.enabled = true;
+        p.region = "cn".into();
+        p.notes = "插件侧采集候选人/沟通上下文，并支持把打招呼文案填入聊天框".into();
+        p.updated_at = ts;
+        let id = p.id.clone();
+        if let Err(e) = repo::save_platforms_async(app, &platforms).await {
+            log::warn!(target: "chatcms_lib::medias", "update BOSS platform failed: {e}");
+            return;
+        }
+        id
+    } else {
+        let id = Uuid::new_v4().to_string();
+        platforms.push(MediaPlatform {
+            id: id.clone(),
+            code: CODE.into(),
+            name: NAME.into(),
+            kind: "dynamic".into(),
+            inject_url: INJECT.into(),
+            home_url: HOME.into(),
+            enabled: true,
+            notes: "插件侧采集候选人/沟通上下文，并支持把打招呼文案填入聊天框".into(),
+            region: "cn".into(),
+            updated_at: ts,
+        });
+        if let Err(e) = repo::save_platforms_async(app, &platforms).await {
+            log::warn!(target: "chatcms_lib::medias", "insert BOSS platform failed: {e}");
+            return;
+        }
+        id
+    };
+
+    let mut collect = repo::load_collect_scripts_async(app).await;
+    match collect.iter_mut().find(|s| s.platform_id == platform_id) {
+        Some(s) => {
+            // 仅在尚未发布时写入种子，避免覆盖用户改稿
+            if s.published_version == 0 || s.published_script.trim().is_empty() {
+                s.kind = "dynamic".into();
+                s.draft_script = COLLECT.into();
+                s.published_script = COLLECT.into();
+                s.published_version = 1;
+                s.match_url = "https://www.zhipin.com".into();
+                s.changelog = "种子：BOSS 打招呼页采集".into();
+                s.updated_at = ts;
+                let _ = repo::save_collect_scripts_async(app, &collect).await;
+            }
+        }
+        None => {
+            collect.push(PublishScript {
+                id: Uuid::new_v4().to_string(),
+                platform_id: platform_id.clone(),
+                kind: "dynamic".into(),
+                draft_script: COLLECT.into(),
+                published_script: COLLECT.into(),
+                published_version: 1,
+                match_url: "https://www.zhipin.com".into(),
+                changelog: "种子：BOSS 打招呼页采集".into(),
+                updated_at: ts,
+            });
+            let _ = repo::save_collect_scripts_async(app, &collect).await;
+        }
+    }
+
+    let mut publish = repo::load_publish_scripts_async(app).await;
+    match publish.iter_mut().find(|s| s.platform_id == platform_id) {
+        Some(s) => {
+            if s.published_version == 0 || s.published_script.trim().is_empty() {
+                s.kind = "dynamic".into();
+                s.draft_script = FILL.into();
+                s.published_script = FILL.into();
+                s.published_version = 1;
+                s.match_url = INJECT.into();
+                s.changelog = "种子：BOSS 打招呼填入".into();
+                s.updated_at = ts;
+                let _ = repo::save_publish_scripts_async(app, &publish).await;
+            }
+        }
+        None => {
+            publish.push(PublishScript {
+                id: Uuid::new_v4().to_string(),
+                platform_id,
+                kind: "dynamic".into(),
+                draft_script: FILL.into(),
+                published_script: FILL.into(),
+                published_version: 1,
+                match_url: INJECT.into(),
+                changelog: "种子：BOSS 打招呼填入".into(),
+                updated_at: ts,
+            });
+            let _ = repo::save_publish_scripts_async(app, &publish).await;
+        }
+    }
 }
 
 /// 按 code 合并 MultiPost 全量目录：保留已有 id/enabled/notes，补齐缺失并刷新元数据。
@@ -465,7 +580,11 @@ pub fn bridge_get_script(app: &AppHandle, code: &str) -> Result<BridgeScript, St
 }
 
 pub fn bridge_get_collect_script(app: &AppHandle, code: &str) -> Result<BridgeScript, String> {
-    bridge_get_script_of(app, code, true)
+    // 优先脚本包（新模型）；失败再回落旧平台采集脚本
+    match super::packages::bridge_get_package_script(app, code) {
+        Ok(s) => Ok(s),
+        Err(_) => bridge_get_script_of(app, code, true),
+    }
 }
 
 fn bridge_get_script_of(app: &AppHandle, code: &str, collect: bool) -> Result<BridgeScript, String> {

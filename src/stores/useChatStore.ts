@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke, listen } from "@/hooks/useTauri";
 import type {
+  ChatAttachment,
   ChatMode,
   Message,
   PermissionRequest,
@@ -69,7 +70,10 @@ interface ChatState {
   loadSessions: () => Promise<void>;
   loadSessionGroups: () => Promise<void>;
   selectSession: (id: string) => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (
+    content: string,
+    attachments?: ChatAttachment[],
+  ) => Promise<void>;
   abortSession: () => void;
   newSession: () => void;
   renameSession: (id: string, title: string) => Promise<void>;
@@ -329,13 +333,18 @@ export const useChatStore = create<ChatState>((set, get) => {
       });
     },
 
-    sendMessage: async (content: string) => {
+    sendMessage: async (content: string, attachments?: ChatAttachment[]) => {
       const { activeSessionId, activeSession, focusedGroupId } = get();
       const now = Date.now();
+      const atts = attachments?.length ? attachments : undefined;
+      const displayContent =
+        atts && atts.length
+          ? `${atts.map((a) => `@${a.label}`).join(" ")} ${content}`.trim()
+          : content;
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: "user",
-        content,
+        content: displayContent,
         created: now,
       };
 
@@ -364,10 +373,11 @@ export const useChatStore = create<ChatState>((set, get) => {
         const agentId = cur?.agent_id ?? preferredAgentId;
         const sessionId = await invoke<string>("chat_send", {
           sessionId: activeSessionId,
-          content,
+          content: displayContent,
           mode: chatMode,
           groupId: activeSessionId ? null : focusedGroupId,
           agentId,
+          attachments: atts,
         });
 
         set((s) => ({

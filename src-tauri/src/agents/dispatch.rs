@@ -172,6 +172,21 @@ pub async fn dispatch_tool(
         return dispatch_mcp_tool(tc, state).await;
     }
 
+    if tc.name == "run_page_script" {
+        return match tools::run_page_script::execute(tc, app, session_id).await {
+            Ok(content) => tools::ToolResult {
+                id: tc.id.clone(),
+                content,
+                is_error: false,
+            },
+            Err(msg) => tools::ToolResult {
+                id: tc.id.clone(),
+                content: msg,
+                is_error: true,
+            },
+        };
+    }
+
     tools::execute(tc, workspace_dir).await
 }
 

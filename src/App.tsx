@@ -2,7 +2,6 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { App as AntdApp, ConfigProvider, theme } from "antd";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { AppLayout } from "@/layout/AppLayout";
-import { CrawlerPage, CrawlerConfigPage } from "@/views/crawler";
 import { ChatPage } from "@/views/chat";
 import { MapPage } from "@/views/map";
 import { NavBookmarksPage } from "@/views/nav";
@@ -12,8 +11,7 @@ import { VideosPage, VideoStudioPage } from "@/views/videos";
 import { AccountsPage } from "@/views/accounts";
 import {
   MediaPlatformsPage,
-  MediaScriptPage,
-  CollectScriptPage,
+  ScriptPackageEditPage,
 } from "@/views/media-platforms";
 import { SchedulesPage, WorkflowEditorPage } from "@/views/schedules";
 import { SkillsPage } from "@/views/skills";
@@ -60,16 +58,24 @@ const App = () => {
               <Route path="videos/studio" element={<VideoStudioPage />} />
               <Route path="media-platforms" element={<MediaPlatformsPage />} />
               <Route
+                path="media-platforms/:packageId/edit"
+                element={<ScriptPackageEditPage />}
+              />
+              <Route
+                path="media-platforms/new"
+                element={<Navigate to="/media-platforms" replace />}
+              />
+              <Route
                 path="media-platforms/:platformId/script"
-                element={<MediaScriptPage />}
+                element={<Navigate to="/media-platforms" replace />}
               />
               <Route
                 path="media-platforms/:platformId/collect-script"
-                element={<CollectScriptPage />}
+                element={<Navigate to="/media-platforms" replace />}
               />
               <Route path="accounts" element={<AccountsPage />} />
-              <Route path="crawler" element={<CrawlerPage />} />
-              <Route path="crawler/:taskId" element={<CrawlerConfigPage />} />
+              <Route path="crawler" element={<Navigate to="/accounts" replace />} />
+              <Route path="crawler/:taskId" element={<Navigate to="/accounts" replace />} />
               <Route path="schedules" element={<SchedulesPage />} />
               <Route path="schedules/:projectId" element={<WorkflowEditorPage />} />
               <Route path="cron" element={<Navigate to="/schedules" replace />} />

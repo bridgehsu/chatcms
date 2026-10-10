@@ -1,4 +1,6 @@
-//! 响应生成层：助手终态写入与本轮链路落库。
+//! 收尾：助手正文 finalize（供 plan 调用）+ 本轮 trace 落库（turn 末尾）。
+//!
+//! 模块名历史原因叫 response；**不负责**拼 prompt / 调模型。
 
 mod finalize;
 mod run;

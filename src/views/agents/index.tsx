@@ -12,7 +12,7 @@ import {
 } from "antd";
 import { EyeOutlined, StarFilled, StarOutlined } from "@ant-design/icons";
 import { invoke } from "@/hooks/useTauri";
-import type { AgentProfile, Skill } from "@/types";
+import type { AgentChannelScript, AgentProfile, Skill } from "@/types";
 import CabinX, { type CabinXColumn, type FormField } from "@/components/CabinX";
 import Editor from "@/components/CabinX/Editor";
 import FormSec from "@/components/FormSec";
@@ -23,10 +23,12 @@ import {
 } from "@/utils/agentSkills";
 import { formatTime } from "@/utils/time";
 import SkillsField from "./components/SkillsField";
+import ScriptsField from "./components/ScriptsField";
 import PermField from "./components/PermField";
 
 export const AgentsPage = () => {
   const [skillOptions, setSkillOptions] = useState<Skill[]>([]);
+  const [scriptOptions, setScriptOptions] = useState<AgentChannelScript[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [viewForm] = Form.useForm();
@@ -34,11 +36,13 @@ export const AgentsPage = () => {
   const [viewTitle, setViewTitle] = useState("");
 
   const refreshMeta = async () => {
-    const [skills, activeId] = await Promise.all([
+    const [skills, scripts, activeId] = await Promise.all([
       invoke<Skill[]>("skill_list"),
+      invoke<AgentChannelScript[]>("agent_script_options"),
       invoke<string | null>("agent_active_id"),
     ]);
     setSkillOptions(skills);
+    setScriptOptions(scripts);
     setActiveAgentId(activeId);
   };
 
@@ -87,16 +91,31 @@ export const AgentsPage = () => {
     spawnable: record.spawnable,
     sort: record.sort,
     skillsConfig: skillsToConfig(record.skills),
+    scripts: [...(record.scripts ?? [])],
     permOverrides: { ...(record.perms ?? {}) },
     workspace_dir: record.workspace_dir ?? "",
   });
 
+  // 表单值 → 提交给后端（camelCase；Tauri 会映射到 Rust snake_case）
   const beforeSubmit = (values: any) => {
-    const { skillsConfig, permOverrides, workspace_dir: _ws, ...rest } = values;
+    const {
+      skillsConfig,
+      scripts,
+      permOverrides,
+      workspace_dir: _ws,
+      ...rest
+    } = values;
     return {
-      ...rest,
+      slug: rest.slug,
+      name: rest.name,
+      remark: rest.remark ?? "",
+      systemPrompt: rest.system_prompt ?? "",
+      enabled: rest.enabled ?? true,
       skills: configToSkills(skillsConfig as SkillsConfig | undefined),
+      scripts: Array.isArray(scripts) ? scripts : [],
+      spawnable: rest.spawnable ?? true,
       perms: permOverrides ?? {},
+      sort: rest.sort ?? 0,
     };
   };
 
@@ -314,6 +333,50 @@ export const AgentsPage = () => {
       },
     },
 
+    // ── 表单：渠道脚本 ──────────────────────────────────────────────
+    {
+      title: "",
+      dataIndex: "__sec_scripts",
+      key: "__sec_scripts",
+      hideInTable: true,
+      editor: {
+        name: "__sec_scripts",
+        type: "input",
+        renderFormItem: () => (
+          <FormSec
+            title="渠道脚本"
+            hint="绑定插件可运行的采集/填表脚本；与 Skill 无关，运行 ≠ 发送"
+          />
+        ),
+      },
+    },
+    {
+      title: "渠道脚本",
+      dataIndex: "scripts",
+      key: "scripts",
+      render: (scripts: string[] | undefined) => {
+        const list = scripts ?? [];
+        if (list.length === 0) return "未绑定";
+        return `${list.length} 个`;
+      },
+      editor: {
+        name: "scripts",
+        type: "input",
+        initialValue: [] as string[],
+        renderFormItem: () => (
+          <div className="agent-form__block">
+            <Form.Item
+              name="scripts"
+              initialValue={[]}
+              className="agent-form__bare-item"
+            >
+              <ScriptsField options={scriptOptions} />
+            </Form.Item>
+          </div>
+        ),
+      },
+    },
+
     // ── 表单：权限 ──────────────────────────────────────────────────
     {
       title: "",
@@ -398,7 +461,19 @@ export const AgentsPage = () => {
           size="small"
           checked={enabled}
           onChange={async (checked) => {
-            await invoke("agent_update", { id: record.id, enabled: checked });
+            await invoke("agent_update", {
+              id: record.id,
+              slug: record.slug,
+              name: record.name,
+              remark: record.remark,
+              systemPrompt: record.system_prompt,
+              enabled: checked,
+              skills: record.skills,
+              scripts: record.scripts ?? [],
+              spawnable: record.spawnable,
+              perms: record.perms ?? {},
+              sort: record.sort,
+            });
             setRefreshKey((k) => k + 1);
           }}
         />
@@ -426,7 +501,7 @@ export const AgentsPage = () => {
         })
         .filter((f) => !f.hide?.[2]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [skillOptions, activeAgentId],
+    [skillOptions, scriptOptions, activeAgentId],
   );
 
   const handleView = (record: AgentProfile) => {

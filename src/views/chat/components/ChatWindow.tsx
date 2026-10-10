@@ -12,11 +12,15 @@ import { IconSend, IconStop } from "@/components/icons";
 import { useChatStore } from "@/stores/useChatStore";
 import { useNotesStore } from "@/stores/useNotesStore";
 import { usePermissionStore } from "@/stores/usePermissionStore";
-import type { Message } from "@/types";
+import type { ChatAttachment, Message } from "@/types";
 import {
   findLatestNoteByMessageId,
 } from "../utils/saveToContent";
 import { MarkdownContent } from "./MarkdownContent";
+import MentionPicker, {
+  toAttachment,
+  type MentionOption,
+} from "./MentionPicker";
 import { ModePicker } from "./ModePicker";
 import { ModelPicker, readAuto } from "./ModelPicker";
 import { PermissionPrompt } from "./PermissionPrompt";
@@ -265,14 +269,22 @@ const MessageBubble = memo(
 );
 
 type ComposerProps = {
-  onSend: (text: string) => Promise<void>;
+  onSend: (text: string, attachments?: ChatAttachment[]) => Promise<void>;
   isStreaming: boolean;
   pendingPermission: boolean;
   onAbort: () => void;
   tokenUsage: { input: number; output: number; total: number } | null;
+  agentId?: string | null;
 };
 
-const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage }: ComposerProps) => {
+const Composer = ({
+  onSend,
+  isStreaming,
+  pendingPermission,
+  onAbort,
+  tokenUsage,
+  agentId,
+}: ComposerProps) => {
   const {
     modes: permissionModes,
     activeModeId,
@@ -281,10 +293,18 @@ const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage 
   } = usePermissionStore();
   const { chatMode, setChatMode } = useChatStore();
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [mention, setMention] = useState<{
+    open: boolean;
+    query: string;
+    start: number;
+  }>({ open: false, query: "", start: -1 });
   const [autoModel, setAutoModel] = useState(readAuto);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => { void loadPermissionModes(); }, [loadPermissionModes]);
+  useEffect(() => {
+    void loadPermissionModes();
+  }, [loadPermissionModes]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -293,21 +313,79 @@ const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage 
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  const handleSend = async () => {
-    const text = input.trim();
-    if (!text || isStreaming) return;
-    setInput("");
-    await onSend(text);
+  const closeMention = () =>
+    setMention({ open: false, query: "", start: -1 });
+
+  const syncMentionFromValue = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const at = before.lastIndexOf("@");
+    if (at < 0) {
+      closeMention();
+      return;
+    }
+    if (at > 0 && !/\s/.test(before[at - 1] ?? " ")) {
+      closeMention();
+      return;
+    }
+    const frag = before.slice(at + 1);
+    if (/\s/.test(frag)) {
+      closeMention();
+      return;
+    }
+    setMention({ open: true, query: frag, start: at });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handlePickMention = (opt: MentionOption) => {
+    const att = toAttachment(opt);
+    setAttachments((prev) =>
+      prev.some((a) => a.kind === att.kind && a.id === att.id)
+        ? prev
+        : [...prev, att],
+    );
+    if (mention.start >= 0) {
+      const before = input.slice(0, mention.start);
+      const after = input.slice(
+        mention.start + 1 + mention.query.length,
+      );
+      setInput(`${before}${after}`);
+    }
+    closeMention();
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  };
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if ((!text && !attachments.length) || isStreaming) return;
+    const payload = attachments;
+    setInput("");
+    setAttachments([]);
+    closeMention();
+    await onSend(text || "请根据我引用的内容处理", payload);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mention.open && ["ArrowDown", "ArrowUp", "Escape"].includes(e.key)) {
+      // 交给 picker 的键盘（由 document 焦点在 textarea 时需本地处理导航）
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeMention();
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
+      if (mention.open) {
+        e.preventDefault();
+        return;
+      }
       e.preventDefault();
       void handleSend();
     }
   };
 
-  const permissionOptions = permissionModes.map((m) => ({ value: m.id, label: m.name }));
+  const permissionOptions = permissionModes.map((m) => ({
+    value: m.id,
+    label: m.name,
+  }));
   const permissionValue =
     activeModeId && permissionOptions.some((o) => o.value === activeModeId)
       ? activeModeId
@@ -316,35 +394,93 @@ const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage 
   const showPermission = chatMode === "agent";
   const placeholder =
     chatMode === "ask"
-      ? "提问或闲聊…（Ask：不调用工具）"
+      ? "提问或 @技能 / MCP…（Ask：不调用工具）"
       : chatMode === "search"
-        ? "检索知识库相关问题…"
-        : "描述要完成的任务…（Agent：可调用工具）";
+        ? "检索知识库，或 @ 引用技能…"
+        : "描述任务，输入 @ 引用技能 / MCP…";
 
   return (
     <div className="input-bar">
       <PermissionPrompt />
       <div className="composer">
+        {attachments.length > 0 && (
+          <div className="composer__chips" aria-label="已引用">
+            {attachments.map((a) => (
+              <button
+                key={`${a.kind}:${a.id}`}
+                type="button"
+                className={`composer__chip composer__chip--${a.kind}`}
+                title="点击移除"
+                onClick={() =>
+                  setAttachments((prev) =>
+                    prev.filter(
+                      (x) => !(x.kind === a.kind && x.id === a.id),
+                    ),
+                  )
+                }
+              >
+                <span className="composer__chip-kind">
+                  {a.kind === "script"
+                    ? "脚本"
+                    : a.kind === "skill"
+                      ? "技能"
+                      : "MCP"}
+                </span>
+                {a.label}
+                <span className="composer__chip-x" aria-hidden>
+                  ×
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="composer__body">
-          <textarea
-            ref={textareaRef}
-            className="input-textarea"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            rows={1}
-            disabled={isStreaming || pendingPermission}
-          />
+          <div className="composer__input-wrap">
+            <MentionPicker
+              open={mention.open}
+              query={mention.query}
+              agentId={agentId}
+              excludeKeys={attachments.map((a) => `${a.kind}:${a.id}`)}
+              onPick={handlePickMention}
+              onClose={closeMention}
+            />
+            <textarea
+              ref={textareaRef}
+              className="input-textarea"
+              value={input}
+              onChange={(e) => {
+                const v = e.target.value;
+                setInput(v);
+                syncMentionFromValue(v, e.target.selectionStart ?? v.length);
+              }}
+              onKeyDown={handleKeyDown}
+              onClick={(e) =>
+                syncMentionFromValue(
+                  input,
+                  (e.target as HTMLTextAreaElement).selectionStart ?? 0,
+                )
+              }
+              placeholder={placeholder}
+              rows={1}
+              disabled={isStreaming || pendingPermission}
+            />
+          </div>
           {isStreaming ? (
-            <button className="btn-stop" onClick={onAbort} type="button" aria-label="停止">
+            <button
+              className="btn-stop"
+              onClick={onAbort}
+              type="button"
+              aria-label="停止"
+            >
               <IconStop />
             </button>
           ) : (
             <button
               className="btn-send"
               onClick={() => void handleSend()}
-              disabled={pendingPermission || !input.trim()}
+              disabled={
+                pendingPermission || (!input.trim() && !attachments.length)
+              }
               type="button"
               aria-label="发送"
             >
@@ -372,7 +508,10 @@ const Composer = ({ onSend, isStreaming, pendingPermission, onAbort, tokenUsage 
             )}
           </div>
           {tokenUsage && (
-            <span className="composer__tokens" title={`输入 ${tokenUsage.input.toLocaleString()} · 输出 ${tokenUsage.output.toLocaleString()}`}>
+            <span
+              className="composer__tokens"
+              title={`输入 ${tokenUsage.input.toLocaleString()} · 输出 ${tokenUsage.output.toLocaleString()}`}
+            >
               {tokenUsage.total.toLocaleString()} tokens
             </span>
           )}
@@ -471,6 +610,7 @@ export const ChatWindow = () => {
         pendingPermission={!!pendingPermission}
         onAbort={abortSession}
         tokenUsage={tokenUsage}
+        agentId={activeSession?.agent_id}
       />
 
       {activeSession && polishTarget && (

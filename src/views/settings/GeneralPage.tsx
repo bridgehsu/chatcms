@@ -203,7 +203,7 @@ export const GeneralPage = () => {
                 <div className="settings-card__row">
                   <div className="settings-card__meta">
                     <label htmlFor="general-crawler-url">采集服务</label>
-                    <p>chatcms-collect Worker，媒体采集页共用</p>
+                    <p>chatcms-collect Worker 地址（侧栏采集页已下线）</p>
                   </div>
                   <div className="settings-card__control">
                     <input

@@ -1,6 +1,7 @@
 //! 会话层：确保会话壳、写入用户消息、启动本轮链路。
 //!
-//! 不按意图绑角色；绑定在 decision 层完成。
+//! - 在此解析并固定本轮 [`ChatMode`]（后续层只读 `ctx.mode`）
+//! - 不按意图绑角色；绑定在 decision 层完成
 
 use anyhow::Result;
 use tauri::Manager;
@@ -13,7 +14,7 @@ use crate::core::decision::ChatMode;
 
 /// 层入口：先于意图，只建立/复用会话并记账。
 pub async fn run(ctx: &mut TurnContext) -> Result<()> {
-    // 模式来自用户选择，不依赖意图，此处即可解析供 trace 使用。
+    // 本轮 mode 唯一解析点（用户选择，不依赖意图）。
     ctx.mode = ChatMode::parse(ctx.mode_raw.as_deref().unwrap_or("ask"));
 
     let create_group_id = if ctx.session_id_in.is_none() {

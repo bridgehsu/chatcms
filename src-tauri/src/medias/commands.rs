@@ -1,3 +1,4 @@
+use super::packages::{ScriptFile, ScriptPackage, ScriptPackageDetail, ScriptPackagePage};
 use super::{MediaPlatform, MediaPlatformPage, PublishScriptView};
 use tauri::AppHandle;
 
@@ -130,26 +131,99 @@ pub fn collect_script_discard_draft(
 ) -> Result<PublishScriptView, String> {
     super::discard_collect_script_draft(&app, platform_id)
 }
-#[allow(dead_code)]
-pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
-    tauri::plugin::Builder::<tauri::Wry>::new("media_platforms")
-        .invoke_handler(tauri::generate_handler![
-            media_platform_list,
-            media_platform_list_page,
-            media_platform_get,
-            media_platform_upsert,
-            media_platform_set_enabled,
-            media_platform_remove,
-            publish_script_get,
-            publish_script_list,
-            publish_script_save_draft,
-            publish_script_publish,
-            publish_script_discard_draft,
-            collect_script_get,
-            collect_script_list,
-            collect_script_save_draft,
-            collect_script_publish,
-            collect_script_discard_draft,
-        ])
-        .build()
+
+// ── 脚本包（多文件 JS）──────────────────────────────────────
+
+#[tauri::command]
+pub fn script_pkg_list_page(
+    app: AppHandle,
+    query: Option<String>,
+    page: u32,
+    page_size: u32,
+) -> ScriptPackagePage {
+    super::packages::list_packages_page(&app, query, page, page_size)
+}
+
+#[tauri::command]
+pub fn script_pkg_get(app: AppHandle, id: String) -> Result<ScriptPackageDetail, String> {
+    super::packages::get_package_detail(&app, &id)
+}
+
+#[tauri::command]
+pub fn script_pkg_create(
+    app: AppHandle,
+    code: String,
+    name: String,
+    notes: Option<String>,
+) -> Result<ScriptPackageDetail, String> {
+    super::packages::create_package(&app, code, name, notes.unwrap_or_default())
+}
+
+#[tauri::command]
+pub fn script_pkg_update(
+    app: AppHandle,
+    id: String,
+    name: String,
+    code: String,
+    enabled: bool,
+    entry_path: String,
+    notes: Option<String>,
+) -> Result<ScriptPackageDetail, String> {
+    super::packages::update_package_meta(
+        &app,
+        id,
+        name,
+        code,
+        enabled,
+        entry_path,
+        notes.unwrap_or_default(),
+    )
+}
+
+#[tauri::command]
+pub fn script_pkg_set_enabled(
+    app: AppHandle,
+    id: String,
+    enabled: bool,
+) -> Result<ScriptPackage, String> {
+    super::packages::set_enabled(&app, id, enabled)
+}
+
+#[tauri::command]
+pub fn script_pkg_remove(app: AppHandle, id: String) -> Result<(), String> {
+    super::packages::remove_package(&app, id)
+}
+
+#[tauri::command]
+pub fn script_file_upsert(
+    app: AppHandle,
+    package_id: String,
+    path: String,
+    draft_content: String,
+) -> Result<ScriptFile, String> {
+    super::packages::upsert_file(&app, package_id, path, draft_content)
+}
+
+#[tauri::command]
+pub fn script_file_rename(
+    app: AppHandle,
+    package_id: String,
+    from_path: String,
+    to_path: String,
+) -> Result<ScriptPackageDetail, String> {
+    super::packages::rename_file(&app, package_id, from_path, to_path)
+}
+
+#[tauri::command]
+pub fn script_file_delete(
+    app: AppHandle,
+    package_id: String,
+    path: String,
+) -> Result<ScriptPackageDetail, String> {
+    super::packages::delete_file(&app, package_id, path)
+}
+
+#[tauri::command]
+pub fn script_pkg_open_editor(app: AppHandle, id: String) -> Result<String, String> {
+    super::packages::open_in_editor(&app, id)
 }

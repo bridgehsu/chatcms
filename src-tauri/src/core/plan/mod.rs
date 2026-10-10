@@ -1,10 +1,13 @@
-//! 规划编排层：system prompt 组装 + Agent Loop（模型规划 / 多轮）。
+//! 规划编排层：system prompt +（可选）script_turn + Agent Loop。
+//!
+//! `execute` 由 `agent_loop` 在 tool_calls 时调用，不单独占 turn 顶层。
 
 pub mod compress;
 mod prompt;
 mod agent_loop;
 mod profile;
 mod run;
+mod script_turn;
 
 pub use agent_loop::run_agent_loop;
 pub use profile::resolve_profile;

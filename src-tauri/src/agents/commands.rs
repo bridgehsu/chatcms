@@ -1,4 +1,4 @@
-use super::AgentProfile;
+use super::{AgentChannelScript, AgentProfile};
 use crate::agents::AgentState;
 use crate::common::permission::DomainPolicy;
 use std::collections::HashMap;
@@ -12,6 +12,11 @@ pub async fn agent_list(app: AppHandle, state: State<'_, AgentState>) -> Result<
 }
 
 #[tauri::command]
+pub fn agent_script_options(app: AppHandle) -> Vec<AgentChannelScript> {
+    super::service::list_script_options(&app)
+}
+
+#[tauri::command]
 pub async fn agent_add(
     app: AppHandle,
     state: State<'_, AgentState>,
@@ -21,6 +26,7 @@ pub async fn agent_add(
     system_prompt: String,
     enabled: bool,
     skills: Option<Vec<String>>,
+    scripts: Option<Vec<String>>,
     spawnable: bool,
     perms: Option<HashMap<String, DomainPolicy>>,
     sort: Option<i64>,
@@ -33,6 +39,7 @@ pub async fn agent_add(
         system_prompt,
         enabled,
         skills,
+        scripts,
         spawnable,
         perms.unwrap_or_default(),
         sort.unwrap_or(0),
@@ -53,6 +60,7 @@ pub async fn agent_update(
     system_prompt: String,
     enabled: bool,
     skills: Option<Vec<String>>,
+    scripts: Option<Vec<String>>,
     spawnable: bool,
     perms: Option<HashMap<String, DomainPolicy>>,
     sort: Option<i64>,
@@ -66,6 +74,7 @@ pub async fn agent_update(
         system_prompt,
         enabled,
         skills,
+        scripts,
         spawnable,
         perms.unwrap_or_default(),
         sort.unwrap_or(0),
@@ -116,6 +125,7 @@ pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("agents")
         .invoke_handler(tauri::generate_handler![
             agent_list,
+            agent_script_options,
             agent_add,
             agent_update,
             agent_activate,

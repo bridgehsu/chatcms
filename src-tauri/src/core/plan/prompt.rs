@@ -3,6 +3,7 @@
 use tauri::State;
 
 use crate::agents::AgentState;
+use crate::chat::attachments::{self, ChatAttachment};
 use crate::core::decision::ChatMode;
 use crate::core::intent::{self, Intent};
 use crate::core::memory;
@@ -16,10 +17,14 @@ pub fn build_system_prompt(
     active_agent: Option<crate::agents::AgentProfile>,
     intent: &Intent,
     mode: ChatMode,
+    attachments: &[ChatAttachment],
 ) -> Option<String> {
     let mut blocks: Vec<String> = Vec::new();
     if let Some(p) = active_agent.as_ref().map(crate::agents::format_persona) {
         blocks.push(p);
+    }
+    if let Some(a) = attachments::format_for_prompt(attachments) {
+        blocks.push(a);
     }
     if mode.inject_intent_block() {
         if let Some(i) = intent::format_for_prompt(intent) {
@@ -32,7 +37,8 @@ pub fn build_system_prompt(
         }
     }
     if mode.inject_skills() {
-        if let Some(s) = skills_block(state, content, active_agent.as_ref()) {
+        let forced = attachments::skill_names(attachments);
+        if let Some(s) = skills_block(state, content, active_agent.as_ref(), &forced) {
             blocks.push(s);
         }
     }
@@ -53,10 +59,17 @@ pub fn skills_block(
     state: &State<'_, AgentState>,
     content: &str,
     active_agent: Option<&crate::agents::AgentProfile>,
+    force_names: &[String],
 ) -> Option<String> {
     let skill_list = state.skills.lock().unwrap().clone();
     let allowlist = active_agent.and_then(|a| a.skills.as_ref().map(|v| v.as_slice()));
-    let text = scripts::format_for_prompt(&skill_list, content, allowlist);
+    let force = if force_names.is_empty() {
+        None
+    } else {
+        Some(force_names)
+    };
+    let text =
+        scripts::format_for_prompt_with_force(&skill_list, content, allowlist, force);
     if text.is_empty() {
         None
     } else {

@@ -68,10 +68,20 @@ fn score_skill(skill: &Skill, tokens: &HashSet<String>) -> f32 {
 
 /// 拼进 system prompt：始终给技能目录；相关技能附带正文（OpenClaw 风格）。
 /// `allowlist`: None = 全部启用技能；Some([]) = 无；Some(names) = 白名单。
+/// `force_names`: 用户 @ 的技能，强制注入正文（优先于相关度匹配）。
 pub fn format_for_prompt(
     skills: &[Skill],
     query: &str,
     allowlist: Option<&[String]>,
+) -> String {
+    format_for_prompt_with_force(skills, query, allowlist, None)
+}
+
+pub fn format_for_prompt_with_force(
+    skills: &[Skill],
+    query: &str,
+    allowlist: Option<&[String]>,
+    force_names: Option<&[String]>,
 ) -> String {
     let eligible: Vec<&Skill> = skills
         .iter()
@@ -96,11 +106,25 @@ pub fn format_for_prompt(
         parts.push(format!("- **{}**: {}", s.name, s.description));
     }
 
+    let mut active: Vec<&Skill> = Vec::new();
+    if let Some(forced) = force_names {
+        for name in forced {
+            if let Some(s) = eligible.iter().find(|s| s.name == *name) {
+                if !active.iter().any(|a| a.name == s.name) {
+                    active.push(*s);
+                }
+            }
+        }
+    }
+
     let tokens = tokenize(query);
-    if !tokens.is_empty() {
+    if !tokens.is_empty() && active.len() < 3 {
         let mut scored: Vec<(f32, &Skill)> = eligible
             .iter()
             .filter_map(|s| {
+                if active.iter().any(|a| a.name == s.name) {
+                    return None;
+                }
                 let sc = score_skill(s, &tokens);
                 if sc > 0.0 {
                     Some((sc, *s))
@@ -110,17 +134,20 @@ pub fn format_for_prompt(
             })
             .collect();
         scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-        let matched: Vec<&Skill> = scored.into_iter().take(3).map(|(_, s)| s).collect();
-        if !matched.is_empty() {
-            parts.push("## Active skill instructions".into());
-            for s in matched {
-                parts.push(format!(
-                    "### {}\n{}\n\n{}",
-                    s.name,
-                    s.description,
-                    s.body.trim()
-                ));
-            }
+        for (_, s) in scored.into_iter().take(3 - active.len()) {
+            active.push(s);
+        }
+    }
+
+    if !active.is_empty() {
+        parts.push("## Active skill instructions".into());
+        for s in active {
+            parts.push(format!(
+                "### {}\n{}\n\n{}",
+                s.name,
+                s.description,
+                s.body.trim()
+            ));
         }
     }
 

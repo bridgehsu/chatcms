@@ -1,6 +1,7 @@
 //! 媒体管理：发布平台元数据 + 按类型独立的填表脚本（draft / published）。
 
 pub mod commands;
+pub mod packages;
 pub mod repository;
 
 mod multipost_catalog;

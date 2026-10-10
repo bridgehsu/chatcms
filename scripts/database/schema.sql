@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS agent (
     system_prompt TEXT    NOT NULL DEFAULT '',       -- 人格 / 角色系统提示词
     enabled       INTEGER NOT NULL DEFAULT 1,        -- 是否启用（0=禁用 1=启用）
     skills        TEXT,                              -- 技能白名单（JSON 数组；null=不限制 '[]'=无技能）
+    scripts       TEXT    NOT NULL DEFAULT '[]',     -- 渠道脚本绑定（JSON 数组；key=collect:{id}|publish:{id}）
     spawnable     INTEGER NOT NULL DEFAULT 1,        -- 是否允许被 spawn_agent 调用（0=否 1=是）
     perms         TEXT    NOT NULL DEFAULT '{}',     -- 域权限覆盖（JSON 对象，domain→policy）
     workspace_dir TEXT,                              -- 代理独立工作目录绝对路径（新增时自动创建）
@@ -171,6 +172,7 @@ ALTER TABLE agent ADD COLUMN spawnable     INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE agent ADD COLUMN perms         TEXT    NOT NULL DEFAULT '{}';
 ALTER TABLE agent ADD COLUMN workspace_dir TEXT;
 ALTER TABLE agent ADD COLUMN sort          INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE agent ADD COLUMN scripts       TEXT    NOT NULL DEFAULT '[]';
 
 -- Model profiles (replaces chatcms.json provider profiles)
 CREATE TABLE IF NOT EXISTS model_profile (
@@ -342,3 +344,30 @@ CREATE TABLE IF NOT EXISTS media_collect_script (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_media_collect_script_platform ON media_collect_script(platform_id);
+
+-- 插件脚本包（多文件 JS 工程；替代「平台 + 单段脚本」为主编辑模型）
+CREATE TABLE IF NOT EXISTS script_pkg (
+    id                 TEXT    PRIMARY KEY,
+    code               TEXT    NOT NULL,
+    name               TEXT    NOT NULL,
+    enabled            INTEGER NOT NULL DEFAULT 1,
+    entry_path         TEXT    NOT NULL DEFAULT 'main.js',
+    published_version  INTEGER NOT NULL DEFAULT 0,
+    notes              TEXT    NOT NULL DEFAULT '',
+    updated            INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_script_pkg_code ON script_pkg(code);
+CREATE INDEX IF NOT EXISTS idx_script_pkg_updated ON script_pkg(updated DESC);
+
+CREATE TABLE IF NOT EXISTS script_file (
+    id                 TEXT    PRIMARY KEY,
+    package_id         TEXT    NOT NULL,
+    path               TEXT    NOT NULL,              -- 相对路径，仅 .js
+    draft_content      TEXT    NOT NULL DEFAULT '',
+    published_content  TEXT    NOT NULL DEFAULT '',
+    updated            INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_script_file_pkg_path ON script_file(package_id, path);
+CREATE INDEX IF NOT EXISTS idx_script_file_pkg ON script_file(package_id);

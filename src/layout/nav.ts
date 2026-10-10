@@ -6,7 +6,6 @@ import {
   IconChat,
   IconContent,
   IconCron,
-  IconCrawler,
   IconImages,
   IconLock,
   IconMap,
@@ -103,27 +102,21 @@ export const NAV_ENTRIES: NavEntry[] = [
   {
     kind: "group",
     id: "media-ops",
-    label: "媒体管理",
+    label: "渠道中心",
     Icon: IconMedia,
-    defaultPath: "/crawler",
+    defaultPath: "/accounts",
     children: [
-      {
-        path: "/crawler",
-        label: "媒体采集",
-        description: "连接 chatcms-collect：启停任务、日志与数据文件",
-        Icon: IconCrawler,
-      },
-      {
-        path: "/media-platforms",
-        label: "插件脚本",
-        description: "各平台发布/采集注入页与 JS 脚本（浏览器插件）",
-        Icon: IconMedia,
-      },
       {
         path: "/accounts",
         label: "账号管理",
         description: "本机平台账号与密钥，主密码保险柜保护",
         Icon: IconAccounts,
+      },
+      {
+        path: "/media-platforms",
+        label: "插件脚本",
+        description: "多文件 JS 脚本包；编辑后发布，浏览器插件按入口运行",
+        Icon: IconMedia,
       },
     ],
   },
@@ -137,7 +130,7 @@ export const NAV_ENTRIES: NavEntry[] = [
       {
         path: "/agents",
         label: "代理管理",
-        description: "管理多角色档案、全局默认与技能白名单；会话可选手选主 Agent",
+        description: "管理多角色档案、技能白名单与渠道脚本绑定；会话可选手选主 Agent",
         Icon: IconAgents,
       },
       {
@@ -246,11 +239,7 @@ const leafForPath = (pathname: string) => {
 export const titleForPath = (pathname: string): string => {
   if (pathname === "/images/generate") return "AI 生成图片";
   if (pathname === "/videos/generate" || pathname === "/videos/studio") return "制片";
-  if (pathname === "/crawler/new") return "新增媒体采集";
-  if (pathname.match(/^\/crawler\/[^/]+$/)) return "媒体采集";
-  if (pathname.match(/^\/media-platforms\/[^/]+\/collect-script$/))
-    return "采集脚本";
-  if (pathname.match(/^\/media-platforms\/[^/]+\/script$/)) return "填表脚本";
+  if (pathname.match(/^\/media-platforms\/[^/]+\/edit$/)) return "编辑脚本";
   return leafForPath(pathname)?.label ?? "ChatCMS";
 };
 

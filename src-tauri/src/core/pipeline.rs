@@ -1,6 +1,7 @@
 //! 横切钩子：每层进出记录 trace / 日志（类似 HandlerInterceptor）。
 
 use anyhow::Result;
+use futures_util::future::BoxFuture;
 
 use super::context::TurnContext;
 
@@ -26,4 +27,16 @@ pub fn after(ctx: &mut TurnContext, name: &str, result: &Result<()>) {
             }
         }
     }
+}
+
+/// 统一一层进出钩子，避免 turn 里重复 before/after。
+pub async fn run_layer(
+    ctx: &mut TurnContext,
+    name: &str,
+    f: impl for<'a> FnOnce(&'a mut TurnContext) -> BoxFuture<'a, Result<()>>,
+) -> Result<()> {
+    before(ctx, name);
+    let r = f(ctx).await;
+    after(ctx, name, &r);
+    r
 }

@@ -48,7 +48,7 @@ src/
 | 色板 | `styles/tokens.css` | `styles/tokens.css` |
 | 状态 | `stores/` | `stores/` |
 
-侧栏：**工作台 / 媒体管理 / 智能配置 / 系统设置** 均为可展开分组；自定义书签归入「我的导航」。会话列表在 `views/chat/`（按时间分组）；业务地图在 `views/map/`；内容管理在 `views/content/`；图片 / 视频 / 账号 / 调度中心同前；系统设置页在 `views/settings/`（知识库页面文件亦在此目录，导航挂在智能配置）。智能会话支持 Ask / Agent / Search 模式（模型 Auto 在 ModelPicker）。
+侧栏：**工作台 / 渠道中心 / 智能配置 / 系统设置** 均为可展开分组；自定义书签归入「我的导航」。会话列表在 `views/chat/`（按时间分组）；业务地图在 `views/map/`；内容管理在 `views/content/`；图片 / 视频 / 账号 / 调度中心同前；系统设置页在 `views/settings/`（知识库页面文件亦在此目录，导航挂在智能配置）。智能会话支持 Ask / Agent / Search 模式（模型 Auto 在 ModelPicker）。
 
 ## 组件放哪里
 

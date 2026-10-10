@@ -29,6 +29,9 @@ pub struct AgentProfile {
     /// None = 不限制（全部启用技能）；Some([]) = 无技能；Some([names]) = 白名单
     #[serde(default)]
     pub skills: Option<Vec<String>>,
+    /// 渠道脚本绑定：`script:{package_id}` / 旧 `collect|publish:{platform_id}`；空 = 未绑定
+    #[serde(default)]
+    pub scripts: Vec<String>,
     /// 是否允许被 spawn_agent 调用
     #[serde(default = "default_true")]
     pub spawnable: bool,
@@ -94,6 +97,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             system_prompt: "你是 ChatCMS 的默认助手。简洁、可靠，优先完成用户目标；需要时调用工具与技能。".into(),
             enabled: true,
             skills: None,
+            scripts: vec![],
             spawnable: true,
             perms: std::collections::HashMap::new(),
             workspace_dir: None,
@@ -109,6 +113,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             system_prompt: "你是资深内容写手。输出可直接发布的成稿，关注平台语气、钩子与可读性。优先遵循 content-publish 技能。".into(),
             enabled: true,
             skills: Some(vec!["content-publish".into(), "image-brief".into()]),
+            scripts: vec![],
             spawnable: true,
             perms: std::collections::HashMap::new(),
             workspace_dir: None,
@@ -124,6 +129,7 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             system_prompt: "你是调研助手。先列提纲再收集要点，区分事实与推断，给出可执行的下一步。".into(),
             enabled: true,
             skills: None,
+            scripts: vec![],
             spawnable: true,
             perms: std::collections::HashMap::new(),
             workspace_dir: None,
@@ -132,6 +138,40 @@ pub fn bundled_agents() -> Vec<AgentProfile> {
             updated: ts,
         },
     ]
+}
+
+/// 渠道脚本绑定项（插件下拉 / 代理表单共用）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentChannelScript {
+    /// `script:{package_id}` / 旧 `collect|publish:{platform_id}`
+    pub key: String,
+    /// script/collect → read；publish → act
+    pub role: String,
+    pub kind: String,
+    pub platform_id: String,
+    pub code: String,
+    pub label: String,
+    pub version: u32,
+    pub match_url: String,
+}
+
+/// 解析绑定 key：`(kind, id)`。
+pub fn parse_script_key(key: &str) -> Option<(String, String)> {
+    let key = key.trim();
+    let (kind, id) = key.split_once(':')?;
+    let kind = kind.trim().to_ascii_lowercase();
+    let id = id.trim();
+    if id.is_empty() {
+        return None;
+    }
+    match kind.as_str() {
+        "script" | "collect" | "publish" => Some((kind, id.to_string())),
+        _ => None,
+    }
+}
+
+pub fn script_key(kind: &str, platform_id: &str) -> String {
+    format!("{kind}:{platform_id}")
 }
 
 /// 拼进 system prompt 的人格块。

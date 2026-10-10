@@ -25,6 +25,7 @@ export { IconObserve } from "./IconObserve";
 export { IconSend } from "./IconSend";
 export { IconStop } from "./IconStop";
 export { IconPlus } from "./IconPlus";
+export { IconCode } from "./IconCode";
 export { IconUpload } from "./IconUpload";
 export { IconPlay } from "./IconPlay";
 export { IconSave } from "./IconSave";

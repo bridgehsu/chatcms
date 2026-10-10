@@ -1,6 +1,7 @@
 pub mod bash;
 pub mod glob_files;
 pub mod read_file;
+pub mod run_page_script;
 pub mod search_files;
 pub mod spawn_agent;
 pub mod types;
@@ -19,6 +20,7 @@ pub fn requires_permission(tool_name: &str) -> bool {
 pub fn all_tools() -> Vec<ToolDef> {
     vec![
         spawn_agent::def(),
+        run_page_script::def(),
         bash::def(),
         read_file::def(),
         write_file::def(),

@@ -11,10 +11,20 @@ pub async fn chat_send(
     mode: Option<String>,
     group_id: Option<String>,
     agent_id: Option<String>,
+    attachments: Option<Vec<super::ChatAttachment>>,
 ) -> Result<String, String> {
-    crate::core::start_turn(app, state, session_id, content, mode, group_id, agent_id)
-        .await
-        .map_err(|e| e.to_string())
+    crate::core::run(
+        app,
+        state,
+        session_id,
+        content,
+        mode,
+        group_id,
+        agent_id,
+        attachments,
+    )
+    .await
+    .map_err(|e| e.to_string())
 }
 
 /// 手动绑定 / 切换会话主 Agent（同步 workspace）。

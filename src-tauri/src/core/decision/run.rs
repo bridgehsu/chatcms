@@ -1,4 +1,6 @@
-//! 决策层：模式确认、角色挑选、绑会话、本轮工具集合。
+//! 决策层：角色挑选、绑会话、本轮工具集合。
+//!
+//! 运行模式由 session 层解析并写入 [`TurnContext::mode`]，此处不再重复 parse。
 
 use anyhow::Result;
 use tauri::Manager;
@@ -7,11 +9,8 @@ use crate::agents::AgentState;
 use crate::core::context::TurnContext;
 
 use super::agent;
-use super::mode::ChatMode;
 
 pub async fn run(ctx: &mut TurnContext) -> Result<()> {
-    // session 可能已解析；此处再确认一次，保持幂等。
-    ctx.mode = ChatMode::parse(ctx.mode_raw.as_deref().unwrap_or("ask"));
     if let Some(trace) = ctx.trace.as_mut() {
         trace.chat_mode = ctx.mode.as_str().to_string();
     }
@@ -58,7 +57,20 @@ pub async fn run(ctx: &mut TurnContext) -> Result<()> {
     }
 
     ctx.tools = if ctx.mode.use_tools() {
-        agent::collect_tools(&state).await
+        let mut tools = agent::collect_tools(&state).await;
+        let mcp_filter = crate::chat::attachments::mcp_names(&ctx.attachments);
+        if !mcp_filter.is_empty() {
+            let mcp = state.mcp.lock().await;
+            tools.retain(|t| {
+                if !mcp.is_mcp_tool(&t.name) {
+                    return true; // 保留内置工具
+                }
+                mcp_filter.iter().any(|server| {
+                    t.name == *server || t.name.starts_with(&format!("{server}__"))
+                })
+            });
+        }
+        tools
     } else {
         Vec::new()
     };
