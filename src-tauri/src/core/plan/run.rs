@@ -1,4 +1,4 @@
-//! 规划层：拼 prompt →（可选）script_turn → Agent Loop（内嵌 execute）。
+//! 规划层：拼 prompt →（可选）script_turn / task_turn → Agent Loop。
 
 use anyhow::Result;
 use tauri::Manager;
@@ -12,6 +12,7 @@ use crate::core::decision;
 use crate::core::intent::Intent;
 
 use super::script_turn::{self, ScriptTurnPrep};
+use super::task_turn::{self, TaskTurnPrep};
 use super::{build_system_prompt, run_agent_loop};
 
 /// 层入口。
@@ -43,17 +44,35 @@ pub async fn run(ctx: &mut TurnContext) -> Result<()> {
         &attachments,
     );
 
-    // 前置：@脚本硬规则（分类 / 预执行 / 短路），不进入顶层 turn
+    // 前置：@脚本 / @任务 硬规则（分类 / 预执行 / 短路）
     let script_prep =
         prepare_script_turn(&app, &state, &sid, &content, mode, &attachments).await;
-    merge_script_prompt(&mut system_prompt, script_prep.as_ref());
-    mark_plan_trace(ctx, &intent, mode, &session_agent_id, &system_prompt, script_prep.as_ref())?;
+    let task_prep = prepare_task_turn(&app, &state, &sid, &content, mode, &attachments).await;
+
+    append_prompt(&mut system_prompt, script_prep.as_ref().and_then(|p| p.prompt_extra.as_ref()));
+    append_prompt(&mut system_prompt, task_prep.as_ref().and_then(|p| p.prompt_extra.as_ref()));
+    mark_plan_trace(
+        ctx,
+        &intent,
+        mode,
+        &session_agent_id,
+        &system_prompt,
+        script_prep.as_ref(),
+        task_prep.as_ref(),
+    )?;
 
     ctx.system_prompt = system_prompt.clone();
 
-    if let Some(prep) = script_prep {
-        if let Some(reply) = prep.short_circuit {
-            script_turn::emit_short_reply(&app, &state, &sid, &reply).await;
+    if let Some(prep) = &script_prep {
+        if let Some(reply) = &prep.short_circuit {
+            script_turn::emit_short_reply(&app, &state, &sid, reply).await;
+            return Ok(());
+        }
+        apply_script_tool_policy(ctx, prep.action);
+    }
+    if let Some(prep) = &task_prep {
+        if let Some(reply) = &prep.short_circuit {
+            task_turn::emit_short_reply(&app, &state, &sid, reply).await;
             return Ok(());
         }
         apply_script_tool_policy(ctx, prep.action);
@@ -130,8 +149,22 @@ async fn prepare_script_turn(
     Some(script_turn::prepare(app, state, sid, content, mode, attachments).await)
 }
 
-fn merge_script_prompt(system_prompt: &mut Option<String>, prep: Option<&ScriptTurnPrep>) {
-    let Some(extra) = prep.and_then(|p| p.prompt_extra.as_ref()) else {
+async fn prepare_task_turn(
+    app: &tauri::AppHandle,
+    state: &tauri::State<'_, AgentState>,
+    sid: &str,
+    content: &str,
+    mode: crate::core::decision::ChatMode,
+    attachments: &[crate::chat::ChatAttachment],
+) -> Option<TaskTurnPrep> {
+    if attachments::tasks(attachments).is_empty() {
+        return None;
+    }
+    Some(task_turn::prepare(app, state, sid, content, mode, attachments).await)
+}
+
+fn append_prompt(system_prompt: &mut Option<String>, extra: Option<&String>) {
+    let Some(extra) = extra else {
         return;
     };
     *system_prompt = match system_prompt.take() {
@@ -141,9 +174,9 @@ fn merge_script_prompt(system_prompt: &mut Option<String>, prep: Option<&ScriptT
 }
 
 fn apply_script_tool_policy(ctx: &mut TurnContext, action: ScriptAction) {
-    // 解释 / 已预执行：禁止模型再调 run_page_script
+    // 已预跑或仅讲解：禁止再调工具，避免失败后乱调 web_fetch 等
     if matches!(action, ScriptAction::Explain | ScriptAction::Execute) {
-        ctx.tools.retain(|t| t.name != "run_page_script");
+        ctx.tools.clear();
     }
 }
 
@@ -154,6 +187,7 @@ fn mark_plan_trace(
     session_agent_id: &Option<String>,
     system_prompt: &Option<String>,
     script_prep: Option<&ScriptTurnPrep>,
+    task_prep: Option<&TaskTurnPrep>,
 ) -> Result<()> {
     let trace = ctx
         .trace
@@ -175,6 +209,16 @@ fn mark_plan_trace(
     if let Some(prep) = script_prep {
         trace.mark(
             "script_action",
+            format!(
+                "action={} short_circuit={}",
+                prep.action.as_str(),
+                prep.short_circuit.is_some(),
+            ),
+        );
+    }
+    if let Some(prep) = task_prep {
+        trace.mark(
+            "task_action",
             format!(
                 "action={} short_circuit={}",
                 prep.action.as_str(),

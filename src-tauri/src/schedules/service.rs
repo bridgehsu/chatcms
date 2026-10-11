@@ -1,7 +1,10 @@
 use tauri::AppHandle;
 use uuid::Uuid;
 
-use super::{ScheduleProject, WorkflowGraph, default_workflow, now_ms};
+use super::{
+    MentionableTask, ScheduleProject, WorkflowGraph, default_workflow, extract_script_chain,
+    now_ms,
+};
 use super::repository as repo;
 
 pub fn list(app: &AppHandle) -> Vec<ScheduleProject> {
@@ -104,4 +107,24 @@ pub fn remove(app: &AppHandle, id: String) -> Result<(), String> {
     }
     repo::save_all(app, &list);
     Ok(())
+}
+
+/// 启用且含脚本步骤的任务，供插件 / 会话 @。
+pub fn list_mentionable_tasks(app: &AppHandle) -> Vec<MentionableTask> {
+    list(app)
+        .into_iter()
+        .filter(|p| p.enabled)
+        .filter_map(|p| {
+            let steps = extract_script_chain(&p.workflow);
+            if steps.is_empty() {
+                return None;
+            }
+            Some(MentionableTask {
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                steps,
+            })
+        })
+        .collect()
 }

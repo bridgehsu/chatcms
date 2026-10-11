@@ -195,10 +195,13 @@ pub fn routes() -> Router<PublishBridge> {
         )
         .route("/chat/agents", get(list_agents))
         .route("/chat/agents/{id}/scripts", get(list_agent_scripts))
+        .route("/chat/tasks", get(list_chat_tasks))
         .route("/chat/skills", get(list_chat_skills))
         .route("/chat/mcp", get(list_chat_mcp))
         .route("/chat/script-jobs", get(list_script_jobs))
         .route("/chat/script-jobs/{id}/result", post(complete_script_job))
+        // 页面脚本 / 扩展可直调的一次性补全（不写会话、无 tools）
+        .route("/chat/complete", post(chat_complete_http))
         .route("/chat/session-groups", get(list_session_groups))
         .route("/chat/session/{id}/agent", post(set_session_agent))
         .route("/chat/session/{id}/group", post(set_session_group))
@@ -390,6 +393,30 @@ async fn list_agent_scripts(
     }
 }
 
+/// 可 @ 的任务（调度中心项目 → 脚本串联）。
+async fn list_chat_tasks(State(bridge): State<PublishBridge>) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let items = crate::schedules::list_mentionable_tasks(&app)
+        .into_iter()
+        .map(|t| {
+            json!({
+                "id": t.id,
+                "name": t.name,
+                "description": t.description,
+                "kind": "task",
+                "steps": t.steps.iter().map(|s| json!({
+                    "code": s.code,
+                    "label": s.label,
+                    "pass_output": s.pass_output,
+                })).collect::<Vec<_>>(),
+            })
+        })
+        .collect::<Vec<_>>();
+    Json(items).into_response()
+}
+
 async fn list_chat_skills(State(bridge): State<PublishBridge>) -> Response {
     let Some(app) = bridge.app_handle() else {
         return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
@@ -470,6 +497,39 @@ async fn complete_script_job(
     ) {
         Ok(()) => Json(json!({ "ok": true })).into_response(),
         Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct ChatCompleteHttpBody {
+    content: String,
+    #[serde(default)]
+    system_prompt: Option<String>,
+}
+
+/// `POST /chat/complete` — 页面脚本用 fetch 调模型（走本机已配置 Provider）。
+async fn chat_complete_http(
+    State(bridge): State<PublishBridge>,
+    Json(body): Json<ChatCompleteHttpBody>,
+) -> Response {
+    let Some(app) = bridge.app_handle() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
+    };
+    let state = app.state::<AgentState>();
+    match crate::chat::service::complete_text(
+        &app,
+        &state,
+        body.system_prompt,
+        body.content,
+    )
+    .await
+    {
+        Ok(text) => Json(json!({ "ok": true, "text": text })).into_response(),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "ok": false, "error": e.to_string() })),
+        )
+            .into_response(),
     }
 }
 
@@ -861,7 +921,19 @@ async fn chat_send_sse(
         return (StatusCode::SERVICE_UNAVAILABLE, "ChatCMS 未就绪").into_response();
     };
 
-    let content = body.content.trim().to_string();
+    let attachments = body.attachments.clone();
+    let mut content = crate::chat::service::sanitize_user_content(&body.content);
+    if content.is_empty() {
+        if let Some(ref atts) = attachments {
+            if !atts.is_empty() {
+                content = atts
+                    .iter()
+                    .map(|a| format!("@{}", a.label))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+            }
+        }
+    }
     if content.is_empty() {
         return (StatusCode::BAD_REQUEST, "content 不能为空").into_response();
     }
@@ -945,7 +1017,6 @@ async fn chat_send_sse(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(|s| s.to_string());
-    let attachments = body.attachments;
     tauri::async_runtime::spawn(async move {
         let state = app2.state::<AgentState>();
         let result = send_message(

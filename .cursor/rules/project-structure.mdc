@@ -24,7 +24,8 @@ chatcms/
 │   │   └── schema.sql   # SQLite 建表 DDL（db.rs 编译期 include_str! 加载）
 │   ├── media/           # 渠道脚本种子（include_str! → 首次写入 data_root/scripts/<CODE>/）
 │   │   ├── boss-greet-collect.js
-│   │   └── boss-greet-fill.js
+│   │   ├── boss-greet-fill.js
+│   │   └── boss-job-jd-parse.js   # 职位详情采集 → AI 整理 JD
 │   └── skills/          # 内置 Skill .md（seed.rs 编译期 include_str! 加载）
 │       ├── content-publish.md
 │       ├── image-brief.md
@@ -34,7 +35,7 @@ chatcms/
 │   ├── .vitepress/      # 站点配置
 │   ├── guide/           # 概览 / 启动
 │   ├── concepts/        # Agent Loop、多 Agent
-│   ├── features/        # 功能说明
+│   ├── features/        # 功能说明（含 page-scripts 渠道脚本规范）
 │   ├── drawio/          # 分层流程图源（.drawio）
 │   └── public/          # 静态资源
 ├── resume/              # 简历用项目经历文稿（非运行时）
@@ -64,7 +65,7 @@ src/
 │   ├── content/            # 内容管理 · AI 笔记（SQLite cms_note；Novel 富文本；桥接 knowledge 供 Agent 检索）
 │   ├── images/             # 图片工厂 · AI 生图与本地保存
 │   ├── videos/             # 视频工厂 · AI 生视频 / MPT 口播工程页 / 本地保存
-│   ├── schedules/          # 调度中心 · 项目列表 + n8n 风格工作流画布
+│   ├── schedules/          # 调度中心（渠道中心）· 任务工作流：串联插件脚本，可 @任务
 │   ├── skills/             # 技能管理 · OpenClaw SKILL.md CRUD
 │   ├── agents/             # 代理管理 · 多 Agent 档案 / 技能白名单 / 渠道脚本绑定
 │   ├── mcp/                # MCP 管理 · 表格/预设/工具列表
@@ -72,7 +73,7 @@ src/
 │   ├── intents/            # 意图规则 · 关键词/权重/启用（软路由配置）
 │   ├── permissions/        # 权限模式面板组件（路由在 settings）
 │   ├── settings/           # 全局配置 / 权限 / 意图评测 / 运行观测（审计+会话链路）/ 渠道；知识库页文件亦在此（导航在智能配置）
-│   ├── media-platforms/    # 插件脚本（导航在渠道中心）· 列表 + 多文件编辑页（正文在 data_root/scripts/<CODE>/）
+│   ├── media-platforms/    # 插件脚本（渠道中心）· 列表 + 多文件编辑；pageScriptContract 薄契约/模板
 │   ├── crawler/            # 采集 Worker 页已从导航下线（旧路由重定向到账号管理）
 │   ├── accounts/           # 账号管理（渠道中心 · 本地密码本）
 │   ├── nav/                # 导航书签
@@ -142,7 +143,7 @@ src-tauri/src/
 │
 ├── chat/                # 智能会话数据与命令（运行分层在 core/）
 │   ├── mod.rs           # Session / SessionGroup / Message / Role
-│   ├── attachments.rs   # @ 附件：script / skill / mcp
+│   ├── attachments.rs   # @ 附件：script / task / skill / mcp
 │   ├── script_action.rs # @脚本硬规则：execute / explain / ask + 写页 input 解析
 │   ├── repository.rs    # SQLite sessions + messages + session_group 读写
 │   ├── service.rs       # 会话 CRUD（ensure / list / 分组）
@@ -156,7 +157,7 @@ src-tauri/src/
 │   ├── session/         # 会话层 run
 │   ├── intent/          # 意图层 run / infer
 │   ├── decision/        # 决策层 run：模式、角色、工具集合
-│   ├── plan/            # 编排层 run：prompt + Agent Loop；script_turn 预跑 @脚本
+│   ├── plan/            # 编排层 run：prompt + Agent Loop；script_turn / task_turn
 │   ├── execute/         # 执行层 run：工具回合（委托 agents::dispatch）
 │   ├── memory/          # 记忆协作：知识注入、截断、快照
 │   ├── response/        # 响应层 run：助手终态 + 链路落库
@@ -177,7 +178,7 @@ src-tauri/src/
 │   ├── mod.rs
 │   └── commands.rs
 ├── bridge/              # 浏览器插件桥接（127.0.0.1:17890）
-│   └── mod.rs           # /chat/* 会话 SSE；agents/scripts/skills/mcp；script-jobs；session-groups
+│   └── mod.rs           # /chat/* 会话 SSE；/chat/complete 脚本直调补全；agents/scripts/skills/mcp；script-jobs；session-groups
 ├── business_map/        # 业务地图状态持久化
 │   ├── mod.rs
 │   └── commands.rs
@@ -216,7 +217,7 @@ src-tauri/src/
 ├── publish/             # 本机发布桥 axum server（端口读 AppConfig.general.publish_bridge_port）
 │   ├── mod.rs
 │   └── commands.rs
-├── schedules/           # 调度中心项目 + 工作流图 CRUD
+├── schedules/           # 调度中心：任务项目 + 工作流图；extract_script_chain / @任务列表
 │   ├── mod.rs
 │   └── commands.rs
 └── videos/              # AI 生视频（Videos API）+ 本地落盘（目录走 resolve_data_root）
@@ -235,6 +236,7 @@ ChatWindow → invoke chat_send { session_id?, content, mode?, group_id?, attach
  → decision::run         # 选角 / 绑会话 / 收集 tools（沿用 ctx.mode）
  → plan::run
       ├─ script_turn     # @脚本：execute/explain/ask；可短路或预跑
+      ├─ task_turn       # @任务：按工作流串联多个 run_page_script
       └─ run_agent_loop ⇄ execute::run → agents::dispatch
  → response::finalize_assistant_turn   # 助手正文（plan 内调用）
  → response::run                       # 本轮 trace 落库（turn 末尾）

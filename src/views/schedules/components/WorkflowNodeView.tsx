@@ -30,6 +30,9 @@ export const WorkflowNodeView = ({ data, selected }: NodeProps) => {
       {isNote && typeof d.config.text === "string" && d.config.text ? (
         <div className="wf-node__hint">{d.config.text}</div>
       ) : null}
+      {d.nodeType === "script" && typeof d.config.code === "string" && d.config.code ? (
+        <div className="wf-node__hint">{d.config.code}</div>
+      ) : null}
       {!isNote && (
         <>
           <Handle

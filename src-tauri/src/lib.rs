@@ -279,6 +279,7 @@ pub fn run() {
             business_map::commands::map_state_save,
             // schedules
             schedules::commands::schedule_list,
+            schedules::commands::schedule_task_list,
             schedules::commands::schedule_get,
             schedules::commands::schedule_add,
             schedules::commands::schedule_update,

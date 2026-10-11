@@ -153,12 +153,12 @@ export interface TracePhase {
 
 export type ChatMode = "ask" | "agent" | "search";
 
-/** 会话 @ 附件（脚本 / Skill / MCP） */
-export type ChatAttachmentKind = "script" | "skill" | "mcp";
+/** 会话 @ 附件（脚本 / 任务 / Skill / MCP） */
+export type ChatAttachmentKind = "script" | "task" | "skill" | "mcp";
 
 export interface ChatAttachment {
   kind: ChatAttachmentKind;
-  /** 稳定 id：脚本 key、技能 name、MCP server name */
+  /** 稳定 id：脚本 key、任务项目 id、技能 name、MCP server name */
   id: string;
   label: string;
   /** 脚本编码（kind=script） */
@@ -480,12 +480,29 @@ export interface NavBookmark {
 
 export type WorkflowNodeType =
   | "trigger"
+  | "script"
   | "agent"
   | "http"
   | "publish"
   | "condition"
   | "delay"
   | "note";
+
+/** 任务中可执行的脚本步骤（由工作流 script 节点抽出） */
+export interface TaskScriptStep {
+  code: string;
+  label: string;
+  /** 是否把上一步输出作为本步 input */
+  pass_output: boolean;
+}
+
+/** 可供插件 @ 的任务摘要 */
+export interface MentionableTask {
+  id: string;
+  name: string;
+  description: string;
+  steps: TaskScriptStep[];
+}
 
 export interface WorkflowNode {
   id: string;

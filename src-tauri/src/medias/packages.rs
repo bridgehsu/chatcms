@@ -883,12 +883,34 @@ pub async fn migrate_from_platforms_async(app: &AppHandle) {
 
 /// 种子：BOSS 打招呼（目录无内容时写入）。
 pub async fn ensure_boss_package_async(app: &AppHandle) {
-    const CODE: &str = "JOB_BOSS_GREET";
-    const NAME: &str = "BOSS直聘·打招呼";
-    const COLLECT: &str = include_str!("../../../scripts/media/boss-greet-collect.js");
+    ensure_script_pkg_seed(
+        app,
+        "JOB_BOSS_GREET",
+        "BOSS直聘·打招呼",
+        "采集 BOSS 沟通/JD 上下文",
+        include_str!("../../../scripts/media/boss-greet-collect.js"),
+    )
+    .await;
+    ensure_script_pkg_seed(
+        app,
+        "JOB_BOSS_JD_PARSE",
+        "BOSS直聘·JD解析",
+        "采集职位详情页正文，交 AI 整理 JD",
+        include_str!("../../../scripts/media/boss-job-jd-parse.js"),
+    )
+    .await;
+}
+
+async fn ensure_script_pkg_seed(
+    app: &AppHandle,
+    code: &str,
+    name: &str,
+    notes: &str,
+    main_js: &str,
+) {
     let p = pool(app);
     let row = sqlx::query("SELECT id FROM script_pkg WHERE code = ?")
-        .bind(CODE)
+        .bind(code)
         .fetch_optional(&p)
         .await
         .ok()
@@ -904,9 +926,9 @@ pub async fn ensure_boss_package_async(app: &AppHandle) {
              VALUES (?, ?, ?, 1, 'main.js', 1, ?, ?)",
         )
         .bind(&id)
-        .bind(CODE)
-        .bind(NAME)
-        .bind("采集 BOSS 沟通/JD 上下文")
+        .bind(code)
+        .bind(name)
+        .bind(notes)
         .bind(ts)
         .execute(&p)
         .await
@@ -916,14 +938,15 @@ pub async fn ensure_boss_package_async(app: &AppHandle) {
         }
         id
     };
-    let dir = package_dir(app, CODE);
-    let main = dir.join("main.js");
-    if !main.is_file() {
-        let _ = write_js_file(app, CODE, "main.js", COLLECT);
-        let _ = sqlx::query("UPDATE script_pkg SET entry_path = 'main.js', updated = ? WHERE id = ?")
-            .bind(now_ms())
-            .bind(&id)
-            .execute(&p)
-            .await;
-    }
+    // 内置种子：始终覆盖 main.js，保证仓库脚本更新能落到本机包
+    let _ = write_js_file(app, code, "main.js", main_js);
+    let _ = sqlx::query(
+        "UPDATE script_pkg SET entry_path = 'main.js', name = ?, notes = ?, published_version = CASE WHEN published_version < 1 THEN 1 ELSE published_version END, updated = ? WHERE id = ?",
+    )
+    .bind(name)
+    .bind(notes)
+    .bind(now_ms())
+    .bind(&id)
+    .execute(&p)
+    .await;
 }

@@ -295,7 +295,16 @@ export const SessionList = () => {
     setFocusedGroupId(g.custom?.id ?? null);
   };
 
-  const displayTitle = (raw: string) => raw.trim() || "新会话";
+  const displayTitle = (raw: string) => {
+    const filler = "请根据我引用的内容处理";
+    let t = raw.trim();
+    if (t === filler) t = "";
+    else if (t.endsWith(filler)) t = t.slice(0, -filler.length).trim();
+    else if (t.includes(filler)) {
+      t = t.split(filler).join(" ").replace(/\s+/g, " ").trim();
+    }
+    return t || "新会话";
+  };
 
   const startRename = (id: string, title: string) => {
     setMenuId(null);

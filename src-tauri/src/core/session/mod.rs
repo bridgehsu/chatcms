@@ -42,6 +42,8 @@ pub async fn run(ctx: &mut TurnContext) -> Result<()> {
         format!("session_id={sid} mode={}", ctx.mode.as_str()),
     );
 
+    // 落库前清洗占位文案，并写回 ctx 供后续 script_turn 分类
+    ctx.content = service::sanitize_user_content(&ctx.content);
     service::push_user_message(&app, &state, &sid, &ctx.content).await;
     trace.mark("push_user_message", "");
 

@@ -3,6 +3,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView } from "@codemirror/view";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { SCRIPT_EDITOR_PLACEHOLDER } from "../pageScriptContract";
 
 const lightTheme = EditorView.theme(
   {
@@ -98,7 +99,7 @@ export const ScriptCodeEditor = ({ value, onChange, fileKey }: Props) => {
           searchKeymap: true,
           history: true,
         }}
-        placeholder="// 入口脚本（函数体）。return string | { title, text, url }"
+        placeholder={SCRIPT_EDITOR_PLACEHOLDER}
         onChange={onChange}
       />
     </div>

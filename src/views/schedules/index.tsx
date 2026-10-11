@@ -52,7 +52,7 @@ export const SchedulesPage = () => {
                 label: '项目名称',
                 type: 'input',
                 rules: [{ required: true, message: '请输入项目名称' }],
-                placeholder: '例如：每日早报推送',
+                placeholder: '例如：BOSS采聊→填回复',
             },
             render: (name: string, record: ScheduleProject) => (
                 <>
@@ -124,7 +124,7 @@ export const SchedulesPage = () => {
             <CabinX
                 api={api}
                 columns={columns}
-                pageTitle="调度中心"
+                pageTitle="调度中心 · 任务"
                 rowKey="id"
                 formType="D"
                 editorWidth={480}

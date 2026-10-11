@@ -360,7 +360,8 @@ const Composer = ({
     setInput("");
     setAttachments([]);
     closeMention();
-    await onSend(text || "请根据我引用的内容处理", payload);
+    // 仅有 @ 附件时传空串；store 会拼成「@标签」，后端按「只 @ → 执行」
+    await onSend(text, payload);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -422,9 +423,11 @@ const Composer = ({
                 <span className="composer__chip-kind">
                   {a.kind === "script"
                     ? "脚本"
-                    : a.kind === "skill"
-                      ? "技能"
-                      : "MCP"}
+                    : a.kind === "task"
+                      ? "任务"
+                      : a.kind === "skill"
+                        ? "技能"
+                        : "MCP"}
                 </span>
                 {a.label}
                 <span className="composer__chip-x" aria-hidden>

@@ -106,12 +106,34 @@ pub async fn set_agent(
     Ok(session)
 }
 
+/// 去掉旧版「仅 @ 附件」占位文案，避免写入会话 / 标题。
+pub fn sanitize_user_content(raw: &str) -> String {
+    const FILLER: &str = "请根据我引用的内容处理";
+    let mut s = raw.trim().to_string();
+    if s == FILLER {
+        return String::new();
+    }
+    if let Some(rest) = s.strip_suffix(FILLER) {
+        s = rest.trim().to_string();
+    }
+    if s.contains(FILLER) {
+        s = s.replace(FILLER, " ");
+        s = s.split_whitespace().collect::<Vec<_>>().join(" ");
+    }
+    s
+}
+
 /// 向会话追加用户消息并持久化。
 pub async fn push_user_message(app: &AppHandle, state: &AgentState, sid: &str, content: &str) {
+    let content = sanitize_user_content(content);
     {
         let mut sessions = state.sessions.lock().unwrap();
         if let Some(session) = sessions.get_mut(sid) {
-            session.push(Role::User, content);
+            session.push(Role::User, &content);
+            // 新会话标题用首条用户消息（已去占位），避免列表里出现废话
+            if session.title == "New Chat" && !content.is_empty() {
+                session.title = content.chars().take(40).collect();
+            }
         }
     }
     save_snapshot(app, state, sid).await;

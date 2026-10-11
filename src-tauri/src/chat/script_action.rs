@@ -105,9 +105,9 @@ pub fn classify(content: &str, scripts: &[&ChatAttachment]) -> ScriptAction {
     if has_exec {
         return ScriptAction::Execute;
     }
-    // 只有 @，没有有效说明 → 问清楚
+    // 只 @、不带话 → 默认执行（填/发类缺文案时由 script_turn 再反问）
     if rest_trim.is_empty() {
-        return ScriptAction::Ask;
+        return ScriptAction::Execute;
     }
     // 去掉语气词后仍很短且无动词 → 问清楚
     let compact: String = rest_trim
@@ -310,7 +310,14 @@ mod tests {
             classify("@BOSS打招呼 今天天气真好", &s),
             ScriptAction::Ask
         );
-        assert_eq!(classify("@BOSS打招呼", &s), ScriptAction::Ask);
+    }
+
+    #[test]
+    fn classify_bare_at_means_execute() {
+        let owned = script("BOSS打招呼", "JOB_BOSS_GREET");
+        let s = [&owned];
+        assert_eq!(classify("@BOSS打招呼", &s), ScriptAction::Execute);
+        assert_eq!(classify("@BOSS打招呼   ", &s), ScriptAction::Execute);
     }
 
     #[test]

@@ -1,20 +1,23 @@
-//! 会话 @ 附件：脚本 / Skill / MCP（结构化，不靠意图猜类型）。
+//! 会话 @ 附件：脚本 / 任务 / Skill / MCP（结构化，不靠意图猜类型）。
 
 use serde::{Deserialize, Serialize};
 
-/// `script` | `skill` | `mcp`
+/// `script` | `task` | `skill` | `mcp`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum AttachmentKind {
     Script,
+    Task,
     Skill,
     Mcp,
 }
 
 impl AttachmentKind {
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Script => "script",
+            Self::Task => "task",
             Self::Skill => "skill",
             Self::Mcp => "mcp",
         }
@@ -23,6 +26,7 @@ impl AttachmentKind {
     pub fn parse(raw: &str) -> Option<Self> {
         match raw.trim().to_ascii_lowercase().as_str() {
             "script" => Some(Self::Script),
+            "task" => Some(Self::Task),
             "skill" => Some(Self::Skill),
             "mcp" => Some(Self::Mcp),
             _ => None,
@@ -32,9 +36,9 @@ impl AttachmentKind {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatAttachment {
-    /// script | skill | mcp（兼容前端传 kind 字符串）
+    /// script | task | skill | mcp（兼容前端传 kind 字符串）
     pub kind: String,
-    /// 稳定 id：脚本 platform_id/key、技能 name、MCP server name
+    /// 稳定 id：脚本 platform_id/key、任务项目 id、技能 name、MCP server name
     pub id: String,
     pub label: String,
     /// 脚本编码（kind=script 时）
@@ -67,7 +71,10 @@ impl ChatAttachment {
                     *c = t;
                 }
             }
-            if out.iter().any(|x: &ChatAttachment| x.kind == a.kind && x.id == a.id) {
+            if out
+                .iter()
+                .any(|x: &ChatAttachment| x.kind == a.kind && x.id == a.id)
+            {
                 continue;
             }
             out.push(a);
@@ -76,7 +83,7 @@ impl ChatAttachment {
     }
 }
 
-/// 写入 system prompt，供模型区分三类引用。
+/// 写入 system prompt，供模型区分引用类型。
 pub fn format_for_prompt(attachments: &[ChatAttachment]) -> Option<String> {
     if attachments.is_empty() {
         return None;
@@ -86,7 +93,8 @@ pub fn format_for_prompt(attachments: &[ChatAttachment]) -> Option<String> {
         "The user explicitly @-mentioned the following. Treat type as ground truth (do not reclassify).".into(),
         "· skill — follow that skill's workflow in your reply.".into(),
         "· mcp — prefer tools from that MCP server when needed.".into(),
-        "· script — browser page script; call tool run_page_script to execute on the user's open tab (extension). Do not invent DOM results.".into(),
+        "· script — browser page script; system may pre-run run_page_script.".into(),
+        "· task — schedule workflow that chains multiple page scripts; system may pre-run the chain.".into(),
         "".into(),
     ];
     for a in attachments {
@@ -121,6 +129,7 @@ pub fn mcp_names(attachments: &[ChatAttachment]) -> Vec<String> {
         .collect()
 }
 
+#[allow(dead_code)]
 pub fn script_codes(attachments: &[ChatAttachment]) -> Vec<String> {
     scripts(attachments)
         .into_iter()
@@ -138,6 +147,14 @@ pub fn scripts(attachments: &[ChatAttachment]) -> Vec<&ChatAttachment> {
     attachments
         .iter()
         .filter(|a| a.kind_enum() == Some(AttachmentKind::Script))
+        .collect()
+}
+
+/// 本轮 @ 的任务附件。
+pub fn tasks(attachments: &[ChatAttachment]) -> Vec<&ChatAttachment> {
+    attachments
+        .iter()
+        .filter(|a| a.kind_enum() == Some(AttachmentKind::Task))
         .collect()
 }
 
@@ -184,5 +201,54 @@ pub fn format_script_action_for_prompt(
         _ => {}
     }
     lines.push("</script_action>".into());
+    Some(lines.join("\n"))
+}
+
+pub fn format_task_action_for_prompt(
+    action: &str,
+    tasks: &[&ChatAttachment],
+    step_labels: &[String],
+    pre_ran: bool,
+) -> Option<String> {
+    if tasks.is_empty() {
+        return None;
+    }
+    let names: Vec<&str> = tasks.iter().map(|t| t.label.as_str()).collect();
+    let mut lines = vec![
+        "<task_action>".into(),
+        format!("action: {action}"),
+        format!("tasks: {}", names.join(", ")),
+    ];
+    if !step_labels.is_empty() {
+        lines.push(format!("steps: {}", step_labels.join(" → ")));
+    }
+    match action {
+        "explain" => {
+            lines.push(
+                "Do NOT call run_page_script. Explain this task workflow and its script steps."
+                    .into(),
+            );
+        }
+        "ask" => {
+            lines.push(
+                "Do NOT call run_page_script. Clarify whether to run the task or only learn about it."
+                    .into(),
+            );
+        }
+        "execute" if pre_ran => {
+            lines.push(
+                "The task script chain was ALREADY executed. Do NOT call run_page_script again. Use <task_run_result> to summarize."
+                    .into(),
+            );
+        }
+        "execute" => {
+            lines.push(
+                "This is a multi-script task; prefer letting the system run the chain."
+                    .into(),
+            );
+        }
+        _ => {}
+    }
+    lines.push("</task_action>".into());
     Some(lines.join("\n"))
 }

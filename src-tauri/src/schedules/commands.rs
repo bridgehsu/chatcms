@@ -1,4 +1,4 @@
-use super::{ScheduleProject, WorkflowGraph};
+use super::{MentionableTask, ScheduleProject, WorkflowGraph};
 use tauri::AppHandle;
 
 #[tauri::command]
@@ -45,6 +45,13 @@ pub fn schedule_save_workflow(
 pub fn schedule_remove(app: AppHandle, id: String) -> Result<(), String> {
     super::remove(&app, id)
 }
+
+/// 可 @ 的任务列表（含脚本串联步骤）。
+#[tauri::command]
+pub fn schedule_task_list(app: AppHandle) -> Vec<MentionableTask> {
+    super::list_mentionable_tasks(&app)
+}
+
 #[allow(dead_code)]
 pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new("schedules")
@@ -55,6 +62,7 @@ pub fn plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
             schedule_update,
             schedule_save_workflow,
             schedule_remove,
+            schedule_task_list,
         ])
         .build()
 }

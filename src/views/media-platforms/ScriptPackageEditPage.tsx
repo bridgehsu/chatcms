@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Input, Modal, Select, Switch, message } from "antd";
+import { Dropdown, Input, Modal, Select, Switch, message } from "antd";
+import type { MenuProps } from "antd";
 import { PageShell } from "@/layout/components/PageShell";
 import { invoke } from "@/hooks/useTauri";
 import { IconCode, IconPlus } from "@/components/icons";
 import type { ScriptFile, ScriptPackageDetail } from "@/types";
 import { ScriptCodeEditor } from "./components/ScriptCodeEditor";
+import {
+  SCRIPT_CONTRACT_SUMMARY,
+  SCRIPT_TEMPLATES,
+  lintPageScript,
+  type ScriptTemplateKind,
+} from "./pageScriptContract";
 
 type TopbarBusy = "save" | "newfile" | "rename" | "delete" | null;
 
@@ -78,8 +85,43 @@ export const ScriptPackageEditPage = () => {
     emitTopbar(busy, dirtyFile);
   }, [busy, dirtyFile]);
 
+  const insertTemplate = (kind: ScriptTemplateKind) => {
+    const tpl = SCRIPT_TEMPLATES[kind].source;
+    if (draft.trim()) {
+      const ok = window.confirm(
+        `用「${SCRIPT_TEMPLATES[kind].label}」覆盖当前编辑内容？`,
+      );
+      if (!ok) return;
+    }
+    setDraft(tpl);
+    setDirtyFile(true);
+    message.success(`已插入${SCRIPT_TEMPLATES[kind].label}`);
+  };
+
+  const templateMenu: MenuProps = {
+    items: (Object.keys(SCRIPT_TEMPLATES) as ScriptTemplateKind[]).map(
+      (kind) => ({
+        key: kind,
+        label: SCRIPT_TEMPLATES[kind].label,
+        onClick: () => insertTemplate(kind),
+      }),
+    ),
+  };
+
   /** 保存：元数据 + 当前文件写回磁盘目录 */
   const saveAll = async () => {
+    if (activePath) {
+      const issues = lintPageScript(draft);
+      const errors = issues.filter((i) => i.level === "error");
+      const warns = issues.filter((i) => i.level === "warn");
+      for (const w of warns) message.warning(w.message);
+      if (errors.length) {
+        setError(errors.map((e) => e.message).join("；"));
+        message.error(errors[0].message);
+        return;
+      }
+    }
+
     setBusy("save");
     setError("");
     setOk("");
@@ -155,7 +197,8 @@ export const ScriptPackageEditPage = () => {
         packageId,
         path,
         draftContent:
-          "// 新文件\n// 可被入口脚本同包拼接执行；入口文件最后执行\n",
+          "// 辅助文件（同包可被入口引用逻辑时按目录维护）\n" +
+          "// 入口须为函数体：见左侧「脚本契约」或插入模板\n",
       });
       setNewFileOpen(false);
       setNewFileName("");
@@ -275,6 +318,18 @@ export const ScriptPackageEditPage = () => {
             </header>
 
             <div className="script-pkg-side__scroll">
+              <section className="script-pkg-block script-pkg-contract">
+                <h4 className="script-pkg-block__label">脚本契约</h4>
+                <ul className="script-pkg-contract__list">
+                  {SCRIPT_CONTRACT_SUMMARY.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+                <p className="script-pkg-contract__hint">
+                  完整说明见文档「渠道脚本规范」；右侧可插入模板。
+                </p>
+              </section>
+
               <section className="script-pkg-block">
                 <h4 className="script-pkg-block__label">基本信息</h4>
                 <div className="script-pkg-side__fields">
@@ -384,6 +439,19 @@ export const ScriptPackageEditPage = () => {
                 ) : null}
               </div>
               <div className="script-pkg-editor__actions">
+                <Dropdown
+                  menu={templateMenu}
+                  trigger={["click"]}
+                  disabled={!activePath || !!busy}
+                >
+                  <button
+                    type="button"
+                    className="btn-mcp-action script-pkg-files__btn"
+                    disabled={!activePath || !!busy}
+                  >
+                    插入模板
+                  </button>
+                </Dropdown>
                 <button
                   type="button"
                   className="btn-mcp-action script-pkg-files__btn"

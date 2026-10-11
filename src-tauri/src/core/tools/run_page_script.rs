@@ -1,4 +1,8 @@
 //! 在用户浏览器当前页执行渠道脚本（经扩展认领 pending job）。
+//!
+//! 页面脚本勿直接 `fetch(127.0.0.1)`（Chrome 私网访问会拦截）。
+//! 需要 AI 时返回 `ai_complete`（扩展后台代调）或正文中的
+//! `__CHATCMS_AI__\n{json}`（宿主兜底代调）。
 
 use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager};
@@ -8,8 +12,17 @@ use uuid::Uuid;
 
 use super::types::{ToolCall, ToolDef};
 use crate::agents::AgentState;
+use crate::common::provider;
+use crate::core::plan;
 
-const SCRIPT_TIMEOUT_SECS: u64 = 60;
+/// 含扩展后台 AI 的余量
+const SCRIPT_TIMEOUT_SECS: u64 = 120;
+
+const SCRIPT_AI_MARK: &str = "__CHATCMS_AI__";
+
+const SCRIPT_AI_FALLBACK_SYSTEM: &str = "\
+你是页面信息整理助手。严格按用户消息中的【AI任务】执行；\
+找不到的字段写「未找到」，不要编造。直接输出整理结果，不要重复原文。";
 
 pub fn def() -> ToolDef {
     ToolDef {
@@ -114,7 +127,7 @@ pub async fn execute_direct(
                 if body.trim().is_empty() {
                     Ok(format!("脚本 `{code}` 已在浏览器执行完成（无返回内容）。"))
                 } else {
-                    Ok(body)
+                    Ok(resolve_embedded_script_ai(app, &body).await)
                 }
             } else {
                 Err(res
@@ -136,6 +149,63 @@ pub async fn execute_direct(
             ))
         }
     }
+}
+
+/// 旧扩展未处理 `ai_complete` 时：正文含 `__CHATCMS_AI__\n{json}` 则由宿主代调。
+async fn resolve_embedded_script_ai(app: &AppHandle, body: &str) -> String {
+    let Some(payload) = extract_ai_payload(body) else {
+        return body.to_string();
+    };
+    let state = app.state::<AgentState>();
+    let profile = match plan::resolve_profile(app, state.inner(), None, false, 4096).await {
+        Ok(p) => p,
+        Err(e) => {
+            return format!("AI 调用失败（无法解析模型配置）：{e}\n\n{body}");
+        }
+    };
+    let system = payload
+        .system_prompt
+        .as_deref()
+        .unwrap_or(SCRIPT_AI_FALLBACK_SYSTEM);
+    match provider::complete_chat(&profile, &payload.content, Some(system)).await {
+        Ok(out) => {
+            let t = out.trim().to_string();
+            if t.is_empty() {
+                format!("AI 调用失败：模型返回为空\n\n{body}")
+            } else {
+                t
+            }
+        }
+        Err(e) => format!("AI 调用失败：{e}\n\n{body}"),
+    }
+}
+
+struct EmbeddedAiPayload {
+    content: String,
+    system_prompt: Option<String>,
+}
+
+fn extract_ai_payload(body: &str) -> Option<EmbeddedAiPayload> {
+    let idx = body.find(SCRIPT_AI_MARK)?;
+    let json_part = body[idx + SCRIPT_AI_MARK.len()..].trim();
+    // 正文可能是「标题\n\n__CHATCMS_AI__\n{...}」
+    let v: serde_json::Value = serde_json::from_str(json_part).ok()?;
+    let content = v
+        .get("content")
+        .and_then(|x| x.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())?
+        .to_string();
+    let system_prompt = v
+        .get("system_prompt")
+        .and_then(|x| x.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    Some(EmbeddedAiPayload {
+        content,
+        system_prompt,
+    })
 }
 
 pub fn complete_job(app: &AppHandle, job_id: &str, result: PageScriptResult) -> Result<(), String> {

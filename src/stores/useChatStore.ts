@@ -337,9 +337,12 @@ export const useChatStore = create<ChatState>((set, get) => {
       const { activeSessionId, activeSession, focusedGroupId } = get();
       const now = Date.now();
       const atts = attachments?.length ? attachments : undefined;
+      // 仅附件时只保留 @标签（空话术 → 后端直接执行脚本/任务）
       const displayContent =
         atts && atts.length
-          ? `${atts.map((a) => `@${a.label}`).join(" ")} ${content}`.trim()
+          ? [atts.map((a) => `@${a.label}`).join(" "), content.trim()]
+              .filter(Boolean)
+              .join(" ")
           : content;
       const userMsg: Message = {
         id: crypto.randomUUID(),

@@ -12,9 +12,16 @@ export const NODE_PRESETS: NodePreset[] = [
   {
     type: "trigger",
     label: "触发器",
-    description: "定时 / 手动启动流程",
+    description: "定时 / 手动 / 会话 @任务 启动",
     color: "var(--wf-trigger)",
-    defaultData: { mode: "cron", cron: "0 9 * * *", note: "" },
+    defaultData: { mode: "manual", cron: "0 9 * * *", note: "" },
+  },
+  {
+    type: "script",
+    label: "插件脚本",
+    description: "在当前浏览器页执行一个脚本包（可串联多个）",
+    color: "var(--wf-script)",
+    defaultData: { code: "", pass_output: true },
   },
   {
     type: "agent",

@@ -91,12 +91,6 @@ export const NAV_ENTRIES: NavEntry[] = [
         description: "视频列表：上传、AI 生成与网页导入成片",
         Icon: IconVideos,
       },
-      {
-        path: "/schedules",
-        label: "调度中心",
-        description: "创建调度项目，在画布中设计节点工作流（类似 n8n）",
-        Icon: IconCron,
-      },
     ],
   },
   {
@@ -115,8 +109,14 @@ export const NAV_ENTRIES: NavEntry[] = [
       {
         path: "/media-platforms",
         label: "插件脚本",
-        description: "多文件 JS 脚本包；编辑后发布，浏览器插件按入口运行",
+        description: "多文件 JS 脚本包；单步页面动作，供任务串联或插件 @",
         Icon: IconMedia,
+      },
+      {
+        path: "/schedules",
+        label: "调度中心",
+        description: "任务工作流：串联多个插件脚本，浏览器插件可 @任务 执行",
+        Icon: IconCron,
       },
     ],
   },

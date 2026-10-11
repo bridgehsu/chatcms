@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { invoke } from "@/hooks/useTauri";
+import type { ScriptPackage, ScriptPackagePage } from "@/types";
 import { getNodePreset } from "../nodePresets";
 import type { FlowNodeData } from "./WorkflowNodeView";
 
@@ -16,6 +19,19 @@ export const NodeInspector = ({
   onDelete,
   onClose,
 }: Props) => {
+  const [scriptPkgs, setScriptPkgs] = useState<ScriptPackage[]>([]);
+
+  useEffect(() => {
+    if (data?.nodeType !== "script") return;
+    void invoke<ScriptPackagePage>("script_pkg_list_page", {
+      page: 1,
+      pageSize: 200,
+      query: null,
+    })
+      .then((p) => setScriptPkgs(p.items.filter((x) => x.enabled)))
+      .catch(() => setScriptPkgs([]));
+  }, [data?.nodeType]);
+
   if (!nodeId || !data) {
     return (
       <aside className="wf-inspector wf-inspector--empty">
@@ -82,6 +98,48 @@ export const NodeInspector = ({
                 value={String(cfg.note ?? "")}
                 onChange={(e) => setConfig("note", e.target.value)}
               />
+            </div>
+          </>
+        )}
+
+        {data.nodeType === "script" && (
+          <>
+            <div className="mcp-form-row">
+              <label>脚本包</label>
+              <select
+                value={String(cfg.code ?? "")}
+                onChange={(e) => {
+                  const code = e.target.value;
+                  setConfig("code", code);
+                  const hit = scriptPkgs.find((p) => p.code === code);
+                  if (hit) onChange(nodeId, { label: hit.name });
+                }}
+              >
+                <option value="">选择脚本…</option>
+                {scriptPkgs.map((p) => (
+                  <option key={p.id} value={p.code}>
+                    {p.name} ({p.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mcp-form-row">
+              <label>编码</label>
+              <input
+                value={String(cfg.code ?? "")}
+                onChange={(e) => setConfig("code", e.target.value.trim().toUpperCase())}
+                placeholder="例如 JOB_BOSS_GREET"
+              />
+            </div>
+            <div className="mcp-form-row">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={cfg.pass_output !== false}
+                  onChange={(e) => setConfig("pass_output", e.target.checked)}
+                />{" "}
+                将上一步输出作为本步 input
+              </label>
             </div>
           </>
         )}

@@ -6,13 +6,13 @@
 //! - 各层 `run(ctx)`：业务步骤
 //!
 //! ```text
-//! session → intent → decision → plan[ script_turn → loop ⇄ execute ] → response(trace)
+//! session → intent → decision → plan[ script_turn | task_turn → loop ⇄ execute ] → response(trace)
 //! ```
 //!
 //! - **session**：建/复用会话、写用户消息、解析 mode、开 trace  
 //! - **intent**：软路由 Intent（不短路）  
 //! - **decision**：角色绑定 + 本轮 tools（沿用 session 已解析的 mode）  
-//! - **plan**：拼 prompt；`script_turn` 处理 @脚本；Agent Loop；工具回合走嵌套的 **execute**  
+//! - **plan**：拼 prompt；`script_turn` / `task_turn`（@脚本 / @任务串联）；Agent Loop；嵌套 **execute**  
 //! - **response**：本轮链路落库（不是生成助手正文）
 //!
 //! 会话数据在 `crate::chat`；应用级状态在 `AgentState`（类似 ApplicationContext）。

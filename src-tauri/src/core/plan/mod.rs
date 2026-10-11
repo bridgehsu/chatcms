@@ -1,4 +1,4 @@
-//! 规划编排层：system prompt +（可选）script_turn + Agent Loop。
+//! 规划编排层：system prompt +（可选）script_turn / task_turn + Agent Loop。
 //!
 //! `execute` 由 `agent_loop` 在 tool_calls 时调用，不单独占 turn 顶层。
 
@@ -8,6 +8,7 @@ mod agent_loop;
 mod profile;
 mod run;
 mod script_turn;
+mod task_turn;
 
 pub use agent_loop::run_agent_loop;
 pub use profile::resolve_profile;

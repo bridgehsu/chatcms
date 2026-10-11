@@ -23,6 +23,7 @@ const KIND_META: Record<
   { title: string; badge: string }
 > = {
   script: { title: "脚本", badge: "脚本" },
+  task: { title: "任务", badge: "任务" },
   skill: { title: "技能", badge: "技能" },
   mcp: { title: "工具", badge: "MCP" },
 };

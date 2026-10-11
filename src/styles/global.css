@@ -2849,6 +2849,11 @@ body.is-resizing-session-pane {
   color: #0f766e;
 }
 
+.composer__chip--task .composer__chip-kind {
+  background: color-mix(in srgb, #2563eb 18%, transparent);
+  color: #1d4ed8;
+}
+
 .composer__chip--skill .composer__chip-kind {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
@@ -2926,6 +2931,11 @@ body.is-resizing-session-pane {
 .mention-picker__badge--script {
   background: color-mix(in srgb, #0d9488 18%, transparent);
   color: #0f766e;
+}
+
+.mention-picker__badge--task {
+  background: color-mix(in srgb, #2563eb 18%, transparent);
+  color: #1d4ed8;
 }
 
 .mention-picker__badge--skill {
@@ -5535,6 +5545,28 @@ body.is-resizing-session-pane {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.script-pkg-contract__list {
+  margin: 0;
+  padding: 0 0 0 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted, var(--text-dim));
+}
+
+.script-pkg-contract__list li::marker {
+  color: var(--accent);
+}
+
+.script-pkg-contract__hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
   color: var(--text-dim);
 }
 

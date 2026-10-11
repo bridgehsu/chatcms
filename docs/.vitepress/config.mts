@@ -84,7 +84,10 @@ export default defineConfig({
       "/features/": [
         {
           text: "功能说明",
-          items: [{ text: "视频服务", link: "/features/video" }],
+          items: [
+            { text: "渠道脚本规范", link: "/features/page-scripts" },
+            { text: "视频服务", link: "/features/video" },
+          ],
         },
       ],
     },
