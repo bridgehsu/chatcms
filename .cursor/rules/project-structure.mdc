@@ -18,6 +18,11 @@ alwaysApply: true
 chatcms/
 ├── src/                 # React 前端
 ├── src-tauri/           # Tauri / Rust 后端
+├── extension/           # Chrome MV3 扩展（渠道脚本执行 / 侧栏会话；pnpm --dir extension build → dist）
+│   ├── src/             # background / content / popup / shared
+│   ├── public/inject/   # 页面注入静态脚本
+│   ├── manifest.config.ts
+│   └── package.json     # 独立依赖；产物 dist/ 不入库
 ├── scripts/             # 工程脚本与静态资源
 │   ├── dev.sh           # 开发启动脚本
 │   ├── database/        # 数据库脚本
@@ -46,7 +51,7 @@ chatcms/
 └── prompt.md            # 开发进度备忘（非运行时）
 ```
 
-忽略：`node_modules/`、`src-tauri/target/`、`dist/`、`release/`、`docs/.vitepress/dist`。
+忽略：`node_modules/`、`src-tauri/target/`、`dist/`、`release/`、`docs/.vitepress/dist`、`extension/node_modules/`、`extension/dist/`。
 
 ## 前端 `src/`
 

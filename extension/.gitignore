@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+.vite/
+*.log
+.idea/
+.vscode/
+.cursor/
+*.tsbuildinfo
+*.crx
+*.pem
+*.zip
+# 本仓库统一用 pnpm
+package-lock.json

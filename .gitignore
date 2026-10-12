@@ -34,3 +34,16 @@ release
 # VitePress
 docs/.vitepress/dist
 docs/.vitepress/cache
+
+# 浏览器扩展 extension/（构建产物与本地缓存；源码应提交）
+extension/node_modules/
+extension/dist/
+extension/.vite/
+extension/*.tsbuildinfo
+extension/*.crx
+extension/*.pem
+extension/*.zip
+extension/package-lock.json
+extension/.cursor/
+extension/.idea/
+extension/.vscode/
